@@ -24,7 +24,7 @@ git log -5 --oneline
 
 ### 3. docs/ と実コードの優先順位（AGENT.md §6.6）
 
-- 計画書・設計書（`docs/DESIGN.md` / `docs/ROADMAP.md` 等）と AGENT.md / skills が矛盾 → **計画書・設計書が正**。
+- 計画書・設計書（`docs/ARCH.md` / `docs/ROADMAP.md` 等）と AGENT.md / skills が矛盾 → **計画書・設計書が正**。
 - 計画書に無い事項 → AGENT.md（特に §6）→ skills の順。
 
 ### 4. タスク粒度の確認（§1.2）

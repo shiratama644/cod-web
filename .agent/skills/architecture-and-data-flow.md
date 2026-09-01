@@ -59,4 +59,4 @@ packages/shared  (決定論シミュレーション)
 
 ## 関連
 
-- [project-overview.md](./project-overview.md) / [testing.md](./testing.md) / `docs/DESIGN.md`
+- [project-overview.md](./project-overview.md) / [testing.md](./testing.md) / `docs/ARCH.md`

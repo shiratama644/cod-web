@@ -33,7 +33,7 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 |---|---|---|---:|---|---|
 | DOC-1 | リポジトリを CodWeb 向けに再構成（README / AGENTS.md / .agent/ / docs を書き換え・削除） | 実装中 | 60% | DropMod 由来の残骸が無く、CodWeb のドキュメント階層が確立 | ※本ブランチで実施中 |
 | DOC-2 | `docs/CONFIG.md` を技術スタックの全リストとして温存 | 完了 | 100% | CONFIG.md は全リスト（既定の正）として維持 | CONFIG.md 変更なし |
-| DOC-3 | `docs/DESIGN.md`（アーキテクチャ・ネットワーク設計）作成 | 完了 | 100% | 権威サーバー+予測+調停+補間+ラグ補正の設計を文書化 | DESIGN.md |
+| DOC-3 | `docs/ARCH.md`（アーキテクチャ・ネットワーク設計）作成 | 完了 | 100% | 権威サーバー+予測+調停+補間+ラグ補正の設計を文書化 | ARCH.md |
 | DOC-4 | `docs/TECH_SELECTION.md`（絞り込み・判断理由）作成 | 完了 | 100% | CONFIG.md 全リストから実装候補を抽出し判断理由を明記 | TECH_SELECTION.md |
 | DOC-5 | `docs/ROADMAP.md`（本ファイル）作成 | 完了 | 100% | 進捗管理の正本として確立 | 本ファイル |
 
@@ -90,4 +90,4 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 
 ## 進捗メモ
 
-- 2026-09-01: リポジトリの DropMod 残骸を整理し、CodWeb のドキュメント基盤（README / AGENTS.md / docs/README.md / DESIGN.md / TECH_SELECTION.md / ROADMAP.md）を確立。技術選定の主要判断（WebGL2 / **Colyseus + WebTransport** / Node VPS / 完全オリジナルアセット / 6v6 コアマルチ / WebSocket フォールバック）を確定。
+- 2026-09-01: リポジトリの DropMod 残骸を整理し、CodWeb のドキュメント基盤（README / AGENTS.md / docs/README.md / ARCH.md / TECH_SELECTION.md / ROADMAP.md）を確立。技術選定の主要判断（WebGL2 / **Colyseus + WebTransport** / Node VPS / 完全オリジナルアセット / 6v6 コアマルチ / WebSocket フォールバック）を確定。

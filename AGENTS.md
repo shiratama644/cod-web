@@ -152,7 +152,7 @@ git log -5 --oneline
 - 進捗管理の正本は `docs/ROADMAP.md`。タスク ID で管理する。
 
 ### 6.6 計画書 > AGENT.md の優先順位
-- 計画書・設計書（`docs/DESIGN.md` / `docs/ROADMAP.md` 等）と本ドキュメントで指示が食い違う場合、**計画書・設計書を優先**する。
+- 計画書・設計書（`docs/ARCH.md` / `docs/ROADMAP.md` 等）と本ドキュメントで指示が食い違う場合、**計画書・設計書を優先**する。
 
 ---
 
