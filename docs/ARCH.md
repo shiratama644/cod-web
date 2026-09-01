@@ -179,5 +179,7 @@
 | Colyseus + WebTransport | 権威サーバーのルーム管理 + `datagrams`（UDP 相当）と `streams`（確実）を機能別に使い分けられ、競技 FPS の低遅延を実現 |
 | WebRTC (geckos.io) は見送り | P2P 前提のため、クライアント↔サーバーではシグナリング必須 + ICE/STUN/TURN の NAT 越え（TURN 有料・遅延増）+ UDP ダイレクト運用（LB 迂回・IP 公開）が増える。WebTransport は Client→Server QUIC で NAT 越え不要のため同効果を簡潔に得る |
 | WebSocket フォールバック | WebTransport 非対応環境（旧 Safari / UDP ブロックのネットワーク）向けに併設 |
+| 「カスタム UDP は？→ WebTransport に収斂」 | ブラウザは生 UDP を JS に公開しない（意図的な安全策）。ブラウザから UDP 相当を出すのは WebTransport `datagrams`（NAT 越え不要）か WebRTC（複雑）の 2 択。アプリ層プロトコルは自由に書け、トランスポート（TLS/輻輳制御/ストリーム）はブラウザが担う |
 | Node 専用サーバー（VPS） | 永続稼働・QUIC/UDP（WebTransport）・ルーム状態保持が必要。サーバーレスは不可 |
 | 完全オリジナルアセット | CoD は商用 IP のため Web 配信不可。「CoD 相当の品質」を自前で目指す |
+| WebTransport の終端はサーバー側が未成熟 | ブラウザ（クライアント）は Baseline 済みだが、Node.js は組み込み WebTransport が無い。終端は C++(msquic 等) / Go / Rust で代替。本サンドボックスでは Go/Rust 不可（レジストリ・toolchain ブロック）のため C++ が実装可能 |

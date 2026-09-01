@@ -95,6 +95,54 @@
 
 > つまり geckos.io（WebRTC）は「Node にネイティブ WebTransport が無い」問題を**無理矢理 UDP で回避**する割高な代替であり、本プロジェクトでは採用しない。WebTransport が本命（Node 終端は quic-go / aioquic / コミュニティパッケージ）。
 
+### 4.6 「カスタム UDP プロトコルでは？」という指摘への応答
+
+> **指摘（開発者より）**: 「WS は TCP で遅延がある / WebTransport はまだ実験的 / UDP は安定している。なら**カスタム UDP プロトコルを作れば**いい。」
+
+この指摘は**ネイティブゲームの文脈なら完全に正しい**（Gaffer On Games の `netcode.io` / ENet / RakNet はまさにカスタム UDP）。ただし**本プロジェクトはブラウザゲームであり、そこに 1 つの致命的な前提の誤解**がある（出典: 調査 2026-03）。
+
+**① ブラウザは「生の UDP ソケット」を JavaScript に一切公開しない。**
+生の TCP も同様。`fetch` / XHR / WebSocket はすべて HTTP(S) ベースであり、ブラウザは意図的に raw ソケットを塞いでいる（攻撃の踏み台・家庭内ネットワークへの侵入を防ぐため）[2](https://www.reddit.com/r/programming/comments/vs5r4n/no_really_why_cant_we_have_raw_udp_in_javascript/)[7](https://news.ycombinator.com/item?id=31984112)[9](https://stackoverflow.com/questions/17658368/why-no-udp-connection-via-browser-even-with-html5)。raw 接続は「アプリ層の誤用を防ぐハンドシェイクが無い」ため**今後も実装されない**。
+
+> **Browsers deliberately do not expose raw TCP or UDP socket APIs to JavaScript.**[1](https://therelay.net/blog/rtsp-to-webrtc-browser)
+
+→ よって「クライアント（ブラウザ）が**自前の UDP プロトコルを直接喋る**」ことは構造的に不可能。ブラウザから UDP 相当を出す手段は **WebRTC DataChannel** と **WebTransport `datagrams`** の 2 つだけ（WebRTC は ICE/STUN/TURN が要るので前述の通り見送り）。
+
+**② 「カスタム UDP を書きたい」という本能は、ブラウザでは WebTransport に収斂する。**
+WebTransport の `datagrams` こそが「**ブラウザ安全なカスタム UDP**」。アプリ層のメッセージフォーマット（バイナリレイアウト・シーケンス番号・優先度・フラグ）は完全に自前でカスタムできる一方、UDP 相当のトランスポート（TLS 1.3 暗号化・輻輳制御・0-RTT・ストリーム多重化）はブラウザが担う。→ **通信ペイロードの設計は自由、トランスポートは自前で輻輳制御/暗号化/再送を書かずに済む**。
+
+**③ 友人の懸念は実は「サーバー側のライブラリ未成熟」に当たっている。**
+「WebTransport は実験的」というのは、**クライアント（ブラウザ）側ではなく「Node.js サーバー側の実装」に当てはまる**。
+
+| 側 | 成熟度（調査 2026-03） |
+| :--- | :--- |
+| **ブラウザ（クライアント）** | **Baseline 到達**（2026-03、Safari 26.4 で全ブラウザ対応）。**実験的ではない** |
+| **Node.js（サーバー）** | **組み込み実装が無い**。`@fails-components/webtransport`（libquiche）のほか、Colyseus 公式 `@colyseus/h3-transport` は **Experimental 表記**。quic-go（Go）/ wtransport（Rust）/ aioquic（Python）で終端する選択肢もある |
+
+→ **真の論点**は「プロトコルが実験的」ではなく「**サーバー側の WebTransport ライブラリがまだ未成熟**」。これは採用時に見極めるべきリスクであり、**Go / Rust（本サンドボックスでは不可）/ C++ で終端**すれば回避できる（後述 §4.7）。
+
+**まとめ**
+1. ブラウザでは生 UDP が使えないため、「カスタム UDP」は**WebTransport か WebRTC**（複雑）の 2 択に収斂する。
+2. WebTransport の `datagrams` が「ブラウザ安全なカスタム UDP」で、**アプリ層プロトコルは自由に作れる**。現行方針が正解。
+3. 友人が実際に警告しているのは**サーバー側ライブラリの未成熟**。これは採用時に回避策（C++ 等で終端）を用意しておくべき真のリスク。
+
+### 4.7 サーバー側 WebTransport 終端の選択肢（実装判断）
+
+Node に組み込み WebTransport サーバーが無いため、**終端の実装**をどうするかが実務上の判断点。ブラウザ（クライアント）は Baseline 済みだが、**サーバー側を誰が担うか**で構成が変わる。
+
+| 終端方式 | 言語 / ライブラリ | 評価 | 本サンドボックスでの可否（実測 2026-03） |
+| :--- | :--- | :--- | :--- |
+| **Node 組み込み** | — | **存在しない** | — |
+| Node ライブラリ | `@fails-components/webtransport`（libquiche） | 活発だが native 依存 + バージョン一致必須 | ✅ (npm 到達可) |
+| Colyseus 公式 | `@colyseus/h3-transport` | **Experimental 表記**（未成熟） | ✅ (npm 到達可) |
+| **Go 終端** | `quic-go` / `webtransport-go` | 本命候補・Production-ready | ❌ **本サンドボックスでは不可**（toolchain 取得元・`proxy.golang.org` がブロック） |
+| **Rust 終端** | `wtransport` / `web-transport`(moq-dev) | 本命候補・Production-ready | ❌ **本サンドボックスでは不可**（`sh.rustup.rs`・`crates.io` がブロック） |
+| **C++ 終端** | msquic / quiche / lsquic（CMake 要） | 検証済みで使用可能 | ✅ **本サンドボックスで可**（`g++` 12.2 C++17/20/23 + GitHub から依存取得可） |
+
+> **本サンドボックス検証の事実（2026-03）**: 到達可 = `github.com`（git clone 可）/ `registry.npmjs.org` / `pypi.org`。到達不可 = `crates.io` / `static.crates.io` / `index.crates.io`（Rust 依存）/ `proxy.golang.org` / `go.dev` / `dl.google.com`（Go ツールチェーン + モジュール）/ `static.rust-lang.org` / `sh.rustup.rs`（Rust ツールチェーン）/ `deb.debian.org`（apt）。→ **Go / Rust はこの環境では WebTransport サーバーを構築不能。`g++` は C++17/20/23 が動作し、msquic を GitHub から取得可能**。
+
+**現時点の推奨**: WebSocket（Colyseus）を主経路としつつ、WebTransport は **C++（msquic 等）で終端**する構成を検討する。WebTransport の導入は P2-B（実測基盤）で `datagrams` の体感遅延を測ってから判断する。WebRTC（geckos.io / libdatachannel）は「Node に WebTransport が無い」問題を UDP で無理矢理回避する割高な代替なので見送り。
+
 ## 5. ECS / 大量オブジェクト
 
 | 候補 | 判定 | 理由 |
