@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # restore-sandbox-env.sh
-# Sandbox 再構築後の環境復旧（§4.1.1）。sandbox-rebuild-recovery.md から呼出。
+# 環境再構築後の復旧（AGENT.md §4.1）。sandbox-rebuild-recovery.md から呼出。
 #
 # やること:
 #   1. Node.js を .nvmrc のメジャー版 (最新 LTS) に置換
