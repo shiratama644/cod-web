@@ -11,15 +11,17 @@ packages/client  (ブラウザ)
   ├ Client Simulation (予測) ← shared の決定論シミュレーションをローカル実行
   └ Renderer (WebGL2) ← 他エンティティは Entity Interpolation
         │
-        │  input / command (Client → Server)
+        │  input / command (Client → Server, geckos.io WebRTC: 低遅延 UDP)
         ▼
-packages/server  (Node.js, VPS)
-  ├ 権威シミュレーション (shared をそのまま実行)
-  ├ バリデーション (入力・射撃・状態)
-  ├ Lag Compensation (射撃時、ターゲットを時点に巻き戻し)
-  └ State Broadcast (Snapshot) ── datagrams (位置・視点・音声) / streams (射撃・被弾・キルログ)
+packages/server  (Node.js 24, VPS)
+  ├ Socket.IO (制御系 / TCP): 認証・ロビー・ルーム・チャット・マッチイベント
+  └ geckos.io (ゲーム同期層 / UDP):
+       ├ 権威シミュレーション (shared をそのまま実行)
+       ├ バリデーション (入力・射撃・状態)
+       ├ Lag Compensation (射撃時、ターゲットを時点に巻き戻し)
+       └ State Broadcast (Snapshot) ── unreliable (位置・視点・入力) / { reliable: true } (射撃・被弾)
         │
-        │  snapshot (Server → Client, WebTransport)
+        │  snapshot (Server → Client, geckos.io WebRTC)
         ▼
 packages/shared  (決定論シミュレーション)
   └ 移動・射撃・状態遷移 (クライアント/サーバーで import 共有)
@@ -48,8 +50,8 @@ packages/shared  (決定論シミュレーション)
 
 ## Server / Client 境界の要点
 
-- **Server (Node)**: 権威シミュレーション・バリデーション・ブロードキャスト。**Colyseus ルーム管理（MVP は WebSocket 主経路）**。P2-B で WebTransport 終端（QUIC）を追加。永続稼働。Vercel 等のサーバーレスは不可。
-- **Client (Browser)**: 入力・予測・描画。UI/HUD。ネットワーク送信。
+- **Server (Node.js 24)**: 権威シミュレーション・バリデーション・ブロードキャスト。**ゲーム同期層 = geckos.io WebRTC**（tick / 入力検証 / Snapshot / interpolation・prediction）、**制御系 = Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベント）。永続稼働。Vercel 等のサーバーレスは不可。
+- **Client (Browser)**: 入力・予測・描画。UI/HUD。ネットワーク送信（Socket.IO 制御系 + geckos.io ゲーム同期）。
 - **Shared**: 決定論的シミュレーション。クライアント/サーバーで import 共有。React の `state` に載せず `ref`/`getState()`/`subscribe` で直接更新。
 
 ## 同期 / 非同期の境界

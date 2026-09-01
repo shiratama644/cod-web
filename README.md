@@ -11,8 +11,8 @@ Web ブラウザ上で AAA 級オンライン FPS を、モバイルでも PC �
 - **対応プラットフォーム**: PC（マウス/キーボード、ゲームパッド）＋ モバイル（タッチ、仮想スティック）
 - **アーキテクチャ**: 権威型サーバー（Authoritative Server）＋ クライアント予測（Client Prediction）/ サーバー調停（Reconciliation）/ エンティティ補間（Entity Interpolation）/ ラグ補正（Lag Compensation）
 - **描画**: WebGL2（Three.js）で安定優先。WebGPU（`three/webgpu` + TSL）は段階導入
-- **ネットワーク**: 権威サーバーは **Node.js + Colyseus (v0.16+)**、**MVP は WebSocket（Colyseus 標準）を主経路**。`datagrams`（UDP 相当）で位置・視点・音声を、`streams`（QUIC ストリーム）で射撃・被弾・キルログ・チャットを転送する**機能別使い分けは WebTransport（P2-B）** で段階導入。永続データは HTTPS API。WebTransport 非対応環境でも WebSocket がそのまま主経路として機能
-- **サーバー**: 自己管理の Node 専用サーバー（VPS）で永続稼働（MVP は WebSocket で成立、P2-B で QUIC/WebTransport 終端を追加）
+- **ネットワーク**: 権威サーバーは **Node.js 24 + geckos.io（WebRTC）**。**ゲーム同期層 = geckos.io WebRTC**（tick / 入力検証 / Snapshot / interpolation・prediction を低遅延 UDP で）、**制御系 = Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベントを確実に）。永続データは HTTPS API
+- **サーバー**: 自己管理の Node 専用サーバー（VPS）で永続稼働（Socket.IO TCP + geckos.io WebRTC UDP）
 
 ## このリポジトリの構成（ドキュメントファースト）
 
@@ -34,7 +34,7 @@ Web ブラウザ上で AAA 級オンライン FPS を、モバイルでも PC �
 | --- | --- |
 | 描画 | three.js + @react-three/fiber + @react-three/drei（WebGL2） |
 | 物理 / 当たり判定 | @dimforge/rapier3d（決定論的・権威物理）+ three-mesh-bvh（レイキャスト射撃判定） |
-| ネットワーク | Colyseus（権威ルーム/状態同期）+ WebSocket（**MVP 主経路**）+ WebTransport（`datagrams`/`streams`、P2-B で導入）。永続は HTTPS API |
+| ネットワーク | geckos.io WebRTC（ゲーム同期層: 低遅延 UDP）+ Socket.IO（制御系: 認証・ロビー・ルーム・チャット・マッチイベント）。永続は HTTPS API |
 | ECS / 大量オブジェクト | bitecs（決定論的シミュレーション） / miniplex（R3F シーン） |
 | キャラクター | ecctrl（物理駆動）＋ カスタム FPS コントローラー |
 | 入力 | PointerLockControls / KeyboardControls（PC）、nipplejs（モバイル仮想スティック） |

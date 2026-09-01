@@ -1,4 +1,4 @@
-# P1-C: 権威サーバー（Colyseus + ティックループ）の最小実装（WebSocket で成立）
+# P1-C: 権威サーバー（geckos.io WebRTC + Socket.IO）の最小実装
 
 > 対応タスク ID: `P1-C` (docs/ROADMAP.md)
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
@@ -16,31 +16,30 @@ FPS の核心は「サーバーが正 (authoritative) である」こと。ク�
 エンティティ補間 / ラグ補正はすべて、**サーバーが最終的に状態を決める**という前提で成立する。
 本タスクは、**この権威サーバーの最小骨格**を実際に動かし、1 ルームでプレイヤー状態
 （位置・視点・姿勢）の同期が成立することを確認する。これが P1-D（決定論 + クライアント予測）や
-P2-B（WebTransport datagrams/streams）の土台になる。**MVP のトランスポートは WebSocket（Colyseus 標準）**。
+P2-B（geckos.io のゲーム同期本格化）の土台になる。**トランスポートは geckos.io WebRTC（ゲーム同期）+ Socket.IO（ルーム・制御系）**。
 
 ## 3. 変更範囲 (Scope)
 
 変更対象:
-- `packages/server`（新規）: Colyseus (v0.16+) 権威サーバー、ティックループ、ルーム
+- `packages/server`（新規）: Node.js 24 権威サーバー。Socket.IO（ルーム・制御系）+ geckos.io WebRTC（ゲーム同期層）、ティックループ
 - `packages/shared`（新規）: 決定論シミュレーション（移動）の共通ロジック
-- `packages/client`（新規、最小）: サーバーへ入力送信・Snapshot 受信の骨格
+- `packages/client`（新規、最小）: サーバーへ入力送信・Snapshot 受信の骨格（Socket.IO + geckos.io クライアント）
 - 関連ドキュメント更新: `docs/ARCH.md` §2（実装と設計の整合）、`docs/ROADMAP.md`（状態・証拠）
 
 変更しない (境界外):
 - ラグ補正・射撃判定 (P1-E)
 - モバイル入力・3D 描画の最適化 (P3-*)
-- WebTransport の本導入（本タスクは Colyseus + WebSocket で成立させ、QUIC は P2-B で導入）
-- WebRTC / geckos.io（見送り確定）
+- WebTransport の導入（Node 側未成熟のため見送り。geckos.io で代替）
+- ゲーム同期の完全な WebSocket フォールバック（P2-C で評価）
 
 ## 4. 禁止事項
 
 - 推測で仕様を補完しない。不明点は §7 の停止条件に従って質問する。
 - 無関係なリファクタリングをしない。
 - テストを通すためだけに期待値を実装へ合わせない。
-- **本物の WebTransport (QUIC) を本タスクで導入しない**。このサンドボックスでは
-  QUIC スタックをビルドできない（cmake / OpenSSL ヘッダ / autotools 無し、GitHub リリース配信ブロック）ため、
-  P1-C は WebSocket（Colyseus 標準）で権威サーバーを成立させ、WebTransport は P2-B に回す。
-- **サーバー言語は Node.js + Colyseus に固定する。C++ は採用しない**（`g++` が使える環境である点は事実として認識するが、TypeScript で shared をクライアント/サーバー import 共有できる利点を優先）。
+- **本物の WebTransport (QUIC) を本タスクで導入しない**（Node 側の実装が未成熟／Experimental。geckos.io WebRTC で代替）。
+- **サーバー言語は Node.js に固定する。C++ / Go / Rust は採用しない**（`g++` が使える環境である点は事実として認識するが、TypeScript で shared をクライアント/サーバー import 共有できる利点を優先）。
+- ゲーム同期の高頻度データ（位置・入力・Snapshot）を Socket.IO（TCP）に載せない（HoL ブロッキングで遅延が増えるため）。
 - 既存のドキュメント構造（docs/ の階層）を壊さない。
 
 ## 5. 完了条件 (DoD)
@@ -86,25 +85,28 @@ P2-B（WebTransport datagrams/streams）の土台になる。**MVP のトラン�
 | ID | テーマ | 主要成果物 | 依存 |
 |---|---|---|---|
 | P1-C-a | shared 決定論シミュレーション（移動） | 固定ステップ・固定シード | — |
-| P1-C-b | Colyseus 権威サーバー + ティックループ | ルーム join / validate / broadcast | P1-C-a |
-| P1-C-c | 最小クライアント（入力送信・Snapshot 受信） | 予測 + 調停の骨格 | P1-C-b |
+| P1-C-b | 権威サーバー（Socket.IO ルーム/制御系 + geckos.io ゲーム同期 + ティックループ） | ルーム join / validate / broadcast | P1-C-a |
+| P1-C-c | 最小クライアント（Socket.IO 接続 + geckos.io 入力送信・Snapshot 受信） | 予測 + 調停の骨格 | P1-C-b |
 | P1-C-d | ローカル E2E（2 クライアント join 確認） | 実測ログ・証拠 | P1-C-c |
 
 ## 10. 設計詳細・仕様
 
-- 権威サーバー: Colyseus (v0.16+)。`defineServer` + `Room`。ティックは `setSimulationInterval`（固定ステップ）。
-- ネットワーク: **MVP は WebSocket（Colyseus 標準）で統一**。WebTransport は P2-B で導入（サンドボックス制約のため）。
+- 権威サーバー: Node.js 24。**Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベント）と **geckos.io WebRTC**（ゲーム同期層）を併用。
+- ルーム/制御系: Socket.IO の `io`/`room`。join / leave / カウントダウン / チーム分けは Socket.IO で行う（reliable/ordered）。
+- ゲーム同期: geckos.io の `channel`。ティックループは自前の固定ステップ（`setInterval`/`setSimulationInterval` 相当）。
+  - 位置・視点・入力・Snapshot: `channel.emit('state', snapshot)`（unreliable/unordered、デフォルト）。
+  - 射撃・被弾確定・重要イベント: `channel.emit('event', data, { reliable: true })`（再送・重複除去）。
 - shared 決定論: 固定タイムステップ・乱数シード化。Rapier は決定論的だが可変ステップは非決定論のため固定。
-- 同期: 入力 (client→server) / Snapshot (server→client) は **MVP では WebSocket + Colyseus のマッチメイキング**に載せる。
-  WebTransport `datagrams` の使い分けは P2-B で導入。
+- 指針: **高頻度ゲーム状態を Socket.IO（TCP）に載せない**。Socket.IO は制御系・確実性必須の低頻度イベントに限定。
+- ネットワーク: WebTransport は導入しない（Node 側未成熟）。geckos.io WebRTC をゲーム同期の主経路とする。
 
 ## 11. リスク・Gotchas
 
-- **本サンドボックスでは本物の QUIC/WebTransport をビルド不能**（cmake / OpenSSL ヘッダ / autotools 無し、
-  GitHub リリース配信ブロック）。P1-C は WebSocket で完成させ、WebTransport は P2-B で環境を分けて評価する。
-- Colyseus の WebTransport transport (`@colyseus/h3-transport`) は **Experimental 表記**。本タスクでは使わない。
-- Node に組み込み WebTransport が無い点は既知。**サーバー言語は Node.js + Colyseus に固定**（C++/Go/Rust は採用しない）。
-  終端の選定は P2-B で改めて判断する。
+- **本サンドボックスでは `node-datachannel`（geckos.io のネイティブ依存）のビルド/実行に制約がある**可能性。
+  ビルドが不安定な場合は、正規の geckos.io を使って実環境（VPS）で検証する。
+- geckos.io はサーバー側に **UDP ポート開放**が必要（`multiplex:true` で 1 ポートに集約可）。`9208/tcp`（シグナリング）も要る。
+- 公開 IP の専用サーバーへの直接接続では **TURN 不要**（ICE ホスト候補で成立）。UDP ブロック網は Socket.IO（TCP）で動作を維持。
+- ゲーム同期の完全な WebSocket フォールバックは P2-C で評価（本タスクでは扱わない）。
 - 決定論テストは「オフライン再現」で担保（ブロードキャストの実測とは分離）。
 
 ## 12. 実績と証拠 (実装後に記入)

@@ -21,7 +21,7 @@
 
 | ファイル | 概要 | 最終更新 |
 | :--- | :--- | :--- |
-| [project-overview.md](./project-overview.md) | 製品概要・目標・技術方針（WebGL2 / Colyseus+WebTransport / 完全オリジナルアセット）。最初に読む。 | 2026-09-01 |
+| [project-overview.md](./project-overview.md) | 製品概要・目標・技術方針（WebGL2 / geckos.io WebRTC + Socket.IO / 完全オリジナルアセット）。最初に読む。 | 2026-09-01 |
 | [architecture-and-data-flow.md](./architecture-and-data-flow.md) | 権威サーバー + クライアント予測の全体レイヤとデータフロー。 | 2026-09-01 |
 | [sandbox-constraints.md](./sandbox-constraints.md) | 開発環境の制約と迂回策（ネットワーク到達不可 / GPU 無し / 権限）。 | 2026-09-01 |
 | [testing.md](./testing.md) | vitest / msw / Playwright・CI の進め方。 | 2026-09-01 |

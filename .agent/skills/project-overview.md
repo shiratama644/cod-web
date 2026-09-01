@@ -23,9 +23,9 @@
 | 項目 | 方針 | 理由 |
 | :--- | :--- | :--- |
 | 描画 | **WebGL2**（three.js）で安定優先。WebGPU（`three/webgpu` + TSL）は段階導入 | 全ブラウザ対応・モバイル実機で確実に動かすため |
-| ネットワーク | 権威サーバーは **Node.js + Colyseus (v0.16+)**、**MVP は WebSocket（Colyseus 標準）を主経路**。`datagrams`（UDP 相当）で位置・視点・音声、`streams` で射撃・被弾・キルログ・チャットの使い分けは **WebTransport（P2-B）** で段階導入。永続は HTTPS API | WebTransport は Safari 26.4 で Baseline 到達（Chrome/Edge/Firefox/Safari/Opera）。`datagrams` は UDP 相当で低遅延を実現。MVP は WebSocket で権威サーバーを成立させる |
+| ネットワーク | 権威サーバーは **Node.js 24 + geckos.io（WebRTC）**。**ゲーム同期層 = geckos.io WebRTC**（tick / 入力検証 / Snapshot / interpolation・prediction を低遅延 UDP で）、**制御系 = Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベントを確実に）。永続は HTTPS API | geckos.io は authoritative server 向け。WebRTC DataChannel over UDP で低遅延。公開 IP の専用サーバー直結なら TURN 不要 |
 | 物理 | **Rapier（決定論的）**を権威物理に + `three-mesh-bvh` を射撃判定に | クライアント予測/サーバー調停の前提 |
-| サーバー | **Node.js + Colyseus 専用サーバー（VPS）** | 永続稼働・ルーム状態保持が必要。MVP は WebSocket で成立（P2-B で QUIC/UDP=WebTransport を追加）。サーバーレスは不向き |
+| サーバー | **Node.js 24 専用サーバー（VPS）** | 永続稼働・ルーム状態保持が必要。Socket.IO（TCP）+ geckos.io WebRTC（UDP）。サーバーレスは不向き |
 | アセット | **完全オリジナル**（本家超えの品質を志向） | CoD は商用 IP のため Web 配信不可 |
 
 ## リポジトリ構成（ドキュメントファースト）
@@ -45,7 +45,7 @@
 | :--- | :--- |
 | 描画 | three.js + @react-three/fiber + @react-three/drei（WebGL2） |
 | 物理 | @dimforge/rapier3d（決定論的）+ three-mesh-bvh（射撃判定） |
-| ネットワーク | Colyseus（権威）+ WebSocket（**MVP 主経路**）+ WebTransport（`datagrams`/`streams`、P2-B で導入）。永続は HTTPS API |
+| ネットワーク | geckos.io WebRTC（ゲーム同期層: 低遅延 UDP）+ Socket.IO（制御系: 認証・ロビー・ルーム・チャット・マッチイベント）。永続は HTTPS API |
 | 共有シミュレーション | `packages/shared`（決定論的。bitecs 等） |
 | 状態/UI | zustand + @radix-ui/* + framer-motion |
 | 入力 | PointerLockControls / KeyboardControls（PC）+ nipplejs（モバイル） |
@@ -61,7 +61,7 @@
 | :--- | :--- | :--- |
 | 0 | ドキュメント基盤 & リポジトリ整備（CodWeb 化） | 進行中 |
 | 1 | 技術検証（モノレポ / three.js FPS / 権威サーバー / クライアント予測） | 未着手 |
-| 2 | ネットワーク基盤（WebTransport `datagrams`/`streams` 使い分け） | 未着手 |
+| 2 | ネットワーク基盤（geckos.io WebRTC のゲーム同期 + Socket.IO 制御系） | 未着手 |
 | 3 | コアゲームプレイ（6v6 / 武器 / スコア / HUD） | 未着手 |
 | 4 | 品質・最適化（モバイル / テスト / CI / セキュリティ） | 未着手 |
 

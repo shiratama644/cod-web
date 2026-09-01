@@ -13,5 +13,5 @@
 | （なし） | 検証・試作物は追跡対象になった時点でここに列挙する。 |
 
 > 2026-09-01: C++ 権威サーバーの UDP 実証（`wt_udp/`）は**方針転換により廃止**。
-> 権威ゲームサーバーは Node.js + Colyseus、MVP は WebSocket で構築する（WebTransport は P2-B）。
+> 権威ゲームサーバーは **Node.js 24 + geckos.io（WebRTC）**、**ゲーム同期 = geckos.io / 制御系 = Socket.IO** で構築する。
 > `.tmp` 配下に C++ 成果物は残さない。

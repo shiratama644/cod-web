@@ -21,7 +21,7 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 - 商用 IP（CoD の名称・アセット・マップ・キャラクター）は**使用しない**。完全オリジナルで「CoD 相当の品質」を目指す。
 - 権威サーバー + クライアント予測を基本アーキテクチャに据える。
 - 描画は WebGL2（Three.js）で安定優先、WebGPU は段階導入。
-- 権威サーバーは **Node.js + Colyseus (v0.16+)**、**MVP は WebSocket（Colyseus 標準）を主経路**。`datagrams`（UDP 相当）で位置・視点・音声、`streams` で射撃・被弾・キルログ・チャットの機能別使い分けは **WebTransport（P2-B）** で段階導入。永続は HTTPS API。WebTransport 非対応環境でも WebSocket がそのまま主経路として機能。
+- 権威サーバーは **Node.js 24 + geckos.io（WebRTC）**。**ゲーム同期層 = geckos.io WebRTC**（tick / 入力検証 / Snapshot / interpolation・prediction を低遅延 UDP で）、**制御系 = Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベントを確実に）。永続は HTTPS API。
 
 **現フェーズ**: 計画・仕様・設計書ファースト（ソースは未配置）。ドキュメント基盤の整備を進めている。
 
@@ -45,17 +45,17 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 |---|---|---|---:|---|---|
 | P1-A | モノレポ雛形（pnpm workspaces: client / server / shared） | 未着手 | 0% | `pnpm install` / 各パッケージが起動 | — |
 | P1-B | three.js WebGL2 の最小 FPS シーン（カメラ + 移動 + 射撃） | 未着手 | 0% | ブラウザで移動・射撃が動く | — |
-| P1-C | 権威サーバー（Colyseus + ティックループ）の最小実装（WebSocket で成立） | 未着手 | 0% | 1 ルームでプレイヤー 2 名が join、入力がサーバー検証・ブロードキャストされ他クライアントに Snapshot が届く | 計画書: [`docs/planning/P1-C_PLAN.md`](planning/P1-C_PLAN.md)。※WebTransport 本導入（datagrams/streams）は P2-B で（サンドボックスは QUIC ビルド不能のため） |
+| P1-C | 権威サーバー（geckos.io + ティックループ）の最小実装（Socket.IO でルーム、geckos.io でゲーム同期） | 未着手 | 0% | 1 ルームでプレイヤー 2 名が join、入力がサーバー検証・ブロードキャストされ他クライアントに Snapshot が届く | 計画書: [`docs/planning/P1-C_PLAN.md`](planning/P1-C_PLAN.md)。※サンドボックスは `node-datachannel`（native）のビルドに制約あり。実環境で検証 |
 | P1-D | shared 決定論シミュレーション（移動）+ クライアント予測 | 未着手 | 0% | ローカル予測とサーバーが一致（オフライン再現） | — |
 | P1-E | ラグ補正 + 射撃判定（three-mesh-bvh）プロト | 未着手 | 0% | レイキャスト判定がサーバーで検証される | — |
 
-### フェーズ 2: ネットワーク基盤（WebTransport）
+### フェーズ 2: ネットワーク基盤（geckos.io WebRTC + Socket.IO）
 
 | ID | タスク | 状態 | 進捗 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|
 | P2-A | 実測基盤（ラグ・ティックレート・帯域の計測） | 未着手 | 0% | 6v6 相当の負荷でティックレート・ラグを計測 | — |
-| P2-B | WebTransport 終端（QUIC）をサーバーに導入し `datagrams`/`streams` を接続 | 未着手 | 0% | 1 ルームで位置（datagrams）とイベント（streams）が成立 | — |
-| P2-C | WebTransport 非対応環境での WebSocket 経由の成立確認 | 未着手 | 0% | WebTransport 不可でも 6v6 が WebSocket（MVP 主経路）で成立 | — |
+| P2-B | geckos.io のゲーム同期を本格化（unreliable 位置 + `{ reliable: true }` イベントの使い分け） | 未着手 | 0% | 1 ルームで位置（unreliable）と射撃・被弾（reliable）が成立 | — |
+| P2-C | UDP ブロック網での Socket.IO（WebSocket/TCP）経由の成立確認 | 未着手 | 0% | geckos.io（UDP）不可でも 6v6 が Socket.IO で成立 | — |
 | P2-D | `isShooting` フラグ方式（視覚エフェクト自律生成）の実装 | 未着手 | 0% | エフェクト専用パケット無しでマズルフラッシュ等が再現 | — |
 
 ### フェーズ 3: コアゲームプレイ
@@ -84,7 +84,7 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 | ID | タスク | 状態 | 進捗 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|
 | DPL-1 | クライアント（static）デプロイ | 未着手 | 0% | — | — |
-| DPL-2 | 権威サーバー（VPS）デプロイ | 未着手 | 0% | 永続稼働 + QUIC/UDP（WebTransport） | — |
+| DPL-2 | 権威サーバー（VPS）デプロイ | 未着手 | 0% | 永続稼働 + geckos.io WebRTC（UDP）と Socket.IO（TCP） | — |
 | AS-1 | WebGPU / TSL 段階導入 | 未着手 | 0% | 実測で WebGL を上回る | — |
 | AS-2 | ゾンビ / バトロワ派生（PvE） | 対象外 | - | コア FPS 後に再検討 | — |
 
@@ -93,4 +93,5 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 ## 進捗メモ
 
 - 2026-09-01: リポジトリの DropMod 残骸を整理し、CodWeb のドキュメント基盤（README / AGENTS.md / docs/README.md / ARCH.md / TECH_SELECTION.md / ROADMAP.md）を確立。技術選定の主要判断（WebGL2 / **Colyseus + WebSocket（MVP） / WebTransport（P2-B）** / Node VPS / 完全オリジナルアセット / 6v6 コアマルチ）を確定。
+- 2026-09-01: **ネットワーク方針を修正**。Colyseus を廃止し、**権威サーバー = Node.js 24 + geckos.io（WebRTC）**に変更。**ゲーム同期層 = geckos.io WebRTC**（tick / 入力検証 / Snapshot / interpolation・prediction）、**制御系 = Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベント）。WebTransport は Node 側未成熟のため見送り。Reddit の指摘（WebRTC は P2P でない・TURN 不要）を反映。
 - 2026-09-01: 計画書の階層を整理。`docs/planning/` を「個別タスク詳細計画書」の置き場として実体化（`README.md` で規則・一覧・役割分担を明示、`_TEMPLATE.md` を参照）。進捗の正本は `docs/ROADMAP.md` のまま。今後の詳細タスク（P1-*〜P4-*、DPL-*）は `docs/planning/<ID>_PLAN.md` に作成していく。

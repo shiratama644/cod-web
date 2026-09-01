@@ -1,7 +1,7 @@
 # CodWeb 技術選定（絞り込みと判断理由）
 
 > `docs/CONFIG.md` は技術スタックの**全リスト（参考情報）**。本ドキュメントは、その中から**実装候補を絞り込んだ選定と判断理由**を記す。
-> 方針: WebGL2 で安定優先 / 権威サーバーは **Node.js + Colyseus (v0.16+)**、**MVP は WebSocket**（WebTransport は P2-B で段階導入）/ 完全オリジナルアセット。
+> 方針: WebGL2 で安定優先 / 権威サーバーは **Node.js 24 + geckos.io (WebRTC)**、**ゲーム同期層 = geckos.io、制御系 = Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベント）/ 完全オリジナルアセット。
 
 ## 1. 選定原則
 
@@ -34,25 +34,26 @@
 
 ### 4.1 方針（確定）
 
-**権威サーバーは Node.js + Colyseus (v0.16+)**。**MVP は Colyseus 標準の WebSocket で実装**し、**WebTransport は P2-B で段階導入**する。WebTransport（HTTP/3 over QUIC）は導入後、**UDP 相当の `datagrams`（unreliable / unordered）**と**確実な `streams`（reliable / ordered）**の両方を 1 接続で提供し、**機能カテゴリごとに使い分ける**（設計上のターゲット）。
+**権威サーバーは Node.js + geckos.io (WebRTC) でゲーム同期層を構築**し、**信頼性が必要な制御系（認証・ロビー・ルーム・チャット・マッチイベント）は Socket.IO** に分離する。**MVP の主経路 = geckos.io WebRTC（WebRTC DataChannel over UDP）**で高頻度ゲーム状態（座標・視点・入力・Snapshot）を低遅延に同期。Socket.IO（WebSocket/TCP）は確実性・順序保証が求められる制御系に限定し、高頻度ゲーム状態は載せない。
 
-> **WebTransport の現状（2026-03〜）**: Safari 26.4 で Baseline 到達（Chrome/Edge/Firefox/Safari/Opera 全対応）。ただし ①一部ネットワークは UDP/QUIC をブロックするため **WebSocket（MVP 主経路）を必ず併設**、②**Node.js はネイティブの WebTransport サーバーを提供しない**（コミュニティパッケージ or quic-go/aioquic 等で終端）点に注意。**MVP は WebSocket（Colyseus 標準）を主経路とし、WebTransport の終端は P2-B で環境を分けて評価する**。
+> **技術的事実（検索確認・2026-09）**: geckos.io は「authoritative server 向け」として設計（README の用途表に明記）。WebRTC DataChannel over UDP で低遅延・HoL ブロッキング無しを実現。**公開 IP の専用サーバーにクライアントが直接接続する構成では TURN 不要**（ICE ホスト候補で成立、Reddit 指摘どおり）。`node-datachannel` はネイティブ依存（本サンドボックスでのビルド検証に制約）であり、UDP ポート開放（`multiplex:true` で 1 ポートに集約可）が必要。**一部ネットワークは UDP をブロックするため、制御系は Socket.IO（TCP）**で担保する。
 
 ### 4.2 機能別 通信プロトコル選定マトリクス
 
-> **MVP では以下の `datagrams`/`streams` をまとめて WebSocket（Colyseus 標準で reliable/ordered）に置き換える。** WebTransport 導入（P2-B）後、このマトリクスどおりに機能別で使い分ける。マトリクスは設計上のターゲット。
+> **ゲーム同期（高頻度）は geckos.io WebRTC（unreliable 主体、`{ reliable: true }` で重要イベントのみ確実）、制御系（低頻度で確実性必須）は Socket.IO。** WebTransport は見送り（Node 側未成熟）。マトリクスは設計上の基準。
 
 | 機能カテゴリ | 具体的な機能 | 推奨プロトコル / 転送方式 | 到達保証 | 順序保証 | 要求レイテンシ | 選定理由 |
 | :--- | :--- | :--- | :---: | :---: | :---: | :--- |
-| **超高速同期** | プレイヤー座標 / 視点 / 姿勢 | **WebTransport `datagrams`** | ❌ | ❌ | 極小 (<20ms) | 最新 1 パケットさえ届けば過去の位置は不要。再送遅延・HoL ブロッキングを排除 |
-| | プレイヤー入力（WASD / エイム） | **WebTransport `datagrams`** | ❌ | ❌ | 極小 (<20ms) | 毎フレーム (60〜120Hz) 送信。ロスしても次フレームで上書き |
-| | ボイスチャット（マイク音声） | **`datagrams`** + WebCodecs | ❌ | ❌ | 極小 (<50ms) | ミリ秒の音飛びは気にならないが、TCP 再送による音ズレは会話を破綻させる |
-| | 視覚エフェクト（火花 / 薬莢） | **`datagrams`** | ❌ | ❌ | 小 | 装飾演出のため欠落しても進行に影響しない |
-| **重要イベント** | 射撃・着弾・被弾確定 | **`streams`**（単方向/双方向） | ✅ | ✅ | 小 (<50ms) | 「当たった/外れた」判定は欠落厳禁。位置同期の邪魔をしない独立ストリームで送る |
-| | キルログ / スコアボード | **`streams`** | ✅ | ✅ | 中 | 通知の順序・確実性が必要 |
-| | テキストチャット（マッチ/ロビー） | **`streams`**（または WebSocket） | ✅ | ✅ | 中 | 文字化け・順序逆転・送信漏れを防止 |
-| | ラウンド中の武器購入 / 投擲 | **`streams`** | ✅ | ✅ | 小 | ラウンド内のゲーム状態（State）同期に確実な送達が必要 |
-| | マッチメイキング / ルーム管理 | **`streams`** / **WebSocket** | ✅ | ✅ | 中 | 入退室・カウントダウン・チーム分けの状態同期 |
+| **超高速同期（ゲーム）** | プレイヤー座標 / 視点 / 姿勢 | **geckos.io WebRTC（unreliable/unordered）** | ❌ | ❌ | 極小 (<20ms) | 最新 1 パケットさえ届けば過去の位置は不要。再送遅延・HoL ブロッキングを排除 |
+| | プレイヤー入力（WASD / エイム） | **geckos.io WebRTC（unreliable/unordered）** | ❌ | ❌ | 極小 (<20ms) | 毎フレーム (60〜120Hz) 送信。ロスしても次フレームで上書き |
+| | Snapshot（決定論状態） | **geckos.io WebRTC（unreliable/unordered, 高ティック）** | ❌ | ❌ | 極小 (<20ms) | tick ごとに生成。最新状態を低遅延で反映 |
+| | 視覚エフェクト（火花 / 薬莢） | **geckos.io WebRTC（unreliable）** | ❌ | ❌ | 小 | 装飾演出のため欠落しても進行に影響しない |
+| **重要イベント（ゲーム）** | 射撃・着弾・被弾確定 | **geckos.io WebRTC（`{ reliable: true }`）** | ✅ | ✅ | 小 (<50ms) | 「当たった/外れた」判定は欠落厳禁。unreliable な位置同期と別系統で確実に送る |
+| **制御系（Socket.IO）** | 認証 / ログイン | **Socket.IO** | ✅ | ✅ | 中 | トークン検証・セッション管理。確実な配達が必要 |
+| | ロビー / マッチメイキング / ルーム入退室 | **Socket.IO** | ✅ | ✅ | 中 | 入退室・カウントダウン・チーム分けの状態同期。順序保証 |
+| | キルログ / スコアボード | **Socket.IO** | ✅ | ✅ | 中 | 通知の順序・確実性が必要 |
+| | テキストチャット（マッチ/ロビー） | **Socket.IO** | ✅ | ✅ | 中 | 文字化け・順序逆転・送信漏れを防止 |
+| | マッチイベント（開始・終了・武器購入・投擲） | **Socket.IO** | ✅ | ✅ | 小 | ラウンドの状態遷移は確実・順序保証が必要 |
 | **Web / 決済 / 永続** | ショップ / 課金 / ガチャ | **HTTPS (REST / gRPC)** | ✅ | ✅ | 不問 | ACID トランザクションと二重決済防止（Idempotency）が最優先。専用の安全な決済 API |
 | | ログイン / 認証 (JWT / OAuth) | **HTTPS (REST)** | ✅ | ✅ | 不問 | アカウント情報の暗号化とトークン発行 |
 | | インベントリ / ロードアウト保存 | **HTTPS (REST / GraphQL)** | ✅ | ✅ | 不問 | スキン・所持アイテムの確実な DB 永続化 |
@@ -61,86 +62,80 @@
 
 ### 4.3 プロトコル選定の 3 原則
 
-1. **「失われても次の瞬間に上書きされるデータ」**（位置・視点・音声・入力）→ **`datagrams`**（UDP 相当）
-2. **「マッチ中に絶対に失われてはいけないが即時性も欲しいデータ」**（被弾判定・チャット・キルログ）→ **`streams`**（QUIC ストリーム）
-3. **「お金・アイテム・アカウントなどの永続データ」**（課金・インベントリ・認証）→ **HTTPS API**（TCP / DB トランザクション）
+1. **「失われても次の瞬間に上書きされるデータ」**（位置・視点・入力・Snapshot）→ **geckos.io WebRTC（unreliable/unordered、UDP 相当）**
+2. **「マッチ中に絶対に失われてはいけないが即時性も欲しいデータ」**（被弾確定・射撃・イベント）→ **geckos.io WebRTC `{ reliable: true }`**（重要インバンド）、**認証・ロビー・チャット・マッチイベント等は Socket.IO**（確実・別経路）
+3. **「お金・アイテム・アカウントなどの永続データ」**（課金・インベントリ・認証の永続化）→ **HTTPS API**（TCP / DB トランザクション）
 
 ### 4.4 選定・見送り
 
 | 候補 | 判定 | 理由 |
 | :--- | :--- | :--- |
-| **Colyseus (v0.16+)** | **軸（採用）** | 権威ルーム・自動状態同期・マッチメイキング・MIT・自前ホスト可能。WebTransport 上で動かす |
-| **WebTransport** | **軸（採用）** | HTTP/3 over QUIC。`datagrams`（UDP 相当）+ `streams`（確実）を 1 接続で使い分け。競技 FPS の低遅延を実現 |
-| socket.io | 補助 | チャット・ロビー等、確実性重視イベントのフォールバック用 |
-| geckos.io (WebRTC) | 使わない（WebTransport で代替） | WebTransport が UDP 相当を提供するため、WebRTC の複雑さ（ICE/STUN/TURN）は不要 |
+| **geckos.io (WebRTC)** | **採用（ゲーム同期層の主経路）** | authoritative server 向け。UDP 相当（unreliable）で位置・入力・Snapshot を低遅延送信、`{ reliable: true }` で射撃・被弾確定を確実に配達。`node-datachannel`（ネイティブ）前提 |
+| **Socket.IO** | **採用（制御系）** | 認証・ロビー・ルーム・チャット・マッチイベントなど、欠落・順序逆転を許さない低頻度メッセージ。TCP の確実性・順序保証。WebSocket/TCP |
+| **WebTransport** | 見送り | HTTP/3 over QUIC で `datagrams` + `streams` を 1 接続で使えるが、Node 側の実装が未成熟／Experimental。WebRTC（geckos.io）が低遅延 UDP 要件を満たすため |
+| **Colyseus (v0.16+)** | **廃止** | WebRTC/UDP のゲーム同期に未対応。ルーム管理・マッチメイキングは Socket.IO + 自前実装へ |
+| socket.io（補助） | 制御系に採用（本体） | チャット・ロビー・認証・マッチイベントを担当 |
 | Playroom | 見送り | 大人数 / 競技向きでない |
 | Nakama / Photon | 見送り | 自前 Node サーバー方針と合わない（Photon は商用・Unity 寄り） |
 
 > ラグ補正・クライアント予測は輸送層に関わらず必須（権威サーバー + クライアント予測）。
 
-### 4.5 WebRTC はなぜ見送るか（ICE / STUN / TURN の複雑さ）
+### 4.5 WebRTC（geckos.io）をゲーム同期に採用する判断
 
-**結論：WebRTC は P2P 前提の規格であり、クライアント↔サーバー型 FPS で使うと運用・デプロイの複雑さが WebSocket / WebTransport より明確に増す。本プロジェクトでは WebTransport が優位**（出典: 調査 2026-03）。
+**結論：WebRTC は P2P 前提の規格だが、クライアント⇔公開 IP サーバーの 1 対多接続では TURN が不要で、ICE はホスト候補で成立する。本プロジェクトでは geckos.io をゲーム同期層の主経路に採用**（出典: 調査 2026-09）。従来「WebRTC は見送り」としていた判断を修正した。
 
-1. **P2P 前提（fake-peer 構成）** — WebRTC は対等ピア間の規格。クライアント↔サーバーで使うには**サーバー側も「Peer の 1 つ」として WebRTC スタックを実装**する必要がある。
-2. **シグナリングサーバーが必須（規格で未規定）** — 接続前に SDP（offer/answer）と ICE 候補を交換する必要があるが、その交換手段は規格で定められず、**通常は別途 WebSocket サーバーで中継**。ルーム管理・再接続・認証・レート制限・スケールを自前で持つことになる。
-3. **NAT 越え（ICE / STUN / TURN）** — 複雑さとコストの主因。
-   - **STUN**（自分の外向け IP を返す）: 軽量・安価。**約 8 割**の接続で成立。
-   - **TURN**（直接繋がらないときの中継）: **帯域・遅延コスト大**。**約 1〜2 割**の接続で必要。**無料の商用 TURN はほぼ無く、自前（coturn）か有料**。
-   - **ICE**: 候補を並列試行。悪いネットでは **3〜10 秒**の交渉遅延。
-   - 本プロジェクトは **mobile 対象**であり、**キャリアグレード NAT（CGNAT）は WebRTC と相性が悪く、TURN 中継が必須になりやすく**、遅延・コストが跳ね上がる。
-4. **デプロイ / ファイアウォール** — WebRTC は UDP の**ダイレクト接続**で、**ロードバランサ・プロキシを必ず迂回**。geckos.io でも「サーバー IP を公開しクライアントは直接接続、UDP ポート開放が必須」。**UDP を開けないホスティング（Heroku 等）では動作しない**。
-5. **サーバー側 WebRTC スタック** — Node に組み込み WebRTC は無く、`node-datachannel`（=libdatachannel のバインディング）や `wrtc` など**ネイティブ依存 + ビルド**が要る。
-6. **権威サーバー型と矛盾** — FPS はサーバー権威が必須だが、WebRTC を真の P2P で使うとクライアント同士が対等になりチート対策が崩れる。結局「**権威サーバー + UDP トランスポート**」として使うことになり、**ICE/STUN/TURN/シグナリングのコストだけを払って P2P の利点は得られない**。
+- **TURN（P2P 用リレー）は不要** — クライアント→公開 IP の専用サーバーに直接接続する構成では、クライアントが接続を開始するため、NAT 越え用の STUN/TURN 中継は必要ない。ICE はホスト候補（+ Peer Reflexive）で成立する。
+- **シグナリングは geckos.io が内包** — SDP/ICE 交換は geckos.io が提供（`9208/tcp` でシグナリング）。認証・ルーム管理は Socket.IO 側で担保する。
+- **制御系との分離** — 高頻度ゲーム状態（unreliable）は geckos.io、確実性必須の制御系（認証・ロビー・チャット・マッチイベント）は Socket.IO（WebSocket/TCP）に分け、各々の利点を活かす。
+- **UDP ブロック網への対応** — 一部ネットワークは UDP/QUIC をブロックする。その場合、ゲーム同期の低遅延は劣化するが、Socket.IO（TCP）で動作は継続させる。**完全なゲーム同期の WebSocket フォールバックは後続で評価**。
+- **デプロイ / ファイアウォール** — geckos.io は UDP ポート（`multiplex:true` で 1 ポートに集約可）と `9208/tcp` の開放が必要。ロードバランサを挟む場合は UDP 透過に注意。公開 IP の専用サーバーを前提とする。
 
-**なぜ WebTransport なら簡潔か**：WebTransport はクライアント→サーバー単方向の QUIC 接続で、**NAT 越え（ICE/STUN/TURN）が不要**（WebRTC と違い）。unreliable な `datagrams` と確実な `streams` を 1 接続で使い分けられ、シグナリングも不要。**「unreliable（UDP 相当）が欲しい」という FPS の要件を、WebRTC の複雑さを一切払わずに満たせる**。
-
-> つまり geckos.io（WebRTC）は「Node にネイティブ WebTransport が無い」問題を**無理矢理 UDP で回避**する割高な代替であり、本プロジェクトでは採用しない。**MVP は Colyseus 標準の WebSocket で十分**（reliable/ordered で FPS に必要な同期が成立）。WebTransport は P2-B の本命（Node 終端はコミュニティパッケージ / quic-go / aioquic 等）。
+> **補足**: Reddit の指摘（「P2P でない・TURN 不要・geckos を試せ」）は、当方が従来挙げていた「TURN が 1〜2 割必要」「WebRTC は権威サーバー型と矛盾」という見送り理由の誤りを正すもの。**WebRTC を「見送り」から「ゲーム同期層の主経路」へ変更**する。
 
 ### 4.6 「カスタム UDP プロトコルでは？」という指摘への応答
 
-> **指摘（開発者より）**: 「WS は TCP で遅延がある / WebTransport はまだ実験的 / UDP は安定している。なら**カスタム UDP プロトコルを作れば**いい。」
+> **指摘（開発者より）**: 「WS は TCP で遅延がある / UDP は安定している。なら**カスタム UDP プロトコルを作れば**いい。」
 
-この指摘は**ネイティブゲームの文脈なら完全に正しい**（Gaffer On Games の `netcode.io` / ENet / RakNet はまさにカスタム UDP）。ただし**本プロジェクトはブラウザゲームであり、そこに 1 つの致命的な前提の誤解**がある（出典: 調査 2026-03）。
+この指摘は**ネイティブゲームの文脈なら完全に正しい**（Gaffer On Games の `netcode.io` / ENet / RakNet はまさにカスタム UDP）。ただし**本プロジェクトはブラウザゲームであり、そこに 1 つの前提の誤解**がある（出典: 調査 2026-03）。
 
 **① ブラウザは「生の UDP ソケット」を JavaScript に一切公開しない。**
 生の TCP も同様。`fetch` / XHR / WebSocket はすべて HTTP(S) ベースであり、ブラウザは意図的に raw ソケットを塞いでいる（攻撃の踏み台・家庭内ネットワークへの侵入を防ぐため）[2](https://www.reddit.com/r/programming/comments/vs5r4n/no_really_why_cant_we_have_raw_udp_in_javascript/)[7](https://news.ycombinator.com/item?id=31984112)[9](https://stackoverflow.com/questions/17658368/why-no-udp-connection-via-browser-even-with-html5)。raw 接続は「アプリ層の誤用を防ぐハンドシェイクが無い」ため**今後も実装されない**。
 
 > **Browsers deliberately do not expose raw TCP or UDP socket APIs to JavaScript.**[1](https://therelay.net/blog/rtsp-to-webrtc-browser)
 
-→ よって「クライアント（ブラウザ）が**自前の UDP プロトコルを直接喋る**」ことは構造的に不可能。ブラウザから UDP 相当を出す手段は **WebRTC DataChannel** と **WebTransport `datagrams`** の 2 つだけ（WebRTC は ICE/STUN/TURN が要るので前述の通り見送り）。
+→ よって「クライアント（ブラウザ）が**自前の UDP プロトコルを直接喋る**」ことは構造的に不可能。ブラウザから UDP 相当を出す手段は **WebRTC DataChannel** と **WebTransport `datagrams`** の 2 つ。本プロジェクトでは**WebRTC DataChannel（geckos.io）をゲーム同期に採用**する（WebTransport は Node 側未成熟のため見送り）。
 
-**② 「カスタム UDP を書きたい」という本能は、ブラウザでは WebTransport に収斂する。**
-WebTransport の `datagrams` こそが「**ブラウザ安全なカスタム UDP**」。アプリ層のメッセージフォーマット（バイナリレイアウト・シーケンス番号・優先度・フラグ）は完全に自前でカスタムできる一方、UDP 相当のトランスポート（TLS 1.3 暗号化・輻輳制御・0-RTT・ストリーム多重化）はブラウザが担う。→ **通信ペイロードの設計は自由、トランスポートは自前で輻輳制御/暗号化/再送を書かずに済む**。
+**② 「カスタム UDP を書きたい」本能は、ブラウザでは WebRTC か WebTransport に収斂する。**
+どちらも**アプリ層のメッセージフォーマット（バイナリレイアウト・優先度・フラグ）は完全に自前でカスタムできる**一方、UDP 相当のトランスポート（暗号化・輻輳制御・再送ポリシー）はブラウザ/ライブラリが担う。→ **通信ペイロードの設計は自由、トランスポートを自前で書かずに済む**。
 
-**③ 友人の懸念は実は「サーバー側のライブラリ未成熟」に当たっている。**
-「WebTransport は実験的」というのは、**クライアント（ブラウザ）側ではなく「Node.js サーバー側の実装」に当てはまる**。
+**③ 制御系（確実性必須）は Socket.IO に分離する。**
+高頻度ゲーム状態は geckos.io（unreliable）、認証・ロビー・チャット・マッチイベントは **Socket.IO（WebSocket/TCP）** に分け、**「unreliable の低遅延」と「reliable の確実性」を 2 つの経路で両立**させる。
 
-| 側 | 成熟度（調査 2026-03） |
+| 側 | 採用 |
 | :--- | :--- |
-| **ブラウザ（クライアント）** | **Baseline 到達**（2026-03、Safari 26.4 で全ブラウザ対応）。**実験的ではない** |
-| **Node.js（サーバー）** | **組み込み実装が無い**。`@fails-components/webtransport`（libquiche）のほか、Colyseus 公式 `@colyseus/h3-transport` は **Experimental 表記**。quic-go（Go）/ wtransport（Rust）/ aioquic（Python）で終端する選択肢もある |
-
-→ **真の論点**は「プロトコルが実験的」ではなく「**サーバー側の WebTransport ライブラリがまだ未成熟**」。これは**MVP では WebSocket（Colyseus 標準）で権威サーバーを成立させ、WebTransport は P2-B で見極める**ことで回避する（後述 §4.7）。**サーバー言語は Node.js + Colyseus**（C++ 採用はしない）。
+| **ゲーム同期（unreliable / 高頻度）** | geckos.io WebRTC（UDP、低遅延） |
+| **制御系（reliable / 低頻度）** | Socket.IO（WebSocket/TCP、確実・順序保証） |
 
 **まとめ**
-1. ブラウザでは生 UDP が使えないため、「カスタム UDP」は**WebTransport か WebRTC**（複雑）の 2 択に収斂する。
-2. WebTransport の `datagrams` が「ブラウザ安全なカスタム UDP」で、**アプリ層プロトコルは自由に作れる**。設計のターゲットとして妥当。
-3. サーバー側 WebTransport ライブラリは未成熟。**MVP は WebSocket で成立させ、WebTransport は P2-B で評価**する。
+1. ブラウザでは生 UDP が使えないため、「カスタム UDP」は**WebRTC（geckos.io）か WebTransport** の 2 択に収斂する。
+2. **ゲーム同期には geckos.io（WebRTC）**、**制御系には Socket.IO** を使い、各々の利点を活かす。
+3. **WebTransport は Node 側未成熟のため見送り**（再検討余地は残す）。
 
-### 4.7 サーバー側トランスポートの実装判断（MVP = WebSocket）
+### 4.7 サーバー側トランスポートの実装判断（Socket.IO + geckos.io）
 
-**MVP は Node.js + Colyseus（標準の WebSocket）で権威サーバーを成立**させる。WebTransport は P2-B で段階導入するが、**サーバー言語は Node.js + Colyseus のまま**（C++ / Go / Rust は採用しない）。
+**権威サーバーは Node.js + geckos.io（WebRTC）でゲーム同期層、Socket.IO（WebSocket/TCP）で制御系を構築**する。**サーバー言語は Node.js に固定**（C++ / Go / Rust は採用しない、単一言語 TypeScript で `packages/shared` を import 共有）。
 
 | トランスポート | 実装 | 判定 | 備考 |
 | :--- | :--- | :--- | :--- |
-| **WebSocket（MVP）** | Colyseus 標準 | **採用（MVP の主経路）** | `@colyseus/ws-transport` 等。全ブラウザ対応・成熟・シンプル。HoL ブロッキングあり（ただし MVP は WebSocket で成立させる） |
-| WebTransport `datagrams`（P2-B 導入） | コミュニティパッケージ or quic-go/aioquic 等 | P2-B で評価 | Node にネイティブ実装が無い。`@colyseus/h3-transport` は **Experimental** のため MVP では未使用 |
-| WebTransport 用の C++/Go/Rust 終端 | msquic / quic-go / wtransport 等 | **採用しない** | サーバーを Node.js + Colyseus に統一する方針。C++ は廃止 |
+| **geckos.io WebRTC（ゲーム同期）** | `@geckos.io/server` + `@geckos.io/client` | **採用（ゲーム同期層の主経路）** | unreliable/unordered（位置・入力・Snapshot）+ `{ reliable: true }`（射撃・被弾確定）。`node-datachannel`（ネイティブ）前提。`multiplex:true` で UDP ポート集約可 |
+| **Socket.IO（制御系）** | `socket.io` + `socket.io-client` | **採用（制御系）** | 認証・ロビー・ルーム・チャット・マッチイベント（reliable/ordered）。WebSocket/TCP |
+| **WebSocket フォールバック（ゲーム同期）** | 後続で評価 | 保留 | UDP ブロック網では Socket.IO が主経路として機能させる。ゲーム同期の完全な WS フォールバックは体感を実測してから判断 |
+| WebTransport | 見送り | 対象外 | Node 側の実装が未成熟／Experimental。将来再検討余地は残す |
+| Colyseus | 廃止 | 対象外 | WebRTC/UDP のゲーム同期に未対応 |
 
-> **サーバー言語の統一**: 権威ゲームサーバーは **Node.js + Colyseus** に固定する。C++ は採用しない（`g++` が使える環境である点は事実として認識するが、TypeScript で shared をクライアント/サーバー import 共有できる利点を優先し、単一言語運用を維持する）。
+> **サーバー言語の統一**: 権威ゲームサーバーは **Node.js** に固定する。C++ は採用しない（`g++` が使える環境である点は事実として認識するが、TypeScript で shared をクライアント/サーバー import 共有できる利点を優先し、単一言語運用を維持する）。
 
-**現時点の推奨**: 権威サーバーは **Node.js + Colyseus**、MVP は **WebSocket**。WebTransport（datagrams/streams）は **P2-B** で `datagrams` の体感遅延を測ってから導入し、終端の選択肢（コミュニティパッケージ / quic-go / aioquic 等）をその時点で決める。WebRTC（geckos.io / libdatachannel）は「WebSocket が遅い」問題を無理矢理 UDP で回避する割高な代替なので見送り。
+**現時点の推奨**: 権威サーバーは **Node.js 24**。**ゲーム同期層 = geckos.io WebRTC**（tick / 入力検証 / Snapshot / interpolation・prediction）、**制御系 = Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベント）。マッチメイキング・状態同期は自前実装（geckos.io のルーム + Socket.IO のルーム管理を組み合わせ）。WebTransport は Node 側未成熟のため見送り。
 
 ## 5. ECS / 大量オブジェクト
 
@@ -185,14 +180,14 @@ WebTransport の `datagrams` こそが「**ブラウザ安全なカスタム UDP
 | :--- | :--- | :--- |
 | パッケージ | **pnpm workspaces** | `packages/client` / `packages/server` / `packages/shared` を分離 |
 | クライアントビルド | **Vite** | React + three.js の高速開発。Web 向け |
-| サーバー | Node.js + Colyseus（MVP: WebSocket。P2-B で WebTransport を評価） | 権威サーバー。TypeScript で sharing。MVP は Colyseus 標準の WebSocket、WebTransport は P2-B で導入検討 |
+| サーバー | Node.js 24（geckos.io WebRTC でゲーム同期 + Socket.IO で制御系） | 権威サーバー。TypeScript で sharing。ゲーム同期 = geckos.io WebRTC、制御系 = Socket.IO |
 | 型 | **TypeScript strict** | `noUncheckedIndexedAccess` 推奨 |
 
 ## 10. ホスティング
 
 | 用途 | 選定 | 理由 |
 | :--- | :--- | :--- |
-| 権威ゲームサーバー | **Node 専用サーバー（VPS / ゲームサーバー）** | 永続稼働・ルーム状態保持が必要（WebTransport 導入時は QUIC/UDP）。サーバーレス（Vercel 等）は不可 |
+| 権威ゲームサーバー | **Node 専用サーバー（VPS / ゲームサーバー）** | 永続稼働・ルーム状態保持が必要（geckos.io WebRTC の UDP ポート + Socket.IO の TCP ポート）。サーバーレス（Vercel 等）は不可 |
 | クライアント（static） | 任意の静的ホスティング | three.js + React は静的ビルド可。CDN で配信 |
 
 ## 11. 未採用 / 留意
@@ -208,12 +203,14 @@ WebTransport の `datagrams` こそが「**ブラウザ安全なカスタム UDP
 
 ```
 packages/shared   … 決定論的シミュレーション（移動・射撃・状態遷移）
-packages/server   … Colyseus 権威サーバー (Node, VPS)  +  MVP は WebSocket で成立
-                  … ティックループ + ラグ補正 + 状態同期（WebTransport は P2-B で導入）
+packages/server   … 権威サーバー (Node.js 24, VPS)
+                  ├ Socket.IO … 認証・ロビー・ルーム・チャット・マッチイベント
+                  └ geckos.io (WebRTC/UDP) … ゲーム同期層（tick / 入力検証 / Snapshot）
+                     └ interpolation / prediction
 packages/client   … React + three.js (WebGL2) + @react-three/fiber
                   … 入力(mouse/keyboard/nipplejs) + クライアント予測 + HUD(zustand)
 ```
 
 この構成を第 1 マイルストーンの土台とし、小さく検証しながら進めます。
 
-**視覚エフェクトの設計方針**: 実際の商用 FPS はエフェクト用パケットすら個別に送らない。**描画・パーティクル演算は 100% クライアント（Three.js / r3f-vfx）で処理**し、サーバーは発生の合図（トリガー）だけを極めて軽量に流す。サーバーが毎フレーム送るプレイヤー情報（位置・向き）に **1 ビットフラグ（`isShooting: true`）** を混ぜるか、**WebTransport `datagrams`** でトリガーを流し、クライアント側の Three.js が受け取ったら銃口からマズルフラッシュ・薬莢を**自律生成**する（エフェクトは装飾のため欠落しても進行に影響しない）。
+**視覚エフェクトの設計方針**: 実際の商用 FPS はエフェクト用パケットすら個別に送らない。**描画・パーティクル演算は 100% クライアント（Three.js / r3f-vfx）で処理**し、サーバーは発生の合図（トリガー）だけを極めて軽量に流す。サーバーが毎フレーム送るプレイヤー情報（位置・向き）に **1 ビットフラグ（`isShooting: true`）** を混ぜるか、**geckos.io WebRTC（unreliable）** でトリガーを流し、クライアント側の Three.js が受け取ったら銃口からマズルフラッシュ・薬莢を**自律生成**する（エフェクトは装飾のため欠落しても進行に影響しない）。

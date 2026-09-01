@@ -134,7 +134,7 @@ git log -5 --oneline
 - リポジトリは pnpm workspaces で `packages/client` / `packages/server` / `packages/shared` に分かれる想定。
 - クライアントは React + three.js（`@react-three/fiber`）ベース。サーバーは Node.js（権威サーバー）。
 - `shared` にはクライアント/サーバー双方で使う決定論的シミュレーション（移動・射撃のバリデーション）を置く。
-- **ネットワーク**: 権威サーバーは **Node.js + Colyseus (v0.16+)**。**MVP は WebSocket（Colyseus 標準）を主経路**とし、`datagrams`（位置・視点・音声）+ `streams`（射撃・被弾・キルログ・チャット）+ HTTPS（永続データ）の機能別使い分けは **WebTransport（P2-B）** で導入する。**Node.js はネイティブの WebTransport サーバーを提供しない**ため、終端（コミュニティパッケージ等）は P2-B で要検討。**サーバー言語は Node.js + Colyseus に固定**（C++ は採用しない）。
+- **ネットワーク**: 権威サーバーは **Node.js 24 + geckos.io（WebRTC）**。**ゲーム同期層 = geckos.io WebRTC**（tick / 入力検証 / Snapshot / interpolation・prediction を低遅延 UDP で）、**制御系 = Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベントを確実に）。永続データは HTTPS API。**サーバー言語は Node.js に固定**（C++ / Go / Rust は採用しない）。
 
 ### 6.2 サンドボックス制約（乗り越えず、迂回する）
 開発環境固有の恒常的制約（ネットワーク到達不可、GPU 無し、特定バイナリ導入不可等）は修正対象ではない。迂回策は `.agent/skills/` と `AGENT.md`（本節）に記すか、不明ならユーザーに確認する。
