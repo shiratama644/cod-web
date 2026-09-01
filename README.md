@@ -1,1 +1,1 @@
-# cod-web
+# Call of Duty Web Edition
