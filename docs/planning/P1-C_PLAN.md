@@ -1,4 +1,4 @@
-# P1-C: 権威サーバー（Colyseus + WebTransport 終端）+ ティックループの最小実装
+# P1-C: 権威サーバー（Colyseus + ティックループ）の最小実装（WebSocket で成立）
 
 > 対応タスク ID: `P1-C` (docs/ROADMAP.md)
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
@@ -16,7 +16,7 @@ FPS の核心は「サーバーが正 (authoritative) である」こと。ク�
 エンティティ補間 / ラグ補正はすべて、**サーバーが最終的に状態を決める**という前提で成立する。
 本タスクは、**この権威サーバーの最小骨格**を実際に動かし、1 ルームでプレイヤー状態
 （位置・視点・姿勢）の同期が成立することを確認する。これが P1-D（決定論 + クライアント予測）や
-P2-B（WebTransport datagrams/streams）の土台になる。
+P2-B（WebTransport datagrams/streams）の土台になる。**MVP のトランスポートは WebSocket（Colyseus 標準）**。
 
 ## 3. 変更範囲 (Scope)
 
@@ -39,9 +39,8 @@ P2-B（WebTransport datagrams/streams）の土台になる。
 - テストを通すためだけに期待値を実装へ合わせない。
 - **本物の WebTransport (QUIC) を本タスクで導入しない**。このサンドボックスでは
   QUIC スタックをビルドできない（cmake / OpenSSL ヘッダ / autotools 無し、GitHub リリース配信ブロック）ため、
-  P1-C は WebSocket で権威サーバーを成立させ、WebTransport は P2-B に回す。
-  `.tmp/wt_udp/` の UDP 実証は「unreliable datagram の通信パターン確認」であり、
-  **本物の WebTransport ではない**と明記する。
+  P1-C は WebSocket（Colyseus 標準）で権威サーバーを成立させ、WebTransport は P2-B に回す。
+- **サーバー言語は Node.js + Colyseus に固定する。C++ は採用しない**（`g++` が使える環境である点は事実として認識するが、TypeScript で shared をクライアント/サーバー import 共有できる利点を優先）。
 - 既存のドキュメント構造（docs/ の階層）を壊さない。
 
 ## 5. 完了条件 (DoD)
@@ -94,20 +93,18 @@ P2-B（WebTransport datagrams/streams）の土台になる。
 ## 10. 設計詳細・仕様
 
 - 権威サーバー: Colyseus (v0.16+)。`defineServer` + `Room`。ティックは `setSimulationInterval`（固定ステップ）。
-- ネットワーク: まず WebSocket（Colyseus 標準）。WebTransport は P2-B で導入（サンドボックス制約のため）。
+- ネットワーク: **MVP は WebSocket（Colyseus 標準）で統一**。WebTransport は P2-B で導入（サンドボックス制約のため）。
 - shared 決定論: 固定タイムステップ・乱数シード化。Rapier は決定論的だが可変ステップは非決定論のため固定。
-- 同期: 入力 (client→server) / Snapshot (server→client) は WebTransport `datagrams` 想定だが、
-  P1-C では WebSocket + Colyseus のマッチメイキングに載せる。
-- `.tmp/wt_udp/` との関係: これは「unreliable datagram の通信パターン」を UDP で再現したもので、
-  **本物の WebTransport ではない**。本タスクの権威ロジックの参考実装として扱い、トランスポートは差し替える。
+- 同期: 入力 (client→server) / Snapshot (server→client) は **MVP では WebSocket + Colyseus のマッチメイキング**に載せる。
+  WebTransport `datagrams` の使い分けは P2-B で導入。
 
 ## 11. リスク・Gotchas
 
 - **本サンドボックスでは本物の QUIC/WebTransport をビルド不能**（cmake / OpenSSL ヘッダ / autotools 無し、
   GitHub リリース配信ブロック）。P1-C は WebSocket で完成させ、WebTransport は P2-B で環境を分けて評価する。
 - Colyseus の WebTransport transport (`@colyseus/h3-transport`) は **Experimental 表記**。本タスクでは使わない。
-- Node に組み込み WebTransport が無い点は既知。終端は Go/Rust（本サンドボックス不可）/ C++（msquic 等）が候補。
-  本タスクでは扱わず、P2-B で判断。
+- Node に組み込み WebTransport が無い点は既知。**サーバー言語は Node.js + Colyseus に固定**（C++/Go/Rust は採用しない）。
+  終端の選定は P2-B で改めて判断する。
 - 決定論テストは「オフライン再現」で担保（ブロードキャストの実測とは分離）。
 
 ## 12. 実績と証拠 (実装後に記入)

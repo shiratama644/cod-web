@@ -11,7 +11,7 @@ CodWeb は **クライアント（ブラウザ / static）** と **権威ゲー�
 | 成果物 | ホスト | 内容 |
 | :--- | :--- | :--- |
 | `packages/client` | 静的ホスティング（CDN / VPS / S3 等） | three.js + React のビルド済み静的ファイル |
-| `packages/server` | VPS / ゲームサーバー（Node） | Colyseus + WebTransport 終端（QUIC）。永続稼働 |
+| `packages/server` | VPS / ゲームサーバー（Node） | Colyseus 権威サーバー（MVP は WebSocket 主経路、P2-B で WebTransport 終端 = QUIC を追加）。永続稼働 |
 | 決済・認証・永続 API | VPS / クラウド | HTTPS (REST/gRPC)。DB トランザクション |
 
 ---
@@ -39,8 +39,8 @@ pnpm --filter client build     # 例。ビルド成果物が dist/ に生成さ�
 ### 3.1 前提
 
 - **Node.js**（バージョンは `packages/server` の要件に従う。例: Node 24 LTS）
-- **QUIC / HTTP/3** 終端が必要（WebTransport を満たす）。
-  - Node.js はネイティブの WebTransport サーバーを提供しないため、**quic-go / aioquic / コミュニティパッケージ等**で終端する。または WebSocket フォールバックを主経路にする。
+- **MVP は Colyseus 標準の WebSocket を主経路**とする（QUIC / HTTP/3 終端は P2-B で WebTransport を導入する際に必要）。
+  - Node.js はネイティブの WebTransport サーバーを提供しないため、P2-B では**コミュニティパッケージ等**で終端する。サーバー言語は **Node.js + Colyseus に固定**（C++ は採用しない）。
 
 ### 3.2 セットアップ
 
@@ -85,9 +85,9 @@ WantedBy=multi-user.target
 
 ### 3.4 ネットワーク・ミドルウェア
 
-- **UDP ポート**（QUIC/WebTransport）と **TCP ポート**（WebSocket フォールバック / API）を开放。
+- **MVP は TCP ポート（Colyseus WebSocket / API）**。P2-B で WebTransport を導入する際に **UDP ポート**（QUIC/WebTransport）を追加。
 - http/3 を透過する場合はリバースプロキシ（Caddy / nginx 等）の設定に注意。
-- 一部ネットワークは UDP/QUIC をブロックするため、**WebSocket フォールバック**を必ず併設する。
+- 一部ネットワークは UDP/QUIC をブロックするため、**WebSocket（MVP 主経路）を必ず併設**する（P2-B 以降も維持）。
 
 ---
 
@@ -108,8 +108,8 @@ WantedBy=multi-user.target
 
 - [ ] クライアントがブラウザでロードされる（HTTP 200）
 - [ ] `/health` などサーバーのヘルスチェックが応答
-- [ ] WebTransport 接続が成立（対応ブラウザで）
-- [ ] WebSocket フォールバックが成立（非対応環境で）
+- [ ] WebSocket（MVP 主経路）でクライアント接続が成立
+- [ ] WebTransport 接続が成立（P2-B 導入後・対応ブラウザで）
 - [ ] 1 ルームで複数クライアントが Join できる
 - [ ] 6v6 相当の負荷でティックレート・ラグが目標内
 
@@ -117,9 +117,9 @@ WantedBy=multi-user.target
 
 ## 6. トラブルシューティング
 
-### 6.1 WebTransport が接続できない
+### 6.1 WebTransport が接続できない（P2-B 導入時）
 - ブラウザが WebTransport 対応か確認（`typeof WebTransport === 'function'`）。
-- UDP/QUIC がブロックされている可能性 → **WebSocket フォールバック**で動作確認。
+- UDP/QUIC がブロックされている可能性 → **WebSocket（MVP 主経路）**で動作確認。
 - Node 側の QUIC 終端の設定・ポートを確認。
 
 ### 6.2 ラグが大きい

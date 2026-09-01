@@ -21,7 +21,7 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 - 商用 IP（CoD の名称・アセット・マップ・キャラクター）は**使用しない**。完全オリジナルで「CoD 相当の品質」を目指す。
 - 権威サーバー + クライアント予測を基本アーキテクチャに据える。
 - 描画は WebGL2（Three.js）で安定優先、WebGPU は段階導入。
-- ネットワークは **Colyseus (v0.16+) + WebTransport** ベース。`datagrams`（UDP 相当）で位置・視点・音声、`streams` で射撃・被弾・キルログ・チャット。永続は HTTPS API。非対応環境は WebSocket フォールバック。
+- 権威サーバーは **Node.js + Colyseus (v0.16+)**、**MVP は WebSocket（Colyseus 標準）を主経路**。`datagrams`（UDP 相当）で位置・視点・音声、`streams` で射撃・被弾・キルログ・チャットの機能別使い分けは **WebTransport（P2-B）** で段階導入。永続は HTTPS API。WebTransport 非対応環境でも WebSocket がそのまま主経路として機能。
 
 **現フェーズ**: 計画・仕様・設計書ファースト（ソースは未配置）。ドキュメント基盤の整備を進めている。
 
@@ -55,7 +55,7 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 |---|---|---|---:|---|---|
 | P2-A | 実測基盤（ラグ・ティックレート・帯域の計測） | 未着手 | 0% | 6v6 相当の負荷でティックレート・ラグを計測 | — |
 | P2-B | WebTransport 終端（QUIC）をサーバーに導入し `datagrams`/`streams` を接続 | 未着手 | 0% | 1 ルームで位置（datagrams）とイベント（streams）が成立 | — |
-| P2-C | WebSocket フォールバック（非対応環境用） | 未着手 | 0% | WebTransport 不可でも 6v6 が WebSocket で成立 | — |
+| P2-C | WebTransport 非対応環境での WebSocket 経由の成立確認 | 未着手 | 0% | WebTransport 不可でも 6v6 が WebSocket（MVP 主経路）で成立 | — |
 | P2-D | `isShooting` フラグ方式（視覚エフェクト自律生成）の実装 | 未着手 | 0% | エフェクト専用パケット無しでマズルフラッシュ等が再現 | — |
 
 ### フェーズ 3: コアゲームプレイ
@@ -92,5 +92,5 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 
 ## 進捗メモ
 
-- 2026-09-01: リポジトリの DropMod 残骸を整理し、CodWeb のドキュメント基盤（README / AGENTS.md / docs/README.md / ARCH.md / TECH_SELECTION.md / ROADMAP.md）を確立。技術選定の主要判断（WebGL2 / **Colyseus + WebTransport** / Node VPS / 完全オリジナルアセット / 6v6 コアマルチ / WebSocket フォールバック）を確定。
+- 2026-09-01: リポジトリの DropMod 残骸を整理し、CodWeb のドキュメント基盤（README / AGENTS.md / docs/README.md / ARCH.md / TECH_SELECTION.md / ROADMAP.md）を確立。技術選定の主要判断（WebGL2 / **Colyseus + WebSocket（MVP） / WebTransport（P2-B）** / Node VPS / 完全オリジナルアセット / 6v6 コアマルチ）を確定。
 - 2026-09-01: 計画書の階層を整理。`docs/planning/` を「個別タスク詳細計画書」の置き場として実体化（`README.md` で規則・一覧・役割分担を明示、`_TEMPLATE.md` を参照）。進捗の正本は `docs/ROADMAP.md` のまま。今後の詳細タスク（P1-*〜P4-*、DPL-*）は `docs/planning/<ID>_PLAN.md` に作成していく。

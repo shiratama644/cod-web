@@ -40,15 +40,15 @@
 
 ### 2.1 輸送層の選択（方針）
 
-**権威サーバー（Colyseus v0.16+）+ WebTransport をベース**とします。WebTransport は HTTP/3 over QUIC で、**UDP 相当の `datagrams`（unreliable / unordered）**と**確実な `streams`（reliable / ordered）**の両方を 1 接続で提供します。これにより、ブラウザから権威サーバーへ **機能カテゴリごとに最適な転送方式**を選べます。
+**権威サーバーは Node.js + Colyseus (v0.16+)**。**MVP は WebSocket（Colyseus 標準）で実装**し、**WebTransport は P2-B で段階導入**する。WebTransport（HTTP/3 over QUIC）は **UDP 相当の `datagrams`（unreliable / unordered）**と**確実な `streams`（reliable / ordered）**の両方を 1 接続で提供し、導入後はブラウザから権威サーバーへ **機能カテゴリごとに最適な転送方式**を選べる（設計上のターゲット）。
 
-> **技術的事実（検索確認・2026-03）**: WebTransport は Safari 26.4 で **Baseline 到達**（Chrome/Edge/Firefox/Safari/Opera 全対応）。ただし ①一部ネットワークは UDP/QUIC をブロックするため **WebSocket フォールバック**の併設、②**Node.js はネイティブの WebTransport サーバーを提供しない**（quic-go / aioquic / コミュニティパッケージ等で終端）点が実装上の注意。
+> **技術的事実（検索確認・2026-03）**: WebTransport は Safari 26.4 で **Baseline 到達**（Chrome/Edge/Firefox/Safari/Opera 全対応）。ただし ①一部ネットワークは UDP/QUIC をブロックするため **WebSocket（MVP 主経路）** を必ず併設、②**Node.js はネイティブの WebTransport サーバーを提供しない**（quic-go / aioquic / コミュニティパッケージ等で終端）点が実装上の注意。**MVP は WebSocket（Colyseus 標準）を主経路とし、WebTransport の終端は P2-B で環境を分けて評価する**。
 
 | 候補 | 長所 | 短所 |
 | :--- | :--- | :--- |
 | **WebTransport (`datagrams`)** | UDP 相当・低遅延・HoL ブロッキング無し・1 接続で複数ストリーム | 一部ネットワークで UDP ブロック。Node 終端が要る |
 | **WebTransport (`streams`)** | 確実・順序保証・QUIC ストリーム・同一接続で datagrams と共存 | 実装は WebSocket より複雑 |
-| WebSocket（フォールバック） | 全ブラウザ対応・成熟・シンプル | TCP 依存・HoL ブロッキング・UDP 相当が無い |
+| **WebSocket（MVP 主経路）** | 全ブラウザ対応・成熟・シンプル | TCP 依存・HoL ブロッキング・UDP 相当が無い（ただし MVP は WebSocket で成立させる） |
 | **geckos.io (WebRTC)** | UDP ライク・低遅延 | **見送り**。WebRTC は P2P 前提のため、クライアント↔サーバーでは (a) シグナリングサーバー必須、(b) ICE/STUN/TURN の NAT 越え（TURN は 1〜2 割で必要・有料化・遅延増）、(c) UDP ダイレクト必須で LB 迂回・IP 公開、(d) Node に組み込み WebRTC 無し（native 依存）、(e) 権威サーバー型と矛盾（P2P の利点が得られない）。→ WebTransport（Client→Server QUIC）なら NAT 越え不要で同効果 |
 | socket.io | WebSocket 抽象化・チャット/イベント | ゲーム用には過剰、低遅延に不向きな場面 |
 | Playroom | ゼロバックエンドで手軽 | 大人数/競技向きでない |
@@ -115,7 +115,7 @@
 | 射撃・被弾・キルログ・チャット | 双方向 | WebTransport `streams`（reliable/ordered） |
 | 決済・認証・インベントリ・戦績 | Client → HTTPS API | HTTPS (REST/gRPC)、DB トランザクション |
 
-> フォールバック: WebTransport 非対応環境（一部 UDP ブロック / 旧 Safari）では WebSocket（Colyseus）へフォールバックする。マトリクス上の「重要イベント」「Web/決済」は WebSocket/HTTPS でも成立し、`datagrams` のみ WebTransport が必要。
+> **MVP**: WebSocket（Colyseus 標準）を主経路とし、権威同期・イベントを全て WebSocket で成立させる。**WebTransport（datagrams/streams）は P2-B で導入**し、導入後は `datagrams`（位置・視点・音声・エフェクトトリガー）を分離。WebTransport 非対応環境（一部 UDP ブロック / 旧 Safari）では引き続き WebSocket へフォールバックする。
 
 ## 3. データフロー
 
@@ -152,7 +152,7 @@
 
 | 境界 | 内容 |
 | :--- | :--- |
-| Server (Node) | 権威シミュレーション・バリデーション・ブロードキャスト。WebTransport 終端 / ルーム管理（Colyseus）。永続稼働 |
+| Server (Node + Colyseus) | 権威シミュレーション・バリデーション・ブロードキャスト。ルーム管理（Colyseus）。**MVP は WebSocket**、WebTransport（datagrams/streams）は P2-B で導入。永続稼働 |
 | Client (Browser) | 入力・予測・描画。UI/HUD。ネットワーク送信 |
 | Shared | 決定論的シミュレーション（移動・射撃・状態）。クライアント/サーバーで import 共有 |
 
@@ -178,8 +178,8 @@
 | 決定論的 shared シミュレーション | クライアント予測とサーバー調停が破綻しないため |
 | Colyseus + WebTransport | 権威サーバーのルーム管理 + `datagrams`（UDP 相当）と `streams`（確実）を機能別に使い分けられ、競技 FPS の低遅延を実現 |
 | WebRTC (geckos.io) は見送り | P2P 前提のため、クライアント↔サーバーではシグナリング必須 + ICE/STUN/TURN の NAT 越え（TURN 有料・遅延増）+ UDP ダイレクト運用（LB 迂回・IP 公開）が増える。WebTransport は Client→Server QUIC で NAT 越え不要のため同効果を簡潔に得る |
-| WebSocket フォールバック | WebTransport 非対応環境（旧 Safari / UDP ブロックのネットワーク）向けに併設 |
+| WebSocket（MVP 主経路） | **MVP は Colyseus 標準の WebSocket で権威サーバーを成立**させる。`datagrams`（UDP 相当）/ `streams` の使い分けは WebTransport（P2-B）で段階導入。WebTransport 非対応環境（旧 Safari / UDP ブロック）でも WebSocket がそのまま主経路として機能 |
 | 「カスタム UDP は？→ WebTransport に収斂」 | ブラウザは生 UDP を JS に公開しない（意図的な安全策）。ブラウザから UDP 相当を出すのは WebTransport `datagrams`（NAT 越え不要）か WebRTC（複雑）の 2 択。アプリ層プロトコルは自由に書け、トランスポート（TLS/輻輳制御/ストリーム）はブラウザが担う |
-| Node 専用サーバー（VPS） | 永続稼働・QUIC/UDP（WebTransport）・ルーム状態保持が必要。サーバーレスは不可 |
+| Node 専用サーバー（VPS） | 永続稼働・ルーム状態保持・（WebTransport 導入時は QUIC/UDP）が必要。サーバーレスは不可 |
 | 完全オリジナルアセット | CoD は商用 IP のため Web 配信不可。「CoD 相当の品質」を自前で目指す |
-| WebTransport の終端はサーバー側が未成熟 | ブラウザ（クライアント）は Baseline 済みだが、Node.js は組み込み WebTransport が無い。終端は C++(msquic 等) / Go / Rust で代替。本サンドボックスでは Go/Rust 不可（レジストリ・toolchain ブロック）のため C++ が実装可能 |
+| 権威ゲームサーバーは Node.js + Colyseus | C++ は採用しない。MVP は **Colyseus + WebSocket** で権威サーバーを成立させ、WebTransport（datagrams/streams）は **P2-B で段階導入**。`@colyseus/h3-transport` は Experimental のため MVP では未使用 |

@@ -48,7 +48,7 @@ packages/shared  (決定論シミュレーション)
 
 ## Server / Client 境界の要点
 
-- **Server (Node)**: 権威シミュレーション・バリデーション・ブロードキャスト。WebTransport 終端（QUIC）・ルーム管理（Colyseus）。永続稼働。Vercel 等のサーバーレスは不可。
+- **Server (Node)**: 権威シミュレーション・バリデーション・ブロードキャスト。**Colyseus ルーム管理（MVP は WebSocket 主経路）**。P2-B で WebTransport 終端（QUIC）を追加。永続稼働。Vercel 等のサーバーレスは不可。
 - **Client (Browser)**: 入力・予測・描画。UI/HUD。ネットワーク送信。
 - **Shared**: 決定論的シミュレーション。クライアント/サーバーで import 共有。React の `state` に載せず `ref`/`getState()`/`subscribe` で直接更新。
 

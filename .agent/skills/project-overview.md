@@ -23,9 +23,9 @@
 | 項目 | 方針 | 理由 |
 | :--- | :--- | :--- |
 | 描画 | **WebGL2**（three.js）で安定優先。WebGPU（`three/webgpu` + TSL）は段階導入 | 全ブラウザ対応・モバイル実機で確実に動かすため |
-| ネットワーク | **Colyseus (v0.16+) + WebTransport** ベース。`datagrams`（UDP 相当）で位置・視点・音声、`streams` で射撃・被弾・キルログ・チャット。永続は HTTPS API。非対応環境は WebSocket フォールバック | WebTransport は Safari 26.4 で Baseline 到達（Chrome/Edge/Firefox/Safari/Opera）。`datagrams` は UDP 相当で低遅延を実現 |
+| ネットワーク | 権威サーバーは **Node.js + Colyseus (v0.16+)**、**MVP は WebSocket（Colyseus 標準）を主経路**。`datagrams`（UDP 相当）で位置・視点・音声、`streams` で射撃・被弾・キルログ・チャットの使い分けは **WebTransport（P2-B）** で段階導入。永続は HTTPS API | WebTransport は Safari 26.4 で Baseline 到達（Chrome/Edge/Firefox/Safari/Opera）。`datagrams` は UDP 相当で低遅延を実現。MVP は WebSocket で権威サーバーを成立させる |
 | 物理 | **Rapier（決定論的）**を権威物理に + `three-mesh-bvh` を射撃判定に | クライアント予測/サーバー調停の前提 |
-| サーバー | **Node 専用サーバー（VPS）** | 永続稼働・QUIC/UDP（WebTransport）・ルーム状態保持が必要。サーバーレスは不向き |
+| サーバー | **Node.js + Colyseus 専用サーバー（VPS）** | 永続稼働・ルーム状態保持が必要。MVP は WebSocket で成立（P2-B で QUIC/UDP=WebTransport を追加）。サーバーレスは不向き |
 | アセット | **完全オリジナル**（本家超えの品質を志向） | CoD は商用 IP のため Web 配信不可 |
 
 ## リポジトリ構成（ドキュメントファースト）
@@ -45,7 +45,7 @@
 | :--- | :--- |
 | 描画 | three.js + @react-three/fiber + @react-three/drei（WebGL2） |
 | 物理 | @dimforge/rapier3d（決定論的）+ three-mesh-bvh（射撃判定） |
-| ネットワーク | Colyseus（権威）+ WebTransport（`datagrams`/`streams`）+ WebSocket（フォールバック）。永続は HTTPS API |
+| ネットワーク | Colyseus（権威）+ WebSocket（**MVP 主経路**）+ WebTransport（`datagrams`/`streams`、P2-B で導入）。永続は HTTPS API |
 | 共有シミュレーション | `packages/shared`（決定論的。bitecs 等） |
 | 状態/UI | zustand + @radix-ui/* + framer-motion |
 | 入力 | PointerLockControls / KeyboardControls（PC）+ nipplejs（モバイル） |
