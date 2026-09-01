@@ -1,6 +1,8 @@
 # CodWeb ロードマップ（進捗・タスク管理の正本）
 
-> これは **進捗管理の唯一の正本** です。タスクは ID（例: `M1-A`）で管理し、状態・完了条件・証拠（コミット SHA / テスト件数 / 実測値）を必ず記録・更新します。
+> これは **進捗管理の唯一の正本** です。タスクは ID（例: `P1-A`）で管理し、状態・完了条件・証拠（コミット SHA / テスト件数 / 実測値）を必ず記録・更新します。
+>
+> - 個別タスクの**詳細計画**（目的・範囲・停止条件・設計詳細・実績）は **`docs/planning/*_PLAN.md`** に置く。規則・一覧は `docs/planning/README.md` 参照。
 >
 > **状態の定義**: `未着手` / `調査中` / `実装中` / `ローカル検証済み` / `実環境検証待ち` / `完了` / `保留` / `対象外`
 >
@@ -43,7 +45,7 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 |---|---|---|---:|---|---|
 | P1-A | モノレポ雛形（pnpm workspaces: client / server / shared） | 未着手 | 0% | `pnpm install` / 各パッケージが起動 | — |
 | P1-B | three.js WebGL2 の最小 FPS シーン（カメラ + 移動 + 射撃） | 未着手 | 0% | ブラウザで移動・射撃が動く | — |
-| P1-C | 権威サーバー（Colyseus + WebTransport 終端）+ ティックループの最小実装 | 未着手 | 0% | 1 ルームで `datagrams` と `streams` の両方が動く | — |
+| P1-C | 権威サーバー（Colyseus + ティックループ）の最小実装（WebSocket で成立） | 未着手 | 0% | 1 ルームでプレイヤー 2 名が join、入力がサーバー検証・ブロードキャストされ他クライアントに Snapshot が届く | 計画書: [`docs/planning/P1-C_PLAN.md`](planning/P1-C_PLAN.md)。※WebTransport 本導入（datagrams/streams）は P2-B で（サンドボックスは QUIC ビルド不能のため） |
 | P1-D | shared 決定論シミュレーション（移動）+ クライアント予測 | 未着手 | 0% | ローカル予測とサーバーが一致（オフライン再現） | — |
 | P1-E | ラグ補正 + 射撃判定（three-mesh-bvh）プロト | 未着手 | 0% | レイキャスト判定がサーバーで検証される | — |
 
@@ -91,3 +93,4 @@ CodWeb は「**Call of Duty を Web に移植して Web からでも AAA 級オ�
 ## 進捗メモ
 
 - 2026-09-01: リポジトリの DropMod 残骸を整理し、CodWeb のドキュメント基盤（README / AGENTS.md / docs/README.md / ARCH.md / TECH_SELECTION.md / ROADMAP.md）を確立。技術選定の主要判断（WebGL2 / **Colyseus + WebTransport** / Node VPS / 完全オリジナルアセット / 6v6 コアマルチ / WebSocket フォールバック）を確定。
+- 2026-09-01: 計画書の階層を整理。`docs/planning/` を「個別タスク詳細計画書」の置き場として実体化（`README.md` で規則・一覧・役割分担を明示、`_TEMPLATE.md` を参照）。進捗の正本は `docs/ROADMAP.md` のまま。今後の詳細タスク（P1-*〜P4-*、DPL-*）は `docs/planning/<ID>_PLAN.md` に作成していく。

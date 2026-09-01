@@ -14,6 +14,9 @@ docs/
 ├── ARCH.md              ★ アーキテクチャ・ネットワーク設計・データフロー・境界
 ├── TECH_SELECTION.md      ★ 技術選定の絞り込みと判断理由
 ├── ROADMAP.md             ★ マイルストーン・タスク管理の正本
+├── planning/              # 個別タスクの詳細計画書
+│   ├── README.md          #   規則・一覧・役割分担
+│   └── _TEMPLATE.md       #   計画書の書式テンプレート
 └── ops/                   # 運用ドキュメント（CI・デプロイ）
     ├── DEPLOY.md
     ├── CI_SETUP.md
@@ -45,6 +48,8 @@ docs/
 | ドキュメント | 内容 |
 |---|---|
 | [`ROADMAP.md`](ROADMAP.md) | マイルストーン・タスク管理の唯一の正本 |
+| [`planning/README.md`](planning/README.md) | 個別タスク計画書の置き場・規則・一覧 |
+| [`planning/_TEMPLATE.md`](planning/_TEMPLATE.md) | 計画書の書式テンプレート（§1〜§12） |
 | `../AGENTS.md` | 開発規約（コミット手順・検証・Git 運用） |
 
 ### 「デプロイしたい / CI を動かしたい」
