@@ -49,7 +49,7 @@
 | **WebTransport (`datagrams`)** | UDP 相当・低遅延・HoL ブロッキング無し・1 接続で複数ストリーム | 一部ネットワークで UDP ブロック。Node 終端が要る |
 | **WebTransport (`streams`)** | 確実・順序保証・QUIC ストリーム・同一接続で datagrams と共存 | 実装は WebSocket より複雑 |
 | WebSocket（フォールバック） | 全ブラウザ対応・成熟・シンプル | TCP 依存・HoL ブロッキング・UDP 相当が無い |
-| **geckos.io (WebRTC)** | UDP ライク・低遅延 | ICE/STUN/TURN 等が複雑。WebTransport で代替可能 |
+| **geckos.io (WebRTC)** | UDP ライク・低遅延 | **見送り**。WebRTC は P2P 前提のため、クライアント↔サーバーでは (a) シグナリングサーバー必須、(b) ICE/STUN/TURN の NAT 越え（TURN は 1〜2 割で必要・有料化・遅延増）、(c) UDP ダイレクト必須で LB 迂回・IP 公開、(d) Node に組み込み WebRTC 無し（native 依存）、(e) 権威サーバー型と矛盾（P2P の利点が得られない）。→ WebTransport（Client→Server QUIC）なら NAT 越え不要で同効果 |
 | socket.io | WebSocket 抽象化・チャット/イベント | ゲーム用には過剰、低遅延に不向きな場面 |
 | Playroom | ゼロバックエンドで手軽 | 大人数/競技向きでない |
 
@@ -177,6 +177,7 @@
 | 権威サーバー + クライアント予測 | 競技 FPS の公正さ・チート対策・低体感ラグに必須 |
 | 決定論的 shared シミュレーション | クライアント予測とサーバー調停が破綻しないため |
 | Colyseus + WebTransport | 権威サーバーのルーム管理 + `datagrams`（UDP 相当）と `streams`（確実）を機能別に使い分けられ、競技 FPS の低遅延を実現 |
+| WebRTC (geckos.io) は見送り | P2P 前提のため、クライアント↔サーバーではシグナリング必須 + ICE/STUN/TURN の NAT 越え（TURN 有料・遅延増）+ UDP ダイレクト運用（LB 迂回・IP 公開）が増える。WebTransport は Client→Server QUIC で NAT 越え不要のため同効果を簡潔に得る |
 | WebSocket フォールバック | WebTransport 非対応環境（旧 Safari / UDP ブロックのネットワーク）向けに併設 |
 | Node 専用サーバー（VPS） | 永続稼働・QUIC/UDP（WebTransport）・ルーム状態保持が必要。サーバーレスは不可 |
 | 完全オリジナルアセット | CoD は商用 IP のため Web 配信不可。「CoD 相当の品質」を自前で目指す |
