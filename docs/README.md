@@ -13,7 +13,9 @@ docs/
 ├── arch/                # ★ 仕様書（どう作るか：技術選定・プロトコル・設計ルール）
 │   ├── README.md        # 仕様書の目次・「仕様書 vs 計画書」の区別
 │   ├── tech-stack.md    # 技術スタック完全ガイド + 全端末60FPS・WebGPU/WebGL2 の設計・実装黄金ルール
-│   ├── networking.md    # ネットワーク＆リアルタイム設計（WebTransport/WS・tick・msgpackr・FX同期）
+│   ├── modules.md       # モジュール＆アーキ構成（client/shared/server/web の層・責務分担・依存ルール）
+│   ├── networking.md    # ネットワーク＆リアルタイム設計（WebTransport/WS・tick・msgpackr・FX同期）＋プロトコル分類マトリクス
+│   ├── protocol.md      # （統合済みポインター。正本は networking.md §4）
 │   └── game-engineering-principles.md  # FPS 設計の黄金ルール・実装パターン集
 ├── planning/            # 計画書（何を・どの順で：Phase 単位・_TEMPLATE.md 形式）
 │   ├── _TEMPLATE.md     # 計画書テンプレート（新規計画書は必ず本形式）

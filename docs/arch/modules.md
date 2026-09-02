@@ -1,210 +1,145 @@
-# 🎮 AAA級クロスプラットフォーム・オンラインFPS 開発技術スタック完全ガイド（統合完全版）
+# モジュール & アーキテクチャ構成（仕様書）
 
-> **コア構成**: React + Three.js + TypeScript + Vite  
-> **対応プラットフォーム**: PC（マウス＆キーボード / ゲームパッド） ＋ モバイル（タッチ / 仮想スティック / ジェスチャー）  
-> **アーキテクチャ**: 権威型サーバー ＋ 超低遅延UDP通信（WebRTC） ＋ クライアント予測・サーバー調停  
-> **開発方針**: 各機能モジュールごとに最適な専門ライブラリを採用し、低遅延・高フレームレート（60〜120FPS）・高品質グラフィックスを両立。
+> コードベースを**どうモジュール分割し、どの責務をどこに置くか**の設計仕様。
+> 「どのライブラリを使うか」は [`tech-stack.md`](./tech-stack.md)、「ネットワークのプロトコル・信頼性」は [`networking.md`](./networking.md)、設計原則は [`game-engineering-principles.md`](./game-engineering-principles.md) を参照。
+> Phase 0（基盤）では `client` の骨組みを作り、`shared` / `server` は Phase 1（ネットワーク）で具体化する。
 
----
+## 1. 全体の層構成
 
-## 1. コア：3Dレンダリング（React統合・WebGPU）
+大きく **4 つの実行主体**に分ける。
 
-| ライブラリ | 役割 | 備考 |
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Client（ブラウザ / Vite + React + R3F、bun でビルド）          │
+│  描画（可変FPS）・入力・予測・補間・FX再生・HUD                 │
+└───────────────┬──────────────────────────────┬──────────────┘
+                │ リアルタイム（WebTransport/WS）│ HTTPS（REST/CDN）
+┌───────────────▼──────────────┐   ┌───────────▼───────────────┐
+│ Game Server（bun・権威）       │   │ Web API / CDN（HTTPS）      │
+│  30Hz 固定シミュレーション・     │   │  認証・課金・インベントリ・   │
+│  ルーム・マッチ・ラグ補償       │   │  戦績（DB）・アセット配信     │
+└───────────────┬──────────────┘   └───────────────────────────┘
+                │
+        ┌───────▼────────┐
+        │ Shared（共有）   │  クライアント/サーバー両方から import
+        │  型・プロトコル・  │  bun でもブラウザでも動く純粋コード
+        │  純粋ゲームロジック│
+        └────────────────┘
+```
+
+- **Client** と **Game Server** はともに **Shared** に依存する（双方向依存はしない）。
+- **Game Server は React / DOM / Three.js に依存しない**（ヘッドレスで動く純粋ロジック＋物理）。
+- **課金・認証・永続化** はリアルタイムのゲームサーバーと分離し、HTTPS API + DB で扱う（[`networking.md`](./networking.md) §4.3）。
+
+## 2. 責務分担の原則
+
+| 責務 | 置く場所 | 理由 |
 | :--- | :--- | :--- |
-| **three** | 3Dレンダリングエンジン | 次世代WebGPUレンダラー（`three/webgpu`）およびTSL対応による高負荷処理が可能 |
-| **@react-three/fiber** | React用Three.jsラッパー | 宣言的シーン管理。`useFrame` による毎フレームの描画ループ・更新制御 |
-| **@react-three/drei** | R3F公式ユーティリティ集 | `<Environment>`, `<PointerLockControls>`, `<Detailed>` (LOD), `<Preload>` など必須コンポーネント群 |
+| 描画・アニメーション・FX 再生 | Client | 可変 FPS（rAF）。サーバーは関知しない |
+| 入力収集（マウス/キー/パッド/タッチ） | Client | デバイス API はブラウザのみ |
+| クライアント予測・補間・調停 | Client（ロジックは Shared） | 体感向上。純粋計算は Shared に置いてテスト |
+| 位置・当たり判定・ダメージ・スコアの**確定** | **Game Server（権威）** | チート防止。クライアント判定は先行表示のみ |
+| ラグ補償（位置履歴の巻き戻し） | Game Server（計算は Shared） | 権威判定の一部 |
+| 30Hz 固定シミュレーション | Game Server（ロジックは Shared） | 描画とは独立した固定 tick |
+| メッセージ型・シリアライズ・プロトコル定数 | **Shared** | クライアント/サーバーで同一の定義を使う |
+| 移動計算・当たり判定ロジック（純粋関数） | **Shared** | 予測と権威シミュレーションで同一コードを共有 |
+| 認証・課金・インベントリ・戦績 | Web API（HTTPS） | ACID・冪等性・DB 永続化 |
+| アセット（GLTF/KTX2）配信 | CDN（HTTPS） | 大容量・キャッシュ |
 
-> 💡 **WebGPUの標準採用**  
-> `import { WebGPURenderer } from 'three/webgpu'` によりゼロ設定で導入可能（WebGL2への自動フォールバック機能付き）。WebGPU Compute Shaderを活用することで、大量の描画・計算負荷をGPUへ逃がし、Draw Callが大量に発生するFPSにおいてWebGL比で数倍のパフォーマンスを発揮します。
+> 重要: **クライアント予測とサーバー権威シミュレーションは同じ純粋関数（Shared）を呼ぶ**。これにより「予測した結果」と「サーバー確定結果」が食い違わず、調停（Reconciliation）がシンプルになる。
 
----
+## 3. Client モジュール構成（`src/`）
 
-## 2. 物理エンジン & 精密衝突・当たり判定（Hitbox・CSG）
+Phase 0 で作成する Vite + React + R3F のクライアント。
 
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **@react-three/rapier** | 物理シミュレーション（クライアント） | Rust製RapierのWASM版。プレイヤーの移動、高精度な剛体挙動・落下・投射物演算に最適 |
-| **@dimforge/rapier3d** | 純粋なRapier（サーバーサイド/ヘッドレス） | Node.js等のサーバー環境で動作し、チート防止・権威ある物理演算に必須 |
-| **three-mesh-bvh** | 高速BVH（境界ボリューム階層） / 精密レイキャスト | **FPSの射撃判定に必須**。超高速Raycastingにより数万ポリゴンの当たり判定・ヘッドショット判定・壁交差をミリ秒未満で計算 |
-| **three-bvh-csg** | リアルタイムCSG（ブーリアン演算） | 壁に弾痕や穴を開ける破壊表現（デストラクション）の実装 |
+```
+src/
+├── main.tsx                # エントリ（React マウント）
+├── App.tsx                 # アプリのルート
+├── game/                   # ★ ゲーム本体（React の外側のループを含む）
+│   ├── scene/              # R3F シーン（Canvas・カメラ・ライト・地面・オブジェクト）
+│   ├── loop/               # ゲームループ（useFrame・可変FPS・delta time・ゼロアロケーション）
+│   ├── ecs/                # ECS（miniplex/bitecs）。エンティティ・コンポーネント・システム
+│   ├── player/             # プレイヤー制御（ecctrl/rapier 移動）・カメラ・武器ビューモデル
+│   ├── input/              # 入力アダプタ（PointerLock/Keyboard/joypad/nipplejs タッチ）
+│   ├── fx/                 # エフェクト・パーティクル・トレーサー（フラグ/トリガーから決定論的再生）
+│   ├── net/                # ネット層（Client）
+│   │   ├── transport.ts    #   NetTransport 抽象インターフェース（Phase 0 で定義のみ）
+│   │   ├── webtransport.ts #   WebTransport 実装（datagrams/streams）
+│   │   ├── websocket.ts    #   WebSocket フォールバック実装
+│   │   ├── prediction.ts   #   クライアント予測
+│   │   ├── reconciliation.ts # サーバー確定値との調停
+│   │   └── interpolation.ts  # リモートエンティティ補間（~100ms バッファ）
+│   └── audio/              # 3D 立体音響（howler / PositionalAudio）
+├── components/             # React UI（HUD・メニュー・設定・スコアボード）
+├── store/                  # Zustand ストア（ゲーム状態。高頻度は getState/subscribe）
+└── lib/                    # 汎用ユーティリティ（DOM/Three 依存なしは shared へ）
+```
 
-> 💡 **物理と射撃判定の使い分け**  
-> プレイヤーの移動や障害物との衝突には **Rapier**、弾丸の着弾判定（レイキャスト）やヘッドショット判定には **three-mesh-bvh** を併用するのが業界標準の最適構成です。
+- 毎フレーム更新される座標等は **React State にせず**、Three.js `ref` または Zustand の `getState()`/`subscribe` で直接更新（[`game-engineering-principles.md`](./game-engineering-principles.md)）。
+- `game/net/transport.ts` の **NetTransport 抽象** は Phase 0 でインターフェースだけ定義し、WT/WS 実装は Phase 1。
 
----
+## 4. Shared モジュール（クライアント/サーバー共有）
 
-## 3. キャラクターコントローラー & カメラシステム
+bun でもブラウザでも動く、**DOM/Three/React に依存しない純粋 TypeScript**。
 
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **ecctrl** | 物理ベース・キャラクターコントローラー | Rapierベースの浮動カプセル移動、階段・段差のスムーズな登攀、アニメーション遷移を内包 |
-| **camera-controls** | 高度なカメラ制御 | ADS（エイムダウンサイト）、反動（リコイル）、視点揺れ、滑らかな補間 |
-| **@react-three/drei** (`CameraShake`) | カメラシェイク | 爆発や被弾時、射撃時の臨場感ある画面揺れの演出 |
+```
+shared/
+├── protocol/
+│   ├── messages.ts         # メッセージ型（入力・状態スナップショット・イベント）
+│   ├── serialize.ts        # msgpackr シリアライズ/デシリアライズ
+│   └── constants.ts        # tick rate(30Hz)・パケットヘッダ・チャネル定義
+├── sim/                    # 純粋なゲームシミュレーション（予測と権威で共用）
+│   ├── movement.ts         # 移動計算（入力 + 状態 → 次状態。delta 引数）
+│   ├── combat.ts           # 当たり判定・ダメージ計算（純粋ロジック）
+│   └── lagcomp.ts          # ラグ補償の巻き戻し計算（位置履歴 + 時刻 → 当時の状態）
+├── ecs/                    # ECS のコンポーネント/型定義（描画非依存）
+└── types.ts                # 共通型（プレイヤー・武器・状態フラグ等）
+```
 
----
+- ここに置くコードは **jsdom / WebGL 不要で Vitest のユニットテストが可能**（Sandbox 制約を回避、[`../../.agent/skills/sandbox-constraints.md`](../../.agent/skills/sandbox-constraints.md)）。
+- 純粋関数（入力＝出力）にし、副作用（ネット送信・描画）は呼び出し側に分離する。
 
-## 4. マルチプレイヤー・低遅延ネットワーキング & ボイスチャット
+## 5. Game Server モジュール（bun）
 
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **Colyseus** | 権威型ゲームサーバーフレームワーク | ルーム管理、状態同期（State Sync）、クライアント予測・サーバー調停（Reconciliation） |
-| **geckos.io** | UDP over WebRTC | **FPSに不可欠なパケットロス許容・超低遅延通信**（プレイヤー座標・入力・射撃イベント同期） |
-| **socket.io** | WebSocket通信 | チャット、ロビー、マッチメイキングなど信頼性・確実性が求められる通信 |
-| **livekit-client** | WebRTC ボイスチャットSDK | **ゲーム内ボイスチャット**。3D空間内の距離に応じて減衰する近接ボイチャ（Proximity Voice）に対応 |
-| **playroomkit** | モバイル向け対戦SDK | モバイル端末間のP2P/ローカル対戦やパーティゲーム風の簡易同期プロトタイピング |
-| **msgpackr** | 高速MessagePackバイナリシリアライザ | JSONに比べパケットサイズを極限まで圧縮し、通信帯域を節約 |
-| **protobufjs** | Protocol Buffers（バイナリ通信） | 厳密なスキーマ定義と極小フットプリントでのネットワーク同期 |
+権威ゲームサーバー。**30Hz 固定 tick** でシミュレーション。
 
----
+```
+server/
+├── index.ts                # bun サーバ起動（WebSocket 受付・Caddy からの WT プロキシ）
+├── room/                   # ルーム・マッチメイキング・プレイヤー参加/退出
+├── sim/                    # 権威シミュレーション（shared/sim を 30Hz で回す）
+├── net/
+│   ├── connections.ts      # 接続管理（WS ネイティブ / WT はエッジ経由）
+│   ├── snapshot.ts         # 状態スナップショット生成（30Hz）
+│   └── lagcomp-store.ts    # 各プレイヤーの位置履歴（~100ms）保持
+├── physics/                # ヘッドレス物理（Rapier、将来）
+└── api/                    # 信頼イベント処理（被弾確定・スコア・購入）
+```
 
-## 5. ECS（エンティティ・コンポーネント・システム）& 大量オブジェクト管理
+- 接続層: WebSocket は bun ネイティブ（uWS）。WebTransport は Caddy エッジで終端してサーバーへプロキシ（[`networking.md`](./networking.md) §6）。bun の WT ネイティブ対応後に寄せる。
+- サーバーは **React/Three/DOM を import しない**。描画ロジックを持たない。
 
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **miniplex** / **@miniplex/react** | R3F向けECSフレームワーク | 弾丸、ドロップアイテム、エフェクトなどのライフサイクルをデータ指向で超高速処理 |
-| **bitecs** | 高性能TypedArrayベースECS | サーバー・クライアント共通で数万のエンティティをGCレス（ガベージコレクションなし）で処理 |
+## 6. Web API / CDN（HTTPS 層）
 
----
+```
+web/（または別サービス）
+├── auth/        # ログイン・JWT/OAuth
+├── billing/     # 課金・ガチャ（ACID・冪等性）
+├── inventory/   # ロードアウト・スキン永続化（DB）
+├── stats/       # 戦績・ランキング（CDN キャッシュ可）
+└── cdn/         # アセット（GLTF/KTX2）・静的ファイル配信
+```
 
-## 6. ゲームAI・パスファインディング（BOT実装 / 練習モード）
+## 7. 依存方向のルール（変更してはいけない）
 
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **yuka** | ゲームAIエンジン / フレームワーク | ステアリング行動（巡回・追跡・回避）、有限ステートマシン、敵ボットの知覚/視線判定（Vision） |
-| **recast-navigation** / **recast-navigation-js** (`@recast-navigation/three`) | NavMesh（ナビメッシュ）生成 & 経路探索 | AAAゲーム標準のRecast/DetourのWASM版。マップ移動可能エリアの自動抽出と3D空間内のA*最短経路探索（ボットの自動走行） |
+- `shared` は誰にも依存しない（一番内側）。
+- `client` と `server` は `shared` に依存してよいが、**互いに依存しない**。
+- `server` は `three` / `react` / DOM API を import しない（ヘッドレス）。
+- 純粋ゲームロジックは必ず `shared` に置き、クライアントの描画/入力/FX コードに埋め込まない。
+- ネット送信・描画といった副作用は、純粋ロジック（shared）の外側の薄いアダプタ層（client/net, server/net）に閉じ込める。
 
----
+## 8. リポジトリ構成（bun workspaces）
 
-## 7. パーティクル & VFX・弾道エフェクト
-
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **three.quarks** / **quarks.r3f** | 高機能GPUパーティクル/VFXエンジン | Unity（Shuriken）互換。マズルフラッシュ、爆破、火花、血飛沫、軌跡（トレイル）を最小Draw Callでバッチ描画 |
-| **three.meshline** | 太さのあるライン描画 | **弾道トレース（Tracer）**、レーザーサイト、近接武器の軌跡表現 |
-| **r3f-vfx** | TSL / WebGPUパーティクル | WebGPU Compute Shaderを用いた大量のGPU駆動パーティクルシミュレーション |
-| **three-custom-shader-material** | カスタムシェーダー拡張 | シールド被弾時の六角形エフェクト、スコープの歪み、既存PBRマテリアルを維持したステルス表現 |
-
----
-
-## 8. アニメーション・リギング & 姿勢制御（IK / FSM / カットシーン）
-
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **@react-three/drei** (`useAnimations`) | ボーン・GLTFアニメーション管理 | 待機（アイドル）、走行、射撃、リロード、ジャンプ等のブレンド・クロスフェード再生制御 |
-| **three-stdlib** / **three-ik** (`CCDIKSolver`) | インバースキネマティクス (IK) | **銃の反動（Recoil）時の腕・手首の追従**、段差や坂道での**足の接地（Foot IK）** |
-| **xstate** | 有限状態マシン (FSM) | リロード中 / 射撃中 / ダッシュ中 / ジャンプ中など、キャラや武器の複雑な状態遷移を一元管理 |
-| **@theatre/core** / **@theatre/r3f** | ビジュアルタイムライン・モーショングラフィックス | マッチ開始前のカメラ演出、キルカメラ、イベントシーンのオーサリング |
-| **gsap** | プログラマティック・イージング | 武器のリコイル復帰、スコープズーム、カメラワークのアニメーション |
-
----
-
-## 9. 入力・コントロール（PC / モバイル / ゲームパッド両対応）
-
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **nipplejs** | 仮想ジョイスティック | モバイル画面上の左スティック（移動）/ 右スティック（視点操作） |
-| **@react-three/drei** (`PointerLockControls`) | マウス視点ロック | PC版FPSの標準的なマウスによるフリーエイム制御 |
-| **@react-three/drei** (`KeyboardControls`) | キーボード入力マッピング | WASD移動、ジャンプ、しゃがみ、リロードなどのキーバインド一元管理 |
-| **joypad.js** | ゲームパッド API ラッパー | PS5 / Xbox コントローラーをブラウザに接続した際の入力制御 |
-| **hammerjs** | タッチジェスチャー | スワイプ（武器切替/回避）、ダブルタップ（リロード/近接攻撃）などの検出 |
-| **screenfull** | フルスクリーン制御 | モバイルブラウザのアドレスバー非表示・没入感向上のための画面最大化 |
-
----
-
-## 10. モバイル & ブラウザUX・デバイス制御
-
-| ライブラリ / API | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **screenfull** | フルスクリーン制御 | ブラウザのアドレスバーを非表示にし、ネイティブアプリ並みの没入感を確保 |
-| **nosleep.js** / **Screen Wake Lock API** | スリープ防止 | プレイ中にモバイル画面が自動消灯・ロックされるのを防止 |
-| **Navigator.vibrate** (Vibration API) | ハプティクス（触覚フィードバック） | モバイルでの射撃時や被弾時に端末を振動させて臨場感を向上 |
-
----
-
-## 11. UI / HUD（ヘッドアップディスプレイ） & 3DダイジェティックUI
-
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **zustand** | グローバル状態管理 | HP、残弾数、キルログ、スコア、プレイヤー座標の超軽量・高速な非同期共有（Context不要） |
-| **@react-three/drei** (`Html`) | 3D空間内HTML投影 | プレイヤー頭上のネームプレート、ピン表示、インタラクトUI |
-| **troika-three-text** | 高速SDF 3Dテキスト | 頭上のネームタグ、大量に発生するダメージポップアップ数値の超高速描画 |
-| **@radix-ui/react-\*** | アクセシブルUIコンポーネント | 設定メニュー、クロスヘア選択、スコアボード、オーディオ/グラフィックスライダー |
-| **framer-motion** | UIモーションアニメーション | キルフィードのアニメーション、被弾時の画面赤フラッシュ、ヒットマーカー演出 |
-| **lucide-react** | アイコンセット | 弾薬、アーマー、各種武器・設定用SVGアイコン |
-
----
-
-## 12. オーディオ & 3D空間立体音響
-
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **@react-three/drei** (`PositionalAudio`) | R3F統合3D立体音響 | 敵の足音や銃声の方向・距離感をWeb Audio APIのHRTFステレオ定位で再現 |
-| **howler.js** | 汎用マルチオーディオ再生管理 | BGMループ、UI効果音、環境音（Ambient）の同時発音数制御と事前プリロード |
-| **resonance-audio** | 高度な空間音響（HRTF・残響音） | 部屋の広さや遮蔽物（オクルージョン）によるリアルな残響・音の回り込みシミュレーション |
-
----
-
-## 13. アセット最適化 & パイプラインツールチェーン
-
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **@react-three/drei** (`useGLTF` / `useTexture`) | 3Dアセット読み込み | `preload()` によるアセット事前キャッシュ、React Suspense対応 |
-| **gltfjsx** | GLTF → JSX 変換CLI | 3DモデルをReactコンポーネント化し、ボーンやマテリアルへの直接アクセスを容易にする |
-| **three-stdlib** | Three.js追加ローダー群 | KTX2Loader, DRACOLoader, LDrawLoader などの標準拡張ローダー |
-| **meshoptimizer** / **DRACOLoader** | 高速メッシュ圧縮・デコード | モデルサイズ削減とモバイル環境での高速ロード（meshoptimizerはデコードが極めて高速） |
-| **@gltf-transform/core** | GLTF最適化ビルドツール | モデルのポリゴン削減、テクスチャのKTX2/Basis変換、LOD自動生成、不要ノード削除 |
-
----
-
-## 14. シェーダー・ポストプロセス・グラフィック効果
-
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **@react-three/postprocessing** | ポストプロセスエフェクト | ブルーム、SSAO（周辺減光）、被写界深度（DoF）、色補正（LUT） |
-| **three-custom-shader-material** | カスタムシェーダー拡張 | 既存のPBRマテリアルを維持したまま、被弾・シールド・ステルスなどの表現を追加 |
-| **three/webgpu (TSL)** | Three Shading Language | WGSL/GLSLを意識せずクロスプラットフォームで動作する次世代ノードシェーダー |
-
----
-
-## 15. パフォーマンス・モニタリング & 自動スケーリング
-
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **r3f-perf** | 詳細パフォーマンスオーバーレイ | FPS、Draw Calls、ジオメトリ数、GPU/CPUメモリ使用量、テクスチャ数を可視化 |
-| **@react-three/drei** (`PerformanceMonitor`) | デバイス適応型品質制御 | フレームレート低下時に解像度スケール（DPR）やシャドウ品質を動的に自動調整 |
-| **stats-gl** | 次世代軽量モニタリング | WebGL/WebGPU対応の軽量パフォーマンス統計 |
-
----
-
-## 16. 開発環境・シーンオーサリング・デバッグ
-
-| ライブラリ | 役割 | 備考 |
-| :--- | :--- | :--- |
-| **leva** | パラメータ調整用GUIパネル | 銃の反動値、ブレ、移動速度、重力、ライト強度などをリアルタイムに変更・検証 |
-| **@react-three/editor** | シーンエディタ（開発用） | レベルデザイン、オブジェクト配置の視覚的オーサリング支援 |
-| **vite-plugin-glsl** | GLSLインポーター | Viteで `.glsl`, `.vert`, `.frag`, `.wgsl` ファイルを直接 import 可能にする |
-| **msw** (Mock Service Worker) | ネットワークAPIモック | 認証、マッチメイキング、インベントリAPIのモック検証 |
-
----
-
-## 🎯 AAA級品質を達成するためのエンジニアリング原則 ＆ 設計・実装黄金ルール
-
-1. **射撃判定は「three-mesh-bvh」でローカル即時判定 ＋ サーバー検証（Lag Compensation）**
-   - クライアント側でBVHを用いて即座にヒットマーカーを表示しつつ、サーバー側でタイムスタンプを巻き戻して正当性を検証。
-2. **クライアント予測（Client Prediction） ＋ サーバー調停（Reconciliation）**
-   - プレイヤーの入力は即座に画面へ反映し、サーバーの定期的な確定情報（スナップショット）と差分補正してラグリプレイを排除。
-3. **WebGPUファースト ＋ TSL（Three Shading Language）**
-   - WebGPU Compute Shaderを活用し、パーティクル演算や大量の弾丸シミュレーションをGPU側で並列実行。
-4. **Reactのレンダリングサイクルとゲームループの完全分離**
-   - 毎フレーム更新される座標や弾丸データは React State ではなく、Three.js のオブジェクト参照（`ref`）や `Zustand` の `getState()` / `subscribe` を用いて直接更新する。
-5. **ゼロ・アロケーション（Zero Allocation in Loop）によるGC徹底回避**
-   - `useFrame` 内での `new THREE.Vector3()`、`Quaternion`、`Matrix4` などのオブジェクト生成は厳禁。事前にモジュールスコープ等でプールした一時変数（`tempVec` など）を再利用し、GC（ガベージコレクション）によるスパイク・フレーム落ち（Stuttering）を根絶。
-6. **ECS（Entity Component System）によるデータ指向設計**
-   - 発射された弾丸、投擲物、NPCなどの大量のゲームオブジェクトはECSで配列（Flat Array）として管理し、メモリ局所性とキャッシュ効率を最大化。
-7. **パーティクルと弾道エフェクトのバッチレンダリング**
-   - 銃撃戦で大量に発生するエフェクトは `three.quarks` や `BatchedMesh` / `InstancedMesh` を使い、Draw Callを極限まで削減。
-8. **モバイル最適化ターゲット**
-   - **Draw Calls**: 80〜100以下（`InstancedMesh` や `BatchedMesh` の積極利用）
-   - **テクスチャ**: すべて KTX2/Basis Universal 形式に圧縮し、GPU VRAM圧迫を回避
-   - **解像度制御**: `PerformanceMonitor` を用いてモバイルの負荷に応じて `dpr={clamp(..., 1, 1.5)}` を動的変更
+- bun のワークスペースとして `client`（Vite フロント）・`server`（bun ゲームサーバ）・`shared`（共有）を分ける方向を基本とする。具体的なディレクトリ分割（単一 `src/` か monorepo か）は Phase 1（ネットワーク）着手時に確定する。
+- Phase 0 ではクライアント単体の `src/` を作り、`shared` の配置はサーバー実装フェーズで整理する。
