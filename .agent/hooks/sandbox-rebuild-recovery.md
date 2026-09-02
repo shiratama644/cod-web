@@ -28,11 +28,11 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 ```bash
 git log --oneline -5          # push 済みコミットが見えること
-pnpm test:unit                # テストが通ること
+pnpm test:unit                # テストが通ること（プロジェクト初期化前は未整備でも可、その場合は pnpm install 成功まで確認）
 ```
 → 問題なければ作業再開。
 
 ## 注意
 
-- `.archive/vite/` が「未追跡」になっている場合も、`git reset --hard FETCH_HEAD` で追跡状態に戻る（新規にファイルを触らないこと, §4.5）。
-- `git reset --hard` は**この例外场景以外では厳禁**（§4.3）。誤用に注意。
+- `git reset --hard` は**この例外場面以外では厳禁**（AGENTS.md §4.3）。誤用に注意。
+- `.archive/` 等のアーカイブが「未追跡」になっている場合も、`git reset --hard FETCH_HEAD` で追跡状態に戻る（新規にファイルを触らないこと、AGENTS.md §4.5）。

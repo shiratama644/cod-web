@@ -1,6 +1,6 @@
-# DropMod ドキュメント索引
+# cod-web ドキュメント索引
 
-DropMod のドキュメント一式を種類別に整理したものです。ルート `README.md` からアプリの概要へアクセスできます。
+cod-web（ブラウザ向け AAA級クロスプラットフォーム・オンラインFPS）のドキュメント一式を種類別に整理したものです。ルート [`../README.md`](../README.md) からアプリの概要へアクセスできます。
 
 ---
 
@@ -8,16 +8,15 @@ DropMod のドキュメント一式を種類別に整理したものです。ル
 
 ```
 docs/
-├── README.md                          ← 本ファイル (全ドキュメントの目次)
-├── task-list.md                       ★ タスク管理の唯一の正本 (進捗・証拠)
-├── planning/                          # 計画書 (Phase 単位・_TEMPLATE.md 形式)
-│   └── _TEMPLATE.md                   # 計画書テンプレート (新規計画書は必ず本形式)
-├── complete/                          # 完了レポート
-├── audit/                             # 差分・バグ監査
-└── ops/                               # 運用ドキュメント (デプロイ・CI 実務)
-    ├── DEPLOY.md                      # Vercel 本番デプロイ手順チェックリスト
-    ├── CI_SETUP.md                    # GitHub Actions セットアップ + 動作確認手順
-    └── CI_WORKFLOW.yml                # GitHub Actions ワークフロー本体 (実配置は .github/)
+├── README.md            ← 本ファイル（全ドキュメントの目次）
+├── CONFIG.md            ★ 技術スタック完全ガイド + AAA品質の設計・実装黄金ルール
+├── task-list.md         ★ タスク管理の唯一の正本（進捗・証拠）
+├── planning/            # 計画書（Phase 単位・_TEMPLATE.md 形式）
+│   ├── _TEMPLATE.md     # 計画書テンプレート（新規計画書は必ず本形式）
+│   ├── PHASE00_PLAN.md  # Phase 0: プロジェクト基盤構築
+│   └── complete/        # 完了レポート
+├── audit/               # 差分・バグ監査
+└── ops/                 # 運用ドキュメント（デプロイ・CI 実務）
 ```
 
 ---
@@ -28,109 +27,30 @@ docs/
 
 | 見る順 | ドキュメント | 内容 |
 |---:|---|---|
-| 1 | [`../README.md`](../README.md) | アプリ概要、技術スタック、セットアップ |
-| 2 | [`task-list.md`](task-list.md) | **タスク管理の正本** (全フェーズの状態・証拠が一覧できる) |
-| 3 | [`planning/PHASE11_PLAN.md`](planning/PHASE11_PLAN.md) | 直近完了フェーズ (Read-only Import & Analysis) |
+| 1 | [`../README.md`](../README.md) | アプリ概要、技術構成、セットアップ |
+| 2 | [`CONFIG.md`](CONFIG.md) | 技術スタックの全容・ライブラリ選定・設計ルール |
+| 3 | [`task-list.md`](task-list.md) | **タスク管理の正本**（全フェーズの状態・証拠） |
 
 ### 「これから開発を継続したい」
 
 | 見る順 | ドキュメント | 内容 |
 |---:|---|---|
 | 1 | [`task-list.md`](task-list.md) | 次に着手すべきタスクと依存・検証待ち項目の一覧 |
-| 2 | [`planning/_TEMPLATE.md`](planning/_TEMPLATE.md) | 計画書テンプレート (新規タスクはこの形式で計画) |
-| 3 | [`planning/PHASE12_PLAN.md`](planning/PHASE12_PLAN.md) | **次フェーズ**: Sync (双方向書き込み) & Modrinth Modpack。§12 の設計論点を確定してから着手 |
-| 4 | [`planning/PHASE13_PLAN.md`](planning/PHASE13_PLAN.md) | **Phase 13**: SEO（SEO-2/SEO-1 ローカル検証済み。本番目視は延期） |
-| 5 | [`planning/SEO_CANDIDATES.md`](planning/SEO_CANDIDATES.md) | SEO 候補レジストリ（実施 DoD は PHASE13_PLAN） |
-| 2 | [`audit/issues-phase9.md`](audit/issues-phase9.md) | 未修正の Low 優先度バグ (17 件、実害なしで放置中) |
-| 3 | [`audit/diff-phase9.md`](audit/diff-phase9.md) | Phase 9 実装と計画書の意図的な齟齬 (背景理解に有用) |
+| 2 | [`planning/PHASE00_PLAN.md`](planning/PHASE00_PLAN.md) | **直近フェーズ**: Phase 0（プロジェクト基盤構築） |
+| 3 | [`planning/_TEMPLATE.md`](planning/_TEMPLATE.md) | 計画書テンプレート（新規タスクはこの形式で計画） |
+| 4 | [`../AGENTS.md`](../AGENTS.md) | AI Agent 開発規約（コミット手順・検証・Git 運用・コミュニケーション） |
+| 5 | [`../.agent/skills/`](../.agent/skills) | コードベース知識（`index.md` が入口） |
 
 ### 「デプロイしたい / CI を動かしたい」
 
 | ドキュメント | 内容 |
 |---|---|
-| [`ops/DEPLOY.md`](ops/DEPLOY.md) | Vercel 本番デプロイ手順 (環境変数・DNS・OGP 検証) |
-| [`ops/CI_SETUP.md`](ops/CI_SETUP.md) | GitHub Actions 有効化手順 + 配置後の動作確認 |
-| [`ops/CI_WORKFLOW.yml`](ops/CI_WORKFLOW.yml) | 実際のワークフロー YAML (ユーザーが `.github/workflows/ci.yml` に配置) |
-
-### 「特定 Phase の詳細を調べたい」
-
-| Phase | 計画書 | 完了レポート | 監査 |
-|:---:|---|---|---|
-| **8** | [`planning/PHASE8_PLAN.md`](planning/PHASE8_PLAN.md) | [`complete/PHASE8_COMPLETE.md`](complete/PHASE8_COMPLETE.md) | [`audit/diff-phase8.md`](audit/diff-phase8.md) |
-| **9** | [`planning/PHASE9_PLAN.md`](planning/PHASE9_PLAN.md) | [`complete/PHASE9_COMPLETE.md`](complete/PHASE9_COMPLETE.md), [`complete/PHASE9_C_COMPLETE.md`](complete/PHASE9_C_COMPLETE.md), [`complete/PHASE9_PROFILER.md`](complete/PHASE9_PROFILER.md) | [`audit/diff-phase9.md`](audit/diff-phase9.md), [`audit/issues-phase9.md`](audit/issues-phase9.md) |
-| **1-7** | [`planning/NEXTJS_MIGRATION_PLAN.md`](planning/NEXTJS_MIGRATION_PLAN.md) | (Phase 7 完了時点まで、計画書内に完了マーク) | [`audit/diff-vite-vs-nextjs.md`](audit/diff-vite-vs-nextjs.md), [`audit/issues-legacy.md`](audit/issues-legacy.md) |
+| `ops/` | Phase 0 完了後に CI / デプロイ手順を整備予定（`.github/workflows/` は書き込み権限制約あり、AGENTS.md §6.3） |
 
 ---
 
-## 🎯 各フォルダの役割
+## ドキュメント運用ルール（AGENTS.md §6.7）
 
-### `planning/` — 計画書
-
-- **Phase 開始前**に作成する詳細な計画書 (**`_TEMPLATE.md` 形式**: 目的/変更範囲/禁止事項/
-  完了条件/テスト方法/停止条件 + 設計詳細/Gotchas/実績。2026-08-27〜)
-- 進捗・証拠は `task-list.md` (正本) で管理し、計画書は個別タスクの詳細を担う
-- 実装で変更があれば `audit/diff-phaseN.md` に記録される
-
-### `complete/` — 完了レポート
-
-- **Phase 完了時**に作成する事後報告書
-- メトリクス (テスト数・カバレッジ・再レンダー数・Bundle サイズなど)、実施した sub-phase、DoD 達成状況を記録
-- `PHASE9_PROFILER.md` は Phase 9-D の再レンダー測定に特化した詳細レポート
-
-### `audit/` — 差分・バグ監査
-
-- **計画書 vs 実装** の差分 (`diff-*.md`)
-- **発見したバグ・潜在的不具合** のリスト (`issues-*.md`)
-- Phase 別に `-phase{N}.md` サフィックスで管理
-- `-legacy.md` は Phase 8 以前の総合資料 (履歴として保管)
-
-### `ops/` — 運用ドキュメント
-
-- **デプロイ・CI・本番運用**の手順書
-- 変更頻度は低く、実際にデプロイする際に参照する
-
----
-
-## 📝 命名規約
-
-- **タスクリスト**: `docs/task-list.md` (固定・唯一の正本)
-- **計画書テンプレート**: `_TEMPLATE.md` (固定)
-- **計画書**: `PHASE{N}_PLAN.md` (例: `PHASE9_PLAN.md`)、または `{TOPIC}_CANDIDATES.md`
-- **完了レポート**: `PHASE{N}_COMPLETE.md`、sub-phase 単独レポートは `PHASE{N}_{S}_COMPLETE.md`
-- **監査 (差分)**: `diff-phase{N}.md` または `diff-{context}.md`
-- **監査 (バグ)**: `issues-phase{N}.md` または `issues-{context}.md`
-- **運用**: 大文字スネークケース (例: `DEPLOY.md`, `CI_SETUP.md`)
-
----
-
-## 🔗 コード側からの参照
-
-一部のソースコード内コメントでドキュメントを参照しています:
-
-| ソース | 参照先 |
-|---|---|
-| `src/lib/modrinth/server.ts` | `docs/planning/NEXTJS_MIGRATION_PLAN.md` §10.5 (キャッシュ戦略) |
-
-ファイル移動時はこれらの参照も更新してください。
-
-※ 2026-08-27 整理: 削除済みファイルを指す 2 行を除去した。
-`components/AppContext.tsx` (Phase 10-B で完全削除) と `biome.json`
-(JSON のためコメント参照を持てず、旧 `eslint.config.mjs` も Phase 10-P5 で撤去済み)。
-
----
-
-## 🔗 予約 URL
-
-| URL | Phase | 用途 |
-|---|---|---|
-| `/resourcepack` | 11 | Resource Pack ハブ |
-| `/shader` | 11 | Shader ハブ |
-| `/modpack` | 12 | Modrinth Modpack ハブ |
-
-検索一覧は `/discover/mods` `/discover/resourcepack` `/discover/shader` `/discover/modpack`。
-予約 URL を検索へリダイレクトしないこと。
-詳細は [`planning/PHASE11_PLAN.md`](planning/PHASE11_PLAN.md) §1.2.1。
-
----
-
-*このドキュメント索引は 2026-08-24 のドキュメント整理 (Phase 9-F 後) 時点の構造です。Phase 10 以降で新規追加された場合は本 README を更新してください。*
+- 計画書は `docs/planning/PHASE{N}_PLAN.md`（N は 2 桁）、完了レポートは `docs/planning/complete/PHASE{N}_COMPLETE.md`。
+- バグ監査・差分レポートは `docs/audit/`、デプロイ・CI 運用は `docs/ops/`。
+- ファイルを追加したら必ず本索引を更新する。

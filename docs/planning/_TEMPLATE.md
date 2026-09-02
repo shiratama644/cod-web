@@ -59,7 +59,7 @@
 - [ ] 条件 1 (例: `pnpm typecheck` / `biome lint` / `pnpm test:unit` / `pnpm build` 全 pass)
 - [ ] 条件 2 (数値目標があれば実測値を記録)
 - [ ] `docs/task-list.md` の状態・進捗・証拠を更新
-- [ ] `.archive/vite/` 無変更
+- [ ] タスク範囲外のファイル（`.archive/` 等のアーカイブを含む）に意図しない変更がない
 
 ## 6. テスト方法
 

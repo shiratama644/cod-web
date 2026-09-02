@@ -1,35 +1,36 @@
 # Hook: Verify Before Commit（commit 直前検証）
 
 > **トリガー**: 実装が終わり、Git Commit する直前。
-> **目的**: AGENT.md §3.1 の 4 検証を必ず全 pass させてから commit する。途中の検証失敗で次へ進んではならない。
+> **目的**: AGENTS.md §3.1 の 4 検証を必ず全 pass させてから commit する。途中の検証失敗で次へ進んではならない。
 
 ## 4 検証（順に実行、1 つでも失敗したら原因特定→修正→再全検証）
 
 ```bash
-pnpm typecheck                # tsc --noEmit (main + tsconfig.test.json 両方)
+pnpm typecheck                # tsc --noEmit
 pnpm exec biome lint .        # Biome 直接呼出（pnpm lint より起動が速い）
-pnpm test:unit                # vitest run （※ pnpm test は watch なので使わない）
-pnpm build                    # Next.js production build (turbopack)
+pnpm test:unit                # vitest run （※ watch モードではない）
+pnpm build                    # vite build（production）
 ```
 
 ### 各コマンドの注意
 
-- **typecheck**: `tsc --noEmit && tsc --noEmit -p tsconfig.test.json`。`noUncheckedIndexedAccess` 有効なので配列アクセスに注意。
-- **biome lint**: `0 error / 0 warning` まで。`biome-ignore` は対象コードの**直前の行**に置く（1 行以上離れると unused 判定で逆に警告になる, §6.5）。自動生成 CSS（`src/styles/fontawesome-subset.css`）は biome.json で除外済。
-- **test:unit**: `pnpm test`（watch）**ではない**。必ず `test:unit`（vitest run）。
-- **build**: Modrinth `ECONNRESET`/`TypeError: fetch failed` は **Sandbox 制約で無視**（§6.2）。**exit code 0 なら成功**。
-  - bundle サイズは turbopack が出力しない → `find .next/static -name "*.css" -exec ls -lh {} \;` 等で直接確認。
-  - `.archive/vite/` は build 対象外（`tsconfig.json` exclude 済）。
+- **typecheck**: `tsc --noEmit`。strict 構成。配列アクセス・nullable に注意。
+- **biome lint**: `0 error / 0 warning` まで。`biome-ignore` は対象コードの**直前の行**に置く（1 行以上離れると unused 判定で逆に警告になる, AGENTS.md §6.5）。テストファイルは `overrides` で `noNonNullAssertion` off。
+- **test:unit**: `pnpm test`（watch）**ではない**。必ず `test:unit`（vitest run）。R3F `<Canvas>` は jsdom で WebGL 未サポートのため、WebGL 非依存のロジック/UI をテスト対象にする（[`../skills/sandbox-constraints.md`](../skills/sandbox-constraints.md)）。
+- **build**: `vite build`。成果物は `dist/`。
+  - バンドルサイズは `ls -lh dist/assets` 等で直接確認（Three.js はバンドルが大きい。依存の重複・chunk 分割に注意）。
+- **ドキュメントのみ変更時**: 4 検証はスキップ可（AGENTS.md §3.1）。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。
 
 ## 追加確認（commit 前）
 
 ```bash
 git status
 git diff                       # 意図しないファイル/差分が無いか
-git diff --stat -- .archive/vite/   # ← 必ず 空 であること（§4.5 絶対不変）
 ```
+- タスク範囲外のファイルが混ざっていないか確認する。
+- `.archive/` 等のアーカイブを置いている場合は、それがビルド/lint/テストの対象外であることを確認（AGENTS.md §4.5）。
 
-## 検証失敗時の原則（§3.2）
+## 検証失敗時の原則（AGENTS.md §3.2）
 
 - テストを通すためだけの**不正な修正厳禁**（テスト削除/skip・アサーション緩和・安易な `any`・Lint 無効化・エラー握り潰し）。
 - 既存テストが落ちたら「テストが間違っている」と即断せず、**既存仕様を壊していないか**先に確認。
@@ -41,4 +42,4 @@ git diff --stat -- .archive/vite/   # ← 必ず 空 であること（§4.5 絶
 
 ## 完了後
 
-4 検証 all pass + `.archive/vite/` 無変更 を確認 → commit（Conventional Commits 形式）→ `git push origin <session-branch>`。
+4 検証 all pass（または docs-only 時の整合性確認）を確認 → commit（Conventional Commits、タスク ID をスコープに）→ `git push origin <session-branch>`（AGENTS.md §4.3.1 で事前許可済み）。

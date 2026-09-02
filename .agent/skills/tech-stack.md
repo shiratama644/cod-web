@@ -1,0 +1,79 @@
+# Tech Stack — cod-web の技術構成
+
+> ライブラリの役割・選定理由・使い分け。網羅の大本は [`../../docs/CONFIG.md`](../../docs/CONFIG.md)（そちらが正）。
+> このスキルは「実装時にどれを使うか」の判断用。プロジェクト初期化（Phase 0）後に実際のバージョンを追記して育てる。
+
+## レンダリング（3D）
+
+| ライブラリ | 役割 | 使いどころ |
+| :--- | :--- | :--- |
+| `three` | 3D レンダリングエンジン | 全 3D の基盤。WebGPU レンダラー（`three/webgpu`）+ TSL、WebGL2 へ自動フォールバック |
+| `@react-three/fiber` | React 用 Three.js ラッパー | 宣言的シーン。`useFrame` で毎フレーム更新 |
+| `@react-three/drei` | R3F ユーティリティ集 | `Environment` / `PointerLockControls` / `Html`（3D内HTML）/ `PositionalAudio` / `useGLTF` / `useTexture` / `Preload` 等 |
+| `troika-three-text` | SDF 3D テキスト | 頭上ネームタグ・ダメージポップアップの高速描画 |
+
+## 物理・当たり判定
+
+| ライブラリ | 役割 |
+| :--- | :--- |
+| `@react-three/rapier` | クライアント物理（WASM 版 Rapier）。プレイヤー移動・剛体・投射物 |
+| Rapier（サーバー） | 権威物理。チート防止・サーバー調停に必須 |
+| `three-mesh-bvh` | 高速 BVH レイキャスト。**射撃判定をクライアント側でローカル即時判定**（数万ポリゴンもミリ秒未満） |
+| `three-bvh-csg` | リアルタイム CSG（弾痕・破壊表現） |
+
+## ECS・大量オブジェクト
+
+- `miniplex` / `@miniplex/react`: R3F 向け ECS。弾丸・ドロップアイテム・エフェクトのライフサイクルをデータ指向で処理。
+- `bitecs`: TypedArray ベースの高性能 ECS。サーバー/クライアント共通で数万エンティティを GC レス処理。
+
+## ネットワーク
+
+| ライブラリ | 用途 | 特性 |
+| :--- | :--- | :--- |
+| **Colyseus** | 権威ゲームサーバー（ルーム管理・状態同期） | クライアント予測・サーバー調停の母体 |
+| **geckos.io** | UDP over WebRTC | 座標・入力・射撃イベント。パケットロス許容・超低遅延 |
+| `socket.io` | WebSocket | チャット・ロビー・マッチメイキング（信頼性重視） |
+| `livekit-client` | WebRTC ボイス | 近接ボイチャ（Proximity Voice） |
+| `msgpackr` / `protobufjs` | バイナリシリアライズ | パケット圧縮 |
+
+## UI / 状態
+
+- **Zustand**: ゲーム状態（HP / 残弾 / キルログ / スコア / プレイヤー座標）。**Context API は新規使用しない**。毎フレーム更新は `getState()` / `subscribe` で React レンダリングを介さない（[game-engineering-principles.md](./game-engineering-principles.md)）。
+- Radix UI: 設定メニュー・クロスヘア選択・スコアボード・スライダー等のアクセシブル UI。
+- framer-motion: キルフィード・被弾赤フラッシュ・ヒットマーカー等の UI モーション。
+- `lucide-react`: アイコン。
+
+## オーディオ
+
+- drei `PositionalAudio` / Web Audio API HRTF: 足音・銃声の方向・距離定位。
+- `howler.js`: BGM / UI 効果音 / 環境音の同時発音数制御・プリロード。
+- `resonance-audio`: HRTF・残響・遮蔽（オクルージョン）。
+
+## アセットパイプライン
+
+- drei `useGLTF` / `useTexture`（`preload()` 付き、Suspense 対応）。
+- `gltfjsx`: GLTF → React コンポーネント化。
+- `three-stdlib`: KTX2Loader / DRACOLoader 等の拡張ローダー。
+- DRACO / meshoperator / KTX2 (Basis Universal): メッシュ・テクスチャ圧縮（モバイル VRAM 対策）。
+- `@gltf-transform/core`: ポリゴン削減・KTX2 変換・LOD 自動生成（ビルドツール）。
+
+## VFX・アニメーション・シェーダー
+
+- パーティクル: `three.quarks` 等。`InstancedMesh` / `BatchedMesh` で Draw Call 削減。
+- ポストプロセス: `@react-three/postprocessing`。
+- アニメーション: Three.js ミキサー + IK / FSM、WebGPU compute は TSL で記述。
+
+## ツールチェーン
+
+| 用途 | 技術 |
+| :--- | :--- |
+| ビルド/Dev | Vite（`pnpm dev` / `pnpm build` / `pnpm preview`） |
+| Lint/Format | **Biome**（ESLint/Prettier 不使用） |
+| Unit | **Vitest** + @testing-library/react（jsdom） |
+| E2E | **Playwright**（Chromium、CI のみ・Sandbox 実行不可、[sandbox-constraints.md](./sandbox-constraints.md)） |
+| パッケージ | pnpm（corepack）、Node LTS（`.nvmrc`） |
+
+## 導入時の注意（実装で確認したら追記）
+
+<!-- Phase 0 で実際にバージョン固定・ハマりどころを記録していく。 -->
+- ライブラリの API 仕様に不安があれば Web 検索（threejs.org / docs.pmnd.rs / colyseus.io 等の公式を優先、AGENTS.md §7.5）。
