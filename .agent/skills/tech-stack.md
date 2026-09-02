@@ -1,6 +1,6 @@
 # Tech Stack — cod-web の技術構成
 
-> ライブラリの役割・選定理由・使い分け。網羅の大本は [`../../docs/CONFIG.md`](../../docs/CONFIG.md)（そちらが正）。
+> ライブラリの役割・選定理由・使い分け。網羅の大本は [`../../docs/arch/tech-stack.md`](../../docs/arch/tech-stack.md)（そちらが正）。
 > このスキルは「実装時にどれを使うか」の判断用。プロジェクト初期化（Phase 0）後に実際のバージョンを追記して育てる。
 
 ## レンダリング（3D）
@@ -28,7 +28,7 @@
 
 ## ネットワーク
 
-> ✅ **トランスポートは確定**（2026-09-03、詳細は [`../../docs/planning/NETWORK_DESIGN.md`](../../docs/planning/NETWORK_DESIGN.md)）。**WebTransport 主 / WebSocket フォールバック**。
+> ✅ **トランスポートは確定**（2026-09-03、詳細は [`../../docs/arch/networking.md`](../../docs/arch/networking.md)）。**WebTransport 主 / WebSocket フォールバック**。
 
 | 技術 | 用途 | 特性 |
 | :--- | :--- | :--- |
@@ -45,7 +45,7 @@
 
 ## UI / 状態
 
-- **Zustand**: ゲーム状態（HP / 残弾 / キルログ / スコア / プレイヤー座標）。**Context API は新規使用しない**。毎フレーム更新は `getState()` / `subscribe` で React レンダリングを介さない（[game-engineering-principles.md](./game-engineering-principles.md)）。
+- **Zustand**: ゲーム状態（HP / 残弾 / キルログ / スコア / プレイヤー座標）。**Context API は新規使用しない**。毎フレーム更新は `getState()` / `subscribe` で React レンダリングを介さない（[arch 仕様書 game-engineering-principles](../../docs/arch/game-engineering-principles.md)）。
 - Radix UI: 設定メニュー・クロスヘア選択・スコアボード・スライダー等のアクセシブル UI。
 - framer-motion: キルフィード・被弾赤フラッシュ・ヒットマーカー等の UI モーション。
 - `lucide-react`: アイコン。
@@ -85,7 +85,7 @@
 <!-- Phase 0 で実際にバージョン固定・ハマりどころを記録していく。 -->
 - **bun**: Sandbox ではプリインストールされていない。`bun.sh` は SSL エラーで到達不可だが、**npm registry 経由なら導入可**（2026-09-03 に `bun 1.4.0` で install / run / test 動作確認済み）。導入は `npm install -g bun`、復旧は `restore-sandbox-env.sh`。テストランナーは Vitest を使い `bun test` は使わない（AGENTS.md §6.1）。
 - ライブラリの API 仕様に不安があれば Web 検索（threejs.org / docs.pmnd.rs / colyseus.io 等の公式を優先、AGENTS.md §7.5）。
-- ネットワークは **WebTransport 主 / WebSocket フォールバック**で確定（[NETWORK_DESIGN](../../docs/planning/NETWORK_DESIGN.md)）。bun は WebTransport サーバー未実装（HTTP/3 は v1.3.14 で実験サポート、WT は issue #13656 で進行中）のため、初期は Caddy エッジで HTTP/3 終端 → bun（WS＋ロジック）。WT の bun ネイティブ対応状況は Phase 1 で再調査。
+- ネットワークは **WebTransport 主 / WebSocket フォールバック**で確定（[networking](../../docs/arch/networking.md)）。bun は WebTransport サーバー未実装（HTTP/3 は v1.3.14 で実験サポート、WT は issue #13656 で進行中）のため、初期は Caddy エッジで HTTP/3 終端 → bun（WS＋ロジック）。WT の bun ネイティブ対応状況は Phase 1 で再調査。
 - ブラウザは WebTransport が Safari26.4（2026-03）で Baseline 入り。古い Safari・iOS WebView・UDP/443 ブロック企業網では WS へフォールバックが必須。
 - geckos.io は不採用（node-datachannel ネイティブ依存で bun 非互換の恐れ、別 UDP ポートが FW に弱い）。
 - **Krunker.io は socket.io（WebSocket/TCP）で動作**し、クライアント予測＋ラグ補償で高速感を実現。「ブラウザFPS＝UDP 必須」ではない。

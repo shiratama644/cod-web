@@ -1,9 +1,9 @@
 # Game Engineering Principles — Krunker 上位互換 FPS 設計・実装ルール
 
-> [`../../docs/CONFIG.md`](../../docs/CONFIG.md) の「🎯 Krunker 上位互換・全端末 60FPS を達成するためのエンジニアリング原則＆設計・実装黄金ルール」を作業時に引きやすくしたもの。ゲームコードを書くときは必ず本スキルを参照する。
+> [`tech-stack.md`](./tech-stack.md) の「🎯 Krunker 上位互換・全端末 60FPS を達成するためのエンジニアリング原則＆設計・実装黄金ルール」を作業時に引きやすくしたもの。ゲームコードを書くときは必ず本仕様書を参照する（正本は docs/arch/）。
 > **最優先目標は「どの端末でも安定 60FPS 以上」**。60FPS を割るリスクのある重い表現は入れない。
 
-## 8 つの黄金ルール（CONFIG.md より）
+## 8 つの黄金ルール（[`tech-stack.md`](./tech-stack.md) より）
 
 1. **射撃判定は three-mesh-bvh でローカル即時判定 ＋ サーバー検証（Lag Compensation）**
    - クライアントは BVH で即座にヒットマーカー表示。サーバーはタイムスタンプを巻き戻して正当性を検証する権威判定。
@@ -58,7 +58,7 @@ useFrame((state, delta) => {
 | HUD 表示用に間引いた値 | Zustand → React（必要な箇所だけ購読） | 毎フレームではなく更新時のみ再レンダー |
 | 静的設定・定数 | `src/` の定数モジュール | - |
 
-### ネットワーク（トランスポート・モデルは [`planning/NETWORK_DESIGN.md`](../../docs/planning/NETWORK_DESIGN.md) で確定）
+### ネットワーク（トランスポート・モデルは [`networking.md`](./networking.md) で確定）
 
 - **トランスポート**: WebTransport（HTTP/3・QUIC、datagrams=非信頼 / streams=信頼 を 1 接続で併用）を主経路、WebSocket をフォールバック＆信頼メッセージ経路とする。geckos.io（WebRTC-UDP）は採用しない（bun 非互換の恐れ＋別 UDP ポートで FW に弱い）。STUN/TURN は不要（P2P ではなくクライアント→公開権威サーバーのため）。
 - **権威モデル**: サーバーが権威。当たり判定・ダメージ・スコア・状態確定はサーバー側。クライアントは予測＋BVH 即時ヒット表示のみ。
@@ -81,7 +81,7 @@ useFrame((state, delta) => {
 ## テストしやすさのための分離
 
 - ゲームロジック（移動計算・当たり判定・リコンサイル・ECS システム）は **Three.js / WebGL に依存しない純粋関数**として書き、jsdom + Vitest でユニットテスト可能にする。
-- レンダリング（Canvas・シェーダー）の目視確認はプレビュー/実機依存とし、ロジックと分離する（[sandbox-constraints.md](./sandbox-constraints.md)）。
+- レンダリング（Canvas・シェーダー）の目視確認はプレビュー/実機依存とし、ロジックと分離する（[`../../.agent/skills/sandbox-constraints.md`](../../.agent/skills/sandbox-constraints.md)）。
 
 ## パフォーマンス計測
 

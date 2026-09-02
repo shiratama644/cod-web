@@ -1,7 +1,7 @@
 # ネットワーク & リアルタイム設計（決定記録）
 
-> 位置づけ: Phase 1（ネットワーク）着手前の**設計決定記録（ADR 相当）**。2026-09-03 の議論で確定した方針をまとめる。
-> 計画書テンプレート: [`_TEMPLATE.md`](./_TEMPLATE.md)。タスク正本: [`../task-list.md`](../task-list.md)。技術スタック: [`../CONFIG.md`](../CONFIG.md)。
+> 位置づけ: Phase 1（ネットワーク）着手前の**設計決定記録（ADR 相当）・仕様書**。計画書は [`../planning/`](../planning/) とは別物。2026-09-03 の議論で確定した方針をまとめる。
+> 計画書テンプレート: [`../planning/_TEMPLATE.md`](../planning/_TEMPLATE.md)。タスク正本: [`../task-list.md`](../task-list.md)。技術スタック仕様: [`tech-stack.md`](./tech-stack.md)。
 > 本表に無い詳細（ライブラリ API 等）は実装フェーズで Web 検索して確定する（AGENTS.md §7.5）。
 
 ## 1. 目標と前提

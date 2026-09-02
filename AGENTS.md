@@ -3,7 +3,7 @@
 本ドキュメントは、AI Agent が本プロジェクトの開発・変更を行う際に**必ず遵守すべき開発規約**です。
 最優先事項は **「速く大量に作ること」ではなく「常に復旧可能で、壊れた状態を長時間維持しないこと」** です。
 
-本プロジェクトは **[Krunker.io](https://krunker.io) にインスパイアされたブラウザ向けクロスプラットフォーム・オンラインFPS**（Vite + React + Three.js + 権威型ゲームサーバー）です。**最重要目標は「どの端末でも安定 60FPS 以上」**（Krunker の完全上位互換）。技術スタックとゲーム設計ルールは [`docs/CONFIG.md`](docs/CONFIG.md) を正とします。
+本プロジェクトは **[Krunker.io](https://krunker.io) にインスパイアされたブラウザ向けクロスプラットフォーム・オンラインFPS**（Vite + React + Three.js + 権威型ゲームサーバー）です。**最重要目標は「どの端末でも安定 60FPS 以上」**（Krunker の完全上位互換）。技術スタックとゲーム設計ルールは [`docs/arch/tech-stack.md`](docs/arch/tech-stack.md) を正とします。
 
 ---
 
@@ -32,7 +32,7 @@
 各タスクは必ず以下の順序で進め、途中の検証が失敗した状態で次へ進んではならない。
 
 ```text
-1. 仕様・既存コード確認 (git status / package.json / 関連ファイル / docs/CONFIG.md)
+1. 仕様・既存コード確認 (git status / package.json / 関連ファイル / docs/arch/tech-stack.md)
    ↓
 2. 実装方針決定（曖昧点は ask_user で確認）
    ↓
@@ -165,7 +165,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 ## 6. プロジェクト固有の遵守事項
 
-本プロジェクト（ブラウザFPS）で実際に踏みやすい地雷・確立した運用ルール。**計画書（`docs/planning/*PLAN.md`）に矛盾する指定があった場合は計画書を優先**するが、それ以外は本節を厳守する。技術スタックの網羅は [`docs/CONFIG.md`](docs/CONFIG.md) が正。
+本プロジェクト（ブラウザFPS）で実際に踏みやすい地雷・確立した運用ルール。**計画書（`docs/planning/*PLAN.md`）に矛盾する指定があった場合は計画書を優先**するが、それ以外は本節を厳守する。技術スタックの網羅は [`docs/arch/tech-stack.md`](docs/arch/tech-stack.md) が正。
 
 ### 6.1 環境・ツールチェーン
 - **ランタイム / パッケージ管理: bun**（`bun install` / `bun run` / `bunx`、ロックファイル `bun.lock`）。Node.js 最新 LTS 上で bun を動かす。
@@ -175,7 +175,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 - **Lint/Format**: Biome（ESLint/Prettier は使わない）。
 - **テスト**: **Vitest** + @testing-library/react（UI）。bun 組み込みの `bun test`（bun:test）は使わない（§3.1）。E2E は Playwright（CI のみ）。
 - **ゲームサーバーのランタイムも bun を想定**。ただしトランスポート/フレームワーク（WebSocket 系 vs WebRTC-UDP 系）によっては bun 互換に差があるため、実結合・ランタイム互換の検証はネットワークフェーズ（Phase 1 以降）で行い、現状は方針として明記するに留める（§6.6）。
-- ツール選定の根拠は `docs/CONFIG.md` を参照し、CONFIG に無いライブラリを導入する場合は一言ユーザーに相談する。
+- ツール選定の根拠は `docs/arch/tech-stack.md` を参照し、CONFIG に無いライブラリを導入する場合は一言ユーザーに相談する。
 
 ### 6.2 サンドボックス制約（乗り越えず、迂回する）
 以下は Sandbox 環境の恒常的制約であり、修正対象ではない。
@@ -205,13 +205,18 @@ bash .agent/hooks/restore-sandbox-env.sh
 ### 6.6 ネットワーク / ゲームサーバー設計ルール
 - **権威型サーバー（Authoritative Server）前提**: 当たり判定・スコア・プレイヤー状態の確定はサーバー側で行う。クライアントの BVH 即時判定はあくまで体感向上（先行表示）で、サーバーが Lag Compensation で検証する（CONFIG 黄金ルール1・2）。
 - クライアント予測・サーバー調停（Reconciliation）を基本とし、クライアント入力は即座に画面反映しつつサーバーのスナップショットで差分補正する。
-- **トランスポートは確定**（[`docs/planning/NETWORK_DESIGN.md`](docs/planning/NETWORK_DESIGN.md)）: **WebTransport（HTTP/3・QUIC、datagrams=非信頼 / streams=信頼）を主経路、WebSocket をフォールバック＆信頼メッセージ経路**とする。非対応・UDP/443 ブロック時は自動で WS へフォールバック。geckos.io（WebRTC-UDP）は採用しない（bun 非互換の恐れ＋別 UDP ポートで FW に弱い）。P2P ではないため STUN/TURN は不要。ネットコードはトランスポート非依存の抽象境界（NetTransport）の内側に書く。
+- **トランスポートは確定**（[`docs/arch/networking.md`](docs/arch/networking.md)）: **WebTransport（HTTP/3・QUIC、datagrams=非信頼 / streams=信頼）を主経路、WebSocket をフォールバック＆信頼メッセージ経路**とする。非対応・UDP/443 ブロック時は自動で WS へフォールバック。geckos.io（WebRTC-UDP）は採用しない（bun 非互換の恐れ＋別 UDP ポートで FW に弱い）。P2P ではないため STUN/TURN は不要。ネットコードはトランスポート非依存の抽象境界（NetTransport）の内側に書く。
 - **tick と描画**: サーバー tick・入力送信・状態スナップショットは **30Hz**。描画は**可変フレームレート（60〜120Hz+）**で tick と独立、全移動・アニメは delta time ベース。
 - **シリアライズは msgpackr** で開始（高頻度パケットのみ将来 bitpacking へ移行する余地を残す）。**FX/アニメはネットに流さず**、アクションフラグ（`isShooting` 等のビットフィールド）と発射トリガーだけ送り、クライアントが決定論的に再生する。
 - ネットワーク結合を含む機能は Sandbox で実結合できないため、ロジックを純粋関数・モック境界で分離し、ユニットテストで検証。実結合は CI/実機確認（「実環境検証待ち」）とする。
 
 ### 6.7 ドキュメント運用
-- ドキュメントは種類別フォルダに配置し、必ず `docs/README.md` の目次を更新する:
+- **仕様書と計画書は明確に区別する**:
+  - **仕様書（どう作るか：技術選定・プロトコル・アーキテクチャ・設計ルール）は `docs/arch/`** に置く（`docs/arch/README.md` が目次）。設計判断の正本で、更新され続ける。
+  - **計画書（何を・どの順で・どんな完了条件でやるか）は `docs/planning/`** に置く。
+  - `.agent/skills/` は実コード由来のコードベース事実・agent 向け要約であり、設計仕様の正本ではない。仕様は `docs/arch/` を参照する。
+- ドキュメントは種類別フォルダに配置し、必ず `docs/README.md` と `docs/arch/README.md` の目次を更新する:
+  - `docs/arch/*.md` — 仕様書（tech-stack / networking / game-engineering-principles 等）
   - `docs/planning/PHASE{N}_PLAN.md` — 実施計画書（着手前に作成、`docs/planning/_TEMPLATE.md` 準拠）
   - `docs/planning/complete/PHASE{N}_COMPLETE.md` — 完了レポート（Phase 完了時に作成）
   - `docs/audit/` — バグ監査・差分レポート
@@ -220,7 +225,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 ### 6.8 計画書 > AGENT.md の優先順位
 - 計画書（`docs/planning/`）と本ドキュメントで指示が食い違う場合、**計画書を優先**する。
-- 計画書に記載のない事項については本ドキュメント（特に §6）と `docs/CONFIG.md` を厳守する。
+- 計画書に記載のない事項については本ドキュメント（特に §6）と `docs/arch/tech-stack.md` を厳守する。
 - 計画書は着手前にユーザーと合意した仕様の記録であり、AGENT.md は「どう作業するか」の一般ルール。
 
 ### 6.9 計画書・タスク管理の形式（恒久ルール）
@@ -273,7 +278,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 #### 7.4.1 質問すべき場面
 - 実装方針が 2 通り以上あり、どちらもメリット・デメリットがある時
-- 計画書 / docs/CONFIG.md に記載されていない仕様判断が必要な時
+- 計画書 / docs/arch/tech-stack.md に記載されていない仕様判断が必要な時
 - ユーザーの過去発言と現在の指示が矛盾している疑いがある時
 - 破壊的変更（ネットワークプロトコル変更、依存関係大規模更新、公開 API 変更等）を含む時
 - 「〜してください」の指示が曖昧で、複数解釈が成り立つ時
@@ -338,7 +343,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 ### 8.4 AGENT.md と skills の役割分担
 - **AGENT.md（本ファイル）** = 「どう作業するか」の**規約**（コミット手順・Lint・Git 運用・コミュニケーション等）。常に正。
 - **skills/** = 「このコードベースが**どう出来ているか**」の**事実/仕様**。深掘り用。
-- **docs/CONFIG.md** = 技術スタック・ライブラリ選定・設計ルールの大本。
+- **docs/arch/tech-stack.md** = 技術スタック・ライブラリ選定・設計ルールの大本。
 - 両者が重複する場合、作業手順は AGENT.md、ドメイン知識は skills / CONFIG を参照。docs/ 計画書との矛盾は §6.8（計画書が優先）に従う。
 
 ### 8.5 運用ルール

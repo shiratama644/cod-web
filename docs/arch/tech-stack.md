@@ -53,7 +53,7 @@
 
 ## 4. マルチプレイヤー・低遅延ネットワーキング & ボイスチャット
 
-> **決定方針（2026-09-03、詳細は [`planning/NETWORK_DESIGN.md`](./planning/NETWORK_DESIGN.md)）**:
+> **決定方針（2026-09-03、詳細は [`networking.md`](./networking.md)）**:
 > **WebTransport（HTTP/3・QUIC）を主経路、WebSocket をフォールバック＆信頼メッセージ経路**とする。datagrams（非信頼）を座標・入力・状態に、streams（信頼）をダメージ確定・チャット等に使用。非対応・UDP/443 ブロック時は自動で WebSocket へフォールバック。STUN/TURN は不要（P2P ではなくクライアント→公開権威サーバー）。
 > サーバー tick・入力は **30Hz**、描画は**可変フレームレート（60〜120Hz+）**で独立。シリアライズは **msgpackr**。FX/アニメはアクションフラグ（`isShooting` 等）＋発射トリガーのみ送りクライアント再生。
 
@@ -223,9 +223,9 @@
    - **Draw Calls**: 80〜100以下（`InstancedMesh` / `BatchedMesh` の積極利用）
    - **テクスチャ**: すべて KTX2/Basis Universal 形式に圧縮し、GPU VRAM 圧迫を回避
    - **デバイス適応**: `PerformanceMonitor`（drei）でフレームレートを監視し、低性能端末では DPR（解像度スケール）・シャドウ・パーティクル数・LOD を動的に下げる品質ティアを用意。**ローエンドモバイルでも 60FPS を割らないこと**を最低ラインとする
-   - **描画フレームレートは可変**: 60FPS は「全端末が達成すべき下限フロア」であり上限ではない。`requestAnimationFrame` はディスプレイのリフレッシュレート（60/90/120/144Hz）で呼ばれるため、**60 で蓋をせずハイリフレッシュ端末では 120FPS で描画**する。全移動・アニメは delta time ベース（固定 16.67ms を仮定しない）。ネット tick（30Hz）とは独立（[`planning/NETWORK_DESIGN.md`](./planning/NETWORK_DESIGN.md)）
+   - **描画フレームレートは可変**: 60FPS は「全端末が達成すべき下限フロア」であり上限ではない。`requestAnimationFrame` はディスプレイのリフレッシュレート（60/90/120/144Hz）で呼ばれるため、**60 で蓋をせずハイリフレッシュ端末では 120FPS で描画**する。全移動・アニメは delta time ベース（固定 16.67ms を仮定しない）。ネット tick（30Hz）とは独立（[`networking.md`](./networking.md)）
    - **高速読み込み**: Krunker 並みの起動の速さを目標に、初期バンドル・アセットを最小化（軽量シーンから段階ロード）
 
 > 💡 **FX/射撃アニメはネットワークに流さない**
-> マズルフラッシュ・反動・トレーサー・薬莢・パーティクル等は、`isShooting` 等の**アクションフラグ（ビットフィールド）**と `{playerId, seq, weapon}` の**発射トリガーイベント**だけを送り、各クライアントが決定論的にローカル再生する。アニメ用 transform を毎フレーム同期せずパケットを最小化する（[`planning/NETWORK_DESIGN.md`](./planning/NETWORK_DESIGN.md) §5）。
+> マズルフラッシュ・反動・トレーサー・薬莢・パーティクル等は、`isShooting` 等の**アクションフラグ（ビットフィールド）**と `{playerId, seq, weapon}` の**発射トリガーイベント**だけを送り、各クライアントが決定論的にローカル再生する。アニメ用 transform を毎フレーム同期せずパケットを最小化する（[`networking.md`](./networking.md) §5）。
    - **解像度制御**: `PerformanceMonitor` を用いてモバイルの負荷に応じて `dpr={clamp(..., 1, 1.5)}` を動的変更

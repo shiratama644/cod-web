@@ -22,11 +22,11 @@
 ## プロジェクト概要
 
 [Krunker.io](https://krunker.io) にインスパイアされたブラウザ向け**クロスプラットフォーム・オンラインFPS**（Krunker の完全上位互換が目標）。**最重要目標は「どの端末でも安定 60FPS 以上」**。技術スタック・設計ルールの大本は
-[`CONFIG.md`](./CONFIG.md)。開発規約は [`../AGENTS.md`](../AGENTS.md)。
+[`arch/tech-stack.md`](./arch/tech-stack.md)。開発規約は [`../AGENTS.md`](../AGENTS.md)。
 
 > レンダラーは **WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準）。
 > **描画 FPS は可変**（rAF = 60〜120Hz+。60 は全端末の下限フロアであり上限ではない）で、ネット tick 30Hz とは独立・delta time ベース。
-> ネットワーク方針は確定: **WebTransport（datagrams+streams）主 / WebSocket フォールバック**、サーバー tick・入力 30Hz、シリアライズ msgpackr、FX はアクションフラグ＋トリガーのみ送信でクライアント再生。詳細は [`planning/NETWORK_DESIGN.md`](./planning/NETWORK_DESIGN.md)。
+> ネットワーク方針は確定: **WebTransport（datagrams+streams）主 / WebSocket フォールバック**、サーバー tick・入力 30Hz、シリアライズ msgpackr、FX はアクションフラグ＋トリガーのみ送信でクライアント再生。詳細は [`arch/networking.md`](./arch/networking.md)。
 
 ロードマップの大枠（フェーズ分割は計画書作成時に確定）:
 
@@ -55,7 +55,7 @@
 | P0-H | ドキュメント/skills の実態追従（README のセットアップ手順検証、`.agent/skills/tech-stack.md` 等を実装後の実態に更新） | 未着手 | 0% | P0-G | docs・skills と実コードの間に不整合がない | |
 
 ※ Playwright（E2E）は CI 基盤タスクとして Phase 1 以降で計画（Sandbox では実行不可、AGENTS.md §6.2）。
-※ ゲームサーバー基盤は Phase 1 以降のネットワークフェーズで計画。トランスポートは **WebTransport 主 / WebSocket フォールバック**で確定（[NETWORK_DESIGN](planning/NETWORK_DESIGN.md)）。Phase 0 では NetTransport 抽象境界のインターフェースのみ定義し、実装（WT/WS）は Phase 1。
+※ ゲームサーバー基盤は Phase 1 以降のネットワークフェーズで計画。トランスポートは **WebTransport 主 / WebSocket フォールバック**で確定（[networking](arch/networking.md)）。Phase 0 では NetTransport 抽象境界のインターフェースのみ定義し、実装（WT/WS）は Phase 1。
 
 ---
 
