@@ -1,6 +1,6 @@
 # skills の定義を是正（Agent のスキルであり、仕様書の要約メモではない）
 
-> Date: 2026-09-03(JST) / Commit: (commit 後に追記) / Branch: arena/01a062ac-cod-web
+> Date: 2026-09-03(JST) / Commit: `98cca3e`（SHA追記は後続）/ Branch: arena/01a062ac-cod-web
 
 ## 1. 指示内容 (Task Summary)
 
