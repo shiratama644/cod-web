@@ -28,7 +28,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 ```bash
 git log --oneline -5          # push 済みコミットが見えること
-pnpm test:unit                # テストが通ること（プロジェクト初期化前は未整備でも可、その場合は pnpm install 成功まで確認）
+bun run test:unit                # テストが通ること（プロジェクト初期化前は未整備でも可、その場合は bun install 成功まで確認）
 ```
 → 問題なければ作業再開。
 

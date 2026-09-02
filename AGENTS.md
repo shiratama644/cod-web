@@ -53,16 +53,18 @@
 
 ### 3.1 検証コマンドの実行
 - `package.json` に定義されたスクリプトのみを使用する（存在しないコマンドを捏造・実行しない）。
+- **パッケージ管理・スクリプトランナーは bun**（`bun install` / `bun run` / `bunx`）。ロックファイルは `bun.lock`。
 - 原則として commit 前に以下 4 種を全て pass させる：
   ```bash
-  pnpm typecheck                # tsc --noEmit
-  pnpm exec biome lint .        # Biome 直接呼び出し (pnpm lint より起動が速い)
-  pnpm test:unit                # vitest run (watch モードではない)
-  pnpm build                    # vite build (production)
+  bun run typecheck             # tsc --noEmit
+  bunx biome lint .             # Biome 直接呼び出し（bun run lint より起動が速い）
+  bun run test:unit             # vitest run（watch モードではない）
+  bun run build                 # vite build（production）
   ```
-- **`pnpm test` は watch モード**にしないこと。commit 前検証には必ず `pnpm test:unit`（vitest run）を使う。
-- **E2E (`pnpm test:e2e` / Playwright) は Sandbox で実行不可**（§6.2 参照）。CI 上のみ実行。ローカルで無理に実行しようとしない。
-- ビルドサイズは `pnpm build` 後の `dist/assets/` を `ls -lh dist/assets` 等で直接確認する（Three.js はバンドルが大きいため、chunk 分割・依存の重複に注意）。
+- **テストランナーは Vitest を使う。`bun test`（bun:test）は使わない**（jsdom + @testing-library/react の DOM テスト資産との互換を優先。bun はあくまでパッケージ管理・ランナーとして使用）。
+- **`vitest` を watch モードで起動しないこと**。commit 前検証には必ず `test:unit`（`vitest run`）を使う。
+- **E2E（Playwright）は Sandbox で実行不可**（§6.2 参照）。CI 上のみ実行。ローカルで無理に実行しようとしない。
+- ビルドサイズは `bun run build` 後の `dist/assets/` を `ls -lh dist/assets` 等で直接確認する（Three.js はバンドルが大きいため、chunk 分割・依存の重複に注意）。
 - ドキュメントのみの変更（コード無変更）では 4 検証はスキップ可。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。
 
 ### 3.2 エラー対応と品質維持
@@ -103,14 +105,13 @@ git fetch origin <session-branch>
 # 2. FETCH_HEAD にワークツリーごとリセット（この場合の --hard は例外的に必要）
 git reset --hard FETCH_HEAD
 
-# 3. corepack + pnpm install で依存を再構築
-corepack enable pnpm >/dev/null 2>&1
-pnpm install --frozen-lockfile
+# 3. bun を導入して依存を再構築（bun はプリインストールされていないため npm 経由で導入する）
+bash .agent/hooks/restore-sandbox-env.sh
 ```
 
 - `git reset --hard FETCH_HEAD` は §4.3 の厳禁ルールの例外で、**サンドボックス再構築後の初回のみ**許可される（未コミット変更は元々存在しない状態のため）。
-- 再構築を判定するヒント：`git log --oneline` が起点コミット 1 個しか返ってこない / `git status` が大量の削除を示す / node_modules がない。
-- 復旧後は必ず `git log --oneline -5` と `pnpm test:unit` で健全性を確認してから作業を再開する。
+- 再構築を判定するヒント：`git log --oneline` が起点コミット 1 個しか返ってこない / `git status` が大量の削除を示す / node_modules がない / **bun が未インストール**。
+- 復旧後は必ず `git log --oneline -5` と `bun run test:unit` で健全性を確認してから作業を再開する。
 - 詳細手順は [`.agent/hooks/sandbox-rebuild-recovery.md`](.agent/hooks/sandbox-rebuild-recovery.md) ＋ [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh)。
 
 ### 4.2 コミットルール
@@ -167,19 +168,21 @@ pnpm install --frozen-lockfile
 本プロジェクト（ブラウザFPS）で実際に踏みやすい地雷・確立した運用ルール。**計画書（`docs/planning/*PLAN.md`）に矛盾する指定があった場合は計画書を優先**するが、それ以外は本節を厳守する。技術スタックの網羅は [`docs/CONFIG.md`](docs/CONFIG.md) が正。
 
 ### 6.1 環境・ツールチェーン
-- Node.js 最新 LTS / pnpm（corepack 経由）/ **Vite** + React + TypeScript（strict）。
-- **3D**: Three.js（WebGPU ファースト、WebGL2 フォールバック）/ @react-three/fiber / @react-three/drei。
+- **ランタイム / パッケージ管理: bun**（`bun install` / `bun run` / `bunx`、ロックファイル `bun.lock`）。Node.js 最新 LTS 上で bun を動かす。
+  - bun はサンドボックスにプリインストールされていない。**npm 経由（registry は到達可）で導入する**（`bun.sh` のインストールスクリプトは SSL エラーで到達不可）。導入・復旧は [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh) に集約。バージョンは devDependency として固定する。
+- **ビルド/Dev: Vite** + React + TypeScript（strict）。**3D**: Three.js（WebGPU ファースト、WebGL2 フォールバック）/ @react-three/fiber / @react-three/drei。
 - **状態管理**: Zustand（ゲーム状態は React State ではなく Zustand の `getState()` / `subscribe` または ref で直接更新）。Context API は新規に使わない。
 - **Lint/Format**: Biome（ESLint/Prettier は使わない）。
-- **テスト**: Vitest + @testing-library/react（UI）。E2E は Playwright（CI のみ）。
-- パッケージマネージャは pnpm。ツール選定の根拠は `docs/CONFIG.md` を参照し、CONFIG に無いライブラリを導入する場合は一言ユーザーに相談する。
+- **テスト**: **Vitest** + @testing-library/react（UI）。bun 組み込みの `bun test`（bun:test）は使わない（§3.1）。E2E は Playwright（CI のみ）。
+- **ゲームサーバーのランタイムも bun を想定**（Colyseus / geckos.io 等）。ただし実結合・ランタイム互換の検証はネットワークフェーズ（Phase 1 以降）で行い、現状は方針として明記するに留める。
+- ツール選定の根拠は `docs/CONFIG.md` を参照し、CONFIG に無いライブラリを導入する場合は一言ユーザーに相談する。
 
 ### 6.2 サンドボックス制約（乗り越えず、迂回する）
 以下は Sandbox 環境の恒常的制約であり、修正対象ではない。
 
 | 制約 | 対処 |
 |---|---|
-| Chromium バイナリの install 不可 | E2E (`pnpm test:e2e` / Playwright) は**書けるが実行できない**。CI (GitHub Actions) 上のみ実行。ローカルで実行を試みない。 |
+| Chromium バイナリの install 不可 | E2E (`bun run test:e2e` / Playwright) は**書けるが実行できない**。CI (GitHub Actions) 上のみ実行。ローカルで実行を試みない。 |
 | 外部ネットワークの一部到達不可 | ゲームサーバー（Colyseus/geckos.io）や外部 API への接続が必要な動作確認は Sandbox では限定的。ローカルではモック/オフライン経路を検証し、実ネットワーク結合は CI または実機確認として「実環境検証待ち」で報告する。 |
 | WebGPU のヘッドレスト環境差 | 3D レンダリングの目視確認はユーザー環境/プレビュー依存。ロジック（ECS・物理・当たり判定の入出力）はヘッドレスでユニットテスト可能な形に分離する。 |
 
@@ -192,7 +195,7 @@ pnpm install --frozen-lockfile
 - **ゼロ・アロケーション（Zero Allocation in Loop）**（CONFIG 黄金ルール5）。`useFrame` 内での `new THREE.Vector3()` / `Quaternion` / `Matrix4` 等のオブジェクト生成は厳禁。モジュールスコープ等にプールした一時変数（`tempVec` など）を再利用し、GC スパイク・フレーム落ちを防ぐ。
 - **Rules of Hooks 厳守**: モーダル・オーバーレイ等のコンポーネントでは、全 hook（`useCallback` / `useState` / `useRef` / `useEffect` / `useId` 等）を早期 return（`if (!isOpen) return null;` 等）の**前**に配置する。
 - **JSX 内で日本語テキストと `{式}` を汚く混ぜない**: テンプレートリテラル（`` `${count}発` ``）または構造化（`<span>{count}</span>発`）で表現する。
-- **production build で動作確認する**: dev mode ではビルド時エラーや最適化の問題を見落とすことがある。ユーザーに変更を提供する前に `pnpm build && pnpm preview` で動作確認する。
+- **production build で動作確認する**: dev mode ではビルド時エラーや最適化の問題を見落とすことがある。ユーザーに変更を提供する前に `bun run build && bun run preview` で動作確認する。
 
 ### 6.5 Biome 特有ルール
 - **`biome-ignore` コメントは対象コードの直前の行**に置く。1 行以上離れると unused 判定になり、逆に「意味のない ignore」として lint エラーになる。
@@ -250,10 +253,10 @@ pnpm install --frozen-lockfile
 3. **ファイル変更数**: `新規/変更ファイル (N files, +X / -Y)`
 4. **検証結果チェックリスト**:
    ```text
-   - ✅ pnpm typecheck: 0 error
-   - ✅ pnpm exec biome lint .: 0 error (N files)
-   - ✅ pnpm test:unit: X passed / Y files
-   - ✅ pnpm build (vite): built in Xs
+   - ✅ bun run typecheck: 0 error
+   - ✅ bunx biome lint .: 0 error (N files)
+   - ✅ bun run test:unit: X passed / Y files
+   - ✅ bun run build (vite): built in Xs
    - ✅ push 済み（`prev..head`）
    ```
 5. **次のアクション**: 「次は何をしますか?」「Go を出していただければ〜」と提示、勝手に次のタスクを開始しない（§5 のタスク完了条件）。

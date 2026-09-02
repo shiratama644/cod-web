@@ -67,13 +67,15 @@
 
 | 用途 | 技術 |
 | :--- | :--- |
-| ビルド/Dev | Vite（`pnpm dev` / `pnpm build` / `pnpm preview`） |
+| ビルド/Dev | Vite（`bun run dev` / `bun run build` / `bun run preview`） |
 | Lint/Format | **Biome**（ESLint/Prettier 不使用） |
 | Unit | **Vitest** + @testing-library/react（jsdom） |
 | E2E | **Playwright**（Chromium、CI のみ・Sandbox 実行不可、[sandbox-constraints.md](./sandbox-constraints.md)） |
-| パッケージ | pnpm（corepack）、Node LTS（`.nvmrc`） |
+| パッケージ / ランタイム | **bun**（`bun install` / `bun run` / `bunx`、`bun.lock`）+ Node LTS（`.nvmrc`）。ゲームサーバーも bun ランタイムを想定 |
 
 ## 導入時の注意（実装で確認したら追記）
 
 <!-- Phase 0 で実際にバージョン固定・ハマりどころを記録していく。 -->
+- **bun**: Sandbox ではプリインストールされていない。`bun.sh` は SSL エラーで到達不可だが、**npm registry 経由なら導入可**（2026-09-03 に `bun 1.4.0` で install / run / test 動作確認済み）。導入は `npm install -g bun`、復旧は `restore-sandbox-env.sh`。テストランナーは Vitest を使い `bun test` は使わない（AGENTS.md §6.1）。
 - ライブラリの API 仕様に不安があれば Web 検索（threejs.org / docs.pmnd.rs / colyseus.io 等の公式を優先、AGENTS.md §7.5）。
+- Colyseus / geckos.io の bun ランタイム互換はネットワークフェーズ（Phase 1 以降）で実機検証。現状は方針のみ。

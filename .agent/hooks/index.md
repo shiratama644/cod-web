@@ -21,7 +21,7 @@
 | [verify-before-commit.md](./verify-before-commit.md) | commit 直前 | 4 検証（typecheck/biome/test:unit/build）+ 意図しない差分の確認 + dist バンドル確認 |
 | [log-task.md](./log-task.md) | タスク完了時 | `.agent/logs/YYYY-MM-DD_<summary>.md` 作成（4 セクション）→ 重要知見を `.agent/skills/` へ同期 → `skills/index.md` + 本 index の「最終更新」更新 |
 | [sandbox-rebuild-recovery.md](./sandbox-rebuild-recovery.md) | Sandbox 再構築検知時 | `git fetch` → `reset --hard FETCH_HEAD`（例外的許可）→ `restore-sandbox-env.sh` で依存再構築 → 健全性確認 |
-| [restore-sandbox-env.sh](./restore-sandbox-env.sh) | 上記から呼出 | `corepack enable pnpm` + `pnpm install --frozen-lockfile` |
+| [restore-sandbox-env.sh](./restore-sandbox-env.sh) | 上記から呼出 | npm 経由で bun を導入 + `bun install --frozen-lockfile` |
 
 ## 運用ルール
 

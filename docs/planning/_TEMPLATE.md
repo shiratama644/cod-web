@@ -56,7 +56,7 @@
 <!-- 第三者が Yes / No で判定できる形で書く。「適切に動作すること」は不可。
      旧計画書の DoD チェックリスト形式を踏襲してよい -->
 
-- [ ] 条件 1 (例: `pnpm typecheck` / `biome lint` / `pnpm test:unit` / `pnpm build` 全 pass)
+- [ ] 条件 1 (例: `bun run typecheck` / `bunx biome lint` / `bun run test:unit` / `bun run build` 全 pass)
 - [ ] 条件 2 (数値目標があれば実測値を記録)
 - [ ] `docs/task-list.md` の状態・進捗・証拠を更新
 - [ ] タスク範囲外のファイル（`.archive/` 等のアーカイブを含む）に意図しない変更がない

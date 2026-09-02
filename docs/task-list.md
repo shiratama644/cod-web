@@ -41,9 +41,9 @@
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
-| P0-A | Vite + React + TypeScript プロジェクト初期化（pnpm、strict、`src/` 構成、`.nvmrc`） | 未着手 | 0% | - | `pnpm dev` / `pnpm build` が通り、空画面が表示される | |
-| P0-B | Biome 導入（lint + format、テスト overrides）+ `pnpm lint` 整備 | 未着手 | 0% | P0-A | `pnpm exec biome lint .` が 0 error | |
-| P0-C | Vitest + @testing-library/react 導入（jsdom 環境）+ `pnpm test:unit` 整備 | 未着手 | 0% | P0-A | サンプルテストが `vitest run` で green | |
+| P0-A | Vite + React + TypeScript プロジェクト初期化（**bun** パッケージ管理・`bun.lock`、strict、`src/` 構成、`.nvmrc`、bun を devDependency 固定） | 未着手 | 0% | - | `bun install` 成功・`bun run dev` / `bun run build` が通り、空画面が表示される | |
+| P0-B | Biome 導入（lint + format、テスト overrides）+ `bun run lint` 整備 | 未着手 | 0% | P0-A | `bunx biome lint .` が 0 error | |
+| P0-C | Vitest + @testing-library/react 導入（jsdom 環境）+ `bun run test:unit` 整備 | 未着手 | 0% | P0-A | サンプルテストが `vitest run` で green | |
 | P0-D | Three.js / @react-three/fiber / @react-three/drei 導入とシーン基盤（Canvas・カメラ・ライト・地面） | 未着手 | 0% | P0-A | ブラウザ/プレビューで 3D シーン（立方体等）が表示される | |
 | P0-E | ゲームループ骨架（`useFrame` ベース、ref 直接更新・ゼロアロケーション方針の確立） | 未着手 | 0% | P0-D | 毎フレーム回転するオブジェクト等でループ動作を確認、React State 非依存の更新であること | |
 | P0-F | Zustand 導入（ゲーム状態ストアの骨架） | 未着手 | 0% | P0-A | サンプルストアを置き、`getState()`/`subscribe` 利用の方針をコードで提示 | |

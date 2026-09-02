@@ -14,7 +14,7 @@
 
 | 層 | 技術 |
 | :--- | :--- |
-| ビルド | **Vite** + React + TypeScript（strict）、pnpm（corepack） |
+| ビルド | **Vite** + React + TypeScript（strict）、bun |
 | 3D | Three.js（**WebGPU ファースト** + WebGL2 フォールバック）/ @react-three/fiber / @react-three/drei、TSL |
 | 物理・判定 | @react-three/rapier（クライアント）/ Rapier（サーバー）、**three-mesh-bvh**（射撃判定） |
 | ECS | miniplex / @miniplex/react（R3F 向け）、bitecs（TypedArray・GCレス） |

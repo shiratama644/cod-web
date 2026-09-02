@@ -6,17 +6,17 @@
 ## 4 検証（順に実行、1 つでも失敗したら原因特定→修正→再全検証）
 
 ```bash
-pnpm typecheck                # tsc --noEmit
-pnpm exec biome lint .        # Biome 直接呼出（pnpm lint より起動が速い）
-pnpm test:unit                # vitest run （※ watch モードではない）
-pnpm build                    # vite build（production）
+bun run typecheck                # tsc --noEmit
+bunx biome lint .        # Biome 直接呼出（bun run lint より起動が速い）
+bun run test:unit                # vitest run （※ watch モードではない）
+bun run build                    # vite build（production）
 ```
 
 ### 各コマンドの注意
 
 - **typecheck**: `tsc --noEmit`。strict 構成。配列アクセス・nullable に注意。
 - **biome lint**: `0 error / 0 warning` まで。`biome-ignore` は対象コードの**直前の行**に置く（1 行以上離れると unused 判定で逆に警告になる, AGENTS.md §6.5）。テストファイルは `overrides` で `noNonNullAssertion` off。
-- **test:unit**: `pnpm test`（watch）**ではない**。必ず `test:unit`（vitest run）。R3F `<Canvas>` は jsdom で WebGL 未サポートのため、WebGL 非依存のロジック/UI をテスト対象にする（[`../skills/sandbox-constraints.md`](../skills/sandbox-constraints.md)）。
+- **test:unit**: `vitest`（watch）**ではない**。必ず `test:unit`（vitest run）。R3F `<Canvas>` は jsdom で WebGL 未サポートのため、WebGL 非依存のロジック/UI をテスト対象にする（[`../skills/sandbox-constraints.md`](../skills/sandbox-constraints.md)）。
 - **build**: `vite build`。成果物は `dist/`。
   - バンドルサイズは `ls -lh dist/assets` 等で直接確認（Three.js はバンドルが大きい。依存の重複・chunk 分割に注意）。
 - **ドキュメントのみ変更時**: 4 検証はスキップ可（AGENTS.md §3.1）。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。
@@ -37,7 +37,7 @@ git diff                       # 意図しないファイル/差分が無いか
 
 ## E2E について
 
-- `pnpm test:e2e`（Playwright）は **Sandbox では実行不可**（Chromium install 不可）。CI（GitHub Actions）でのみ。
+- `bun run test:e2e`（Playwright）は **Sandbox では実行不可**（Chromium install 不可）。CI（GitHub Actions）でのみ。
 - commit 前検証には**含めない**。書けるがローカルで走らせない。
 
 ## 完了後

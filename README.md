@@ -14,20 +14,25 @@
 | ネットワーク | Colyseus（権威サーバー）/ geckos.io（UDP over WebRTC）/ socket.io（ロビー等）/ LiveKit（ボイス） |
 | UI / 状態 | React + TypeScript、Zustand（ゲーム状態）、Radix UI、framer-motion、lucide-react |
 | オーディオ | Web Audio API（HRTF 立体音響）、howler.js、resonance-audio |
-| ビルド / ツール | Vite、pnpm（corepack）、Biome（Lint/Format）、Vitest、Playwright（E2E） |
+| ビルド / ツール | Vite、bun、Biome（Lint/Format）、Vitest、Playwright（E2E） |
 
 ## セットアップ（プロジェクト初期化後に有効）
 
 ```bash
-pnpm install        # 依存インストール
-pnpm dev            # 開発サーバ（Vite）
-pnpm typecheck      # 型チェック（tsc --noEmit）
-pnpm lint           # Biome lint
-pnpm test:unit      # 単体テスト（Vitest run、watch ではない）
-pnpm build          # 本番ビルド（vite build）
-pnpm preview        # 本番ビルドのローカル確認
-pnpm test:e2e       # E2E（Playwright、CI 推奨）
+bun install            # 依存インストール（bun.lock 使用）
+bun run dev            # 開発サーバ（Vite）
+bun run typecheck      # 型チェック（tsc --noEmit）
+bun run lint           # Biome lint
+bun run test:unit      # 単体テスト（Vitest run、watch ではない）
+bun run build          # 本番ビルド（vite build）
+bun run preview        # 本番ビルドのローカル確認
+bun run test:e2e       # E2E（Playwright、CI 推奨）
 ```
+
+> **ランタイム/パッケージ管理は bun**（`bun install` / `bun run` / `bunx`、ロックファイルは `bun.lock`）。
+> bun が未インストールの環境では `npm install -g bun`（npm 経由）で導入できます。
+> なおテストランナーは Vitest を使用し、bun 組み込みの `bun test` は使いません（jsdom +
+> @testing-library との互換性優先）。ゲームサーバーのランタイムも bun を想定しています。
 
 > 現状はリポジトリ初期化前（ドキュメント/ガバナンスのみ）。`package.json` は
 > Phase 0（`docs/task-list.md`）で作成します。

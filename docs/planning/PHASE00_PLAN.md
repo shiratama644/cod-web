@@ -21,7 +21,7 @@
 ## 3. 変更範囲 (Scope)
 
 変更対象:
-- `package.json` / `pnpm-lock.yaml` / `tsconfig.json` / `tsconfig.node.json` / `vite.config.ts` / `biome.json` / `vitest.config.ts`（新規）
+- `package.json` / `bun.lock` / `tsconfig.json` / `tsconfig.node.json` / `vite.config.ts` / `biome.json` / `vitest.config.ts`（新規）
 - `.nvmrc` / `index.html` / `src/`（main エントリ・App・R3F シーン・ゲームループ骨架・Zustand ストア骨架）
 - `__tests__/`（サンプルユニットテスト）
 - `README.md`（セットアップ手順が実態と一致するか検証・必要なら更新）
@@ -46,12 +46,12 @@
 
 ## 5. 完了条件 (DoD)
 
-- [ ] `pnpm install` が成功する
-- [ ] `pnpm typecheck`（`tsc --noEmit`）が 0 error
-- [ ] `pnpm exec biome lint .` が 0 error / 0 warning
-- [ ] `pnpm test:unit`（`vitest run`）が green（サンプルテスト最低 1 件）
-- [ ] `pnpm build`（`vite build`）が成功し、`dist/` に成果物が出力される
-- [ ] `pnpm dev` / `pnpm preview` で R3F シーン（カメラ・ライト・地面・オブジェクト）と、`useFrame` による毎フレーム更新が確認できる（プレビュー URL で HTTP 200）
+- [ ] `bun install` が成功する
+- [ ] `bun run typecheck`（`tsc --noEmit`）が 0 error
+- [ ] `bunx biome lint .` が 0 error / 0 warning
+- [ ] `bun run test:unit`（`vitest run`）が green（サンプルテスト最低 1 件）
+- [ ] `bun run build`（`vite build`）が成功し、`dist/` に成果物が出力される
+- [ ] `bun run dev` / `bun run preview` で R3F シーン（カメラ・ライト・地面・オブジェクト）と、`useFrame` による毎フレーム更新が確認できる（プレビュー URL で HTTP 200）
 - [ ] ゲームループが React State 非依存（ref / Zustand 直接更新）で、ループ内に毎フレームのオブジェクト生成がないことをコードレビューで確認
 - [ ] `docs/task-list.md` の P0-A〜H の状態・進捗・証拠（コミット SHA / テスト件数 / 実測バンドルサイズ）を更新
 - [ ] AGENTS.md §3.1 の 4 検証コマンドが全て実在し、`.agent/hooks/verify-before-commit.md` の記述と一致
@@ -63,7 +63,7 @@
 | Unit (vitest) | ✅ | サンプルの純粋関数 / Zustand ストア動作を `vitest run` で検証 |
 | Component (testing-library) | ✅ | App / UI コンポーネントのスモークレンダリング（R3F は WebGL 非依存の部分を中心に） |
 | E2E (Playwright / CI) | ❌（Phase 0 では設定のみ・実行は CI） | Sandbox では Chromium 不可（AGENTS.md §6.2） |
-| 実環境（プレビュー / 実機） | ✅/検証待ち | `pnpm dev` / `pnpm preview` でシーン表示をライブプレビューで確認。WebGPU の実機差はユーザー環境/実機でも確認（実環境検証待ちとして報告） |
+| 実環境（プレビュー / 実機） | ✅/検証待ち | `bun run dev` / `bun run preview` でシーン表示をライブプレビューで確認。WebGPU の実機差はユーザー環境/実機でも確認（実環境検証待ちとして報告） |
 
 ## 7. 停止条件
 
@@ -88,8 +88,8 @@
 | ID | テーマ | 主要成果物 | 依存 |
 |---|---|---|---|
 | P0-A | Vite + React + TS 初期化 | package.json / vite.config.ts / tsconfig / index.html / src 骨架 | - |
-| P0-B | Biome 導入 | biome.json / `pnpm lint` | P0-A |
-| P0-C | Vitest 導入 | vitest.config.ts / サンプルテスト / `pnpm test:unit` | P0-A |
+| P0-B | Biome 導入 | biome.json / `bun run lint` | P0-A |
+| P0-C | Vitest 導入 | vitest.config.ts / サンプルテスト / `bun run test:unit` | P0-A |
 | P0-D | R3F シーン基盤 | three / @react-three/fiber / drei、Canvas・カメラ・ライト・地面 | P0-A |
 | P0-E | ゲームループ骨架 | `useFrame` ベースのループ、ref 直接更新・ゼロアロケーション | P0-D |
 | P0-F | Zustand 導入 | ゲーム状態ストア骨架 | P0-A |
@@ -102,6 +102,13 @@
 
 - ディレクトリ構成（想定）: `src/main.tsx`（エントリ）/ `src/App.tsx` / `src/game/`（R3F シーン・ループ・ECS 等のゲームコード）/ `src/components/`（UI）/ `src/store/`（Zustand）/ `src/lib/`（汎用ユーティリティ）。テストは `__tests__/` または併置。
 - ゲームループのパターン（CONFIG 黄金ルール4・5）: 毎フレーム更新は `useFrame` 内で ref の `position`/`rotation` を直接書き換え、一時ベクトルはモジュールスコープにプールして再利用。React State は UI 表示用の値に限定。
+- **パッケージ管理/ランタイムは bun**（ユーザー指定 2026-09-03、Sandbox で bun 1.4.0 動作確認済み）:
+  - `bun install` / `bun run` / `bunx` を使用、ロックファイルは `bun.lock`。
+  - bun は devDependency としてバージョン固定（`1.4.0`）。`package.json` に `packageManager` / `engines` で bun 使用を明示。
+  - テストランナーは **Vitest**（`vitest run`）を維持し、`bun test` は使わない（jsdom + @testing-library 互換優先、AGENTS.md §3.1/§6.1）。
+  - ビルド/Dev は Vite（bun 経由で起動）。Biome は `bunx biome`。
+  - ゲームサーバー（Colyseus 等）も bun ランタイムを想定するが、互換検証はネットワークフェーズ（Phase 1 以降）。
+  - Sandbox 再構築時の bun 導入は `.agent/hooks/restore-sandbox-env.sh` が npm 経由で行う（bun.sh は到達不可のため）。
 
 ## 11. リスク・Gotchas
 
