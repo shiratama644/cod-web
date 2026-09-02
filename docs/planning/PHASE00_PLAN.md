@@ -120,11 +120,11 @@
 
 | ID | コミット | テスト | 実測値・備考 |
 |---|---|---|---|
-| P0-A | | | |
-| P0-B | | | |
-| P0-C | | | |
-| P0-D | | | |
-| P0-E | | | |
-| P0-F | | | |
-| P0-G | | | |
-| P0-H | | | |
+| P0-A | `08c65d7` | — | Vite 8.2.2 + React 19.2.8 + TS 7.0.2（bun 1.4.0 固定）。typecheck 0、build OK（JS gzip 60KB）、dev HTTP 200 |
+| P0-B | `85c1a78` | — | @biomejs/biome 2.5.11。`biome lint .` 0 error |
+| P0-C | `85c1a78` | 7 passed | vitest 4.1.11 + jsdom 30 + testing-library 16.3.3。clamp 5 + App スモーク 2 |
+| P0-D | （Phase0 commit） | — | three 0.185.1 / R3F 9.7.0 / drei 10.7.8。createRenderer が navigator.gpu 判定で WebGPU→WebGL2 フォールバック。build/dev 配信 OK。**実機描画は実環境検証待ち** |
+| P0-E | （Phase0 commit） | — | useSpin（useFrame・ref 直接更新・delta クランプ 0.05s・new なし） |
+| P0-F | （Phase0 commit） | +4（store） | zustand 5.0.15。gameStore + gameStoreApi（getState/subscribe）。store テスト 4 |
+| P0-G | （Phase0 commit） | 11 passed | 4 検証一括 PASS: typecheck 0 / lint 0（22 files）/ test 11 / build OK（JS gzip 453KB）。verify フックと整合 |
+| P0-H | （Phase0 commit） | — | README・skills/tech-stack.md を実態追従 |

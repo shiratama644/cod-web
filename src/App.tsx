@@ -1,8 +1,11 @@
+import { RendererHud } from './components/RendererHud'
+import { GameCanvas } from './game/GameCanvas'
+
 export function App() {
   return (
     <main className="app">
-      <h1>cod-web</h1>
-      <p>Krunker.io-inspired cross-platform online FPS — foundation scaffolding.</p>
+      <GameCanvas />
+      <RendererHud />
     </main>
   )
 }

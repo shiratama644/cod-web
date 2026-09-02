@@ -81,10 +81,34 @@
 | E2E | **Playwright**（Chromium、CI のみ・Sandbox 実行不可、[sandbox-constraints.md](./sandbox-constraints.md)） |
 | パッケージ / ランタイム | **bun**（`bun install` / `bun run` / `bunx`、`bun.lock`）+ Node LTS（`.nvmrc`）。ゲームサーバーも bun ランタイムを想定 |
 
-## 導入時の注意（実装で確認したら追記）
+## 導入時の注意（Phase 0 で実機確認したコツ・ハマりどころ）
 
-<!-- Phase 0 で実際にバージョン固定・ハマりどころを記録していく。 -->
+> 2026-09-03 Phase 0 で固定した実バージョン: **react 19.2.8 / react-dom 19.2.8 / vite 8.2.2 / typescript 7.0.2 / three 0.185.1 / @react-three/fiber 9.7.0 / @react-three/drei 10.7.8 / zustand 5.0.15 / vitest 4.1.11 / jsdom 30 / @biomejs/biome 2.5.11 / @types/node 26**。bun は devDependency で exact 固定（`bun add -d bun@1.4.0 --exact`）。
+
 - **bun**: Sandbox ではプリインストールされていない。`bun.sh` は SSL エラーで到達不可だが、**npm registry 経由なら導入可**（2026-09-03 に `bun 1.4.0` で install / run / test 動作確認済み）。導入は `npm install -g bun`、復旧は `restore-sandbox-env.sh`。テストランナーは Vitest を使い `bun test` は使わない（AGENTS.md §6.1）。
+
+### WebGPU / R3F（P0-D で確認）
+
+- **R3F v9 で WebGPU** を使うには `<Canvas gl={asyncFactory}>` に非同期ファクトリを渡す。ファクトリは `new WebGPURenderer({ antialias:true, forceWebGL:false, ...props })`（`three/webgpu` から import）→ `await renderer.init()` して返す。v10 では `renderer` prop になる予定（執筆時点 v9）。
+- **WebGPU 不在時は明示的に WebGL2 へフォールバック**: `navigator.gpu?.requestAdapter()` を自前判定（`three/webgpu` の自動フォールバックに頼り切らず、どのバックエンドかを HUD に出して目視確認できるようにした）。WebGLRenderer に渡すプロパティには WebGPU 固有の `context`（GPUCanvasContext）を含めないこと（型エラーになる）。canvas と antialias だけ渡す。
+- ファクトリの引数は `HTMLCanvasElement` ではなく **R3F のレンダラープロパティオブジェクト**（canvas を含む）。`glProps: Record<string, unknown>` で受けてそのまま WebGPURenderer に spread する。
+
+### ツールチェーンのバージョン差（TS7 / Biome2 / Vite8）
+
+- **TypeScript 7 で `baseUrl` 廃止**: `paths` は相対パスで書く（`"@/*": ["./src/*"]`）。`baseUrl: "."` は TS5102 でエラー。
+- **Biome 2.x**: ① linter の `rules.recommended: true` は deprecated → **`rules: { preset: "recommended" }`**。② `biome migrate` が吐くネガティブグロブ（`!!**/!**/dist/**`）は不正でエラー。**`vcs.useIgnoreFile: true` にすれば .gitignore で除外されるので `files.includes` は書かない**のが一番シンプル。
+- **ESM の `vite.config.ts` / `vitest.config.ts` では `__dirname` が未定義**。`path.dirname(fileURLToPath(import.meta.url))` を使う。
+- **Vite のライブプレビュー（e2b.app プロキシ配下）では `server.allowedHosts: true`（preview も）が必須**。未設定だと Vite が 403 "Blocked request" を返す。`host:true`（0.0.0.0 バインド）と併用。
+
+### テスト（Vitest 4 / jsdom）
+
+- **R3F `<Canvas>` は jsdom で WebGL 無しのためレンダリングテストしない**。WebGL 非依存の DOM コンポーネント（HUD 等）と純粋ロジック（store の getState/subscribe・純粋関数）をテストする。ゲームロジックは純粋関数として WebGL/React から分離して書くとテストできる。
+- **jest-dom マッチャー（`toBeInTheDocument` 等）の型を tsc に認識させる**: `src/vite-env.d.ts` に `/// <reference types="@testing-library/jest-dom" />`、かつ `vitest.setup.ts`（`@testing-library/jest-dom/vitest` を import）を `tsconfig.json` の include に追加。vitest 実行時は setupFiles で動くが、tsc は include を見る。
+
+### Zustand（P0-F で確認）
+
+- ストア本体をフック（`useGameStore`）として export しつつ、React 外（R3F のレンダラー生成・useFrame ループ）からは `useGameStore.getState()` / `.subscribe()` をラップした `gameStoreApi` を使う。毎フレーム動くループでフックを呼ばないこと。
+- 高頻度値（座標・回転）はストアに入れず three の ref を直接更新。ストアは HP・残弾・描画バックエンド等の低頻度・UI 表示値に限定。
 - ライブラリの API 仕様に不安があれば Web 検索（threejs.org / docs.pmnd.rs / colyseus.io 等の公式を優先、AGENTS.md §7.5）。
 - ネットワークは **WebTransport 主 / WebSocket フォールバック**で確定（[networking](../../docs/arch/networking.md)）。bun は WebTransport サーバー未実装（HTTP/3 は v1.3.14 で実験サポート、WT は issue #13656 で進行中）のため、初期は Caddy エッジで HTTP/3 終端 → bun（WS＋ロジック）。WT の bun ネイティブ対応状況は Phase 1 で再調査。
 - ブラウザは WebTransport が Safari26.4（2026-03）で Baseline 入り。古い Safari・iOS WebView・UDP/443 ブロック企業網では WS へフォールバックが必須。

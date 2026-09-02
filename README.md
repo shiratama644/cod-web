@@ -12,7 +12,7 @@
 | --- | --- |
 | 3D レンダリング | Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**、WebGL2 が全端末の基準）/ @react-three/fiber / @react-three/drei、TSL |
 | 物理・当たり判定 | @react-three/rapier（クライアント）/ Rapier（サーバー）、three-mesh-bvh（射撃判定） |
-| ゲームロジック | ECS（miniplex / biteps）、ゲームループは React レンダリングから分離 |
+| ゲームロジック | ECS（miniplex / bitecs 候補、Phase 1 で選定）、ゲームループは React レンダリングから分離 |
 | ネットワーク | 権威型サーバー + クライアント予測・サーバー調停 + ラグ補償。**WebTransport（HTTP/3・datagrams+streams）主 / WebSocket フォールバック**、サーバー tick 30Hz・描画は可変フレームレート。[設計記録](docs/arch/networking.md) |
 | UI / 状態 | React + TypeScript、Zustand（ゲーム状態）、Radix UI、framer-motion、lucide-react |
 | オーディオ | Web Audio API（HRTF 立体音響）、howler.js、resonance-audio |
@@ -28,7 +28,6 @@ bun run lint           # Biome lint
 bun run test:unit      # 単体テスト（Vitest run、watch ではない）
 bun run build          # 本番ビルド（vite build）
 bun run preview        # 本番ビルドのローカル確認
-bun run test:e2e       # E2E（Playwright、CI 推奨）
 ```
 
 > **ランタイム/パッケージ管理は bun**（`bun install` / `bun run` / `bunx`、ロックファイルは `bun.lock`）。
@@ -36,8 +35,9 @@ bun run test:e2e       # E2E（Playwright、CI 推奨）
 > なおテストランナーは Vitest を使用し、bun 組み込みの `bun test` は使いません（jsdom +
 > @testing-library との互換性優先）。ゲームサーバーのランタイムも bun を想定しています。
 
-> 現状はリポジトリ初期化前（ドキュメント/ガバナンスのみ）。`package.json` は
-> Phase 0（`docs/task-list.md`）で作成します。
+> **進捗: Phase 0（プロジェクト基盤）** — `bun install` で Vite + React 19 + TypeScript + R3F
+> （three/webgpu 最優先・WebGL2 自動フォールバック）+ Biome + Vitest + Zustand の基盤が動作します。
+> ゲームプレイ・ネットワークは Phase 1 以降。タスク状況は [`docs/task-list.md`](./docs/task-list.md) を参照。
 
 ## 開発ドキュメント
 

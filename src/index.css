@@ -24,11 +24,28 @@ body {
 }
 
 .app {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  position: relative;
   width: 100%;
   height: 100%;
-  text-align: center;
+}
+
+/* R3F Canvas は全画面を占有 */
+.app canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.renderer-hud {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  color: #9fe7ff;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(159, 231, 255, 0.3);
+  border-radius: 6px;
+  pointer-events: none;
 }
