@@ -46,8 +46,8 @@
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
 | P0-A | Vite + React + TypeScript プロジェクト初期化（**bun** パッケージ管理・`bun.lock`、strict、`src/` 構成、`.nvmrc`、bun を devDependency 固定） | ローカル検証済み | 100% | - | `bun install` 成功・`bun run dev` / `bun run build` が通り、空画面が表示される | react19.2.8/vite8.2.2/ts7.0.2、bun1.4.0固定、typecheck 0、build OK（JS gzip 60KB）、dev HTTP 200 |
-| P0-B | Biome 導入（lint + format、テスト overrides）+ `bun run lint` 整備 | 未着手 | 0% | P0-A | `bunx biome lint .` が 0 error | |
-| P0-C | Vitest + @testing-library/react 導入（jsdom 環境）+ `bun run test:unit` 整備 | 未着手 | 0% | P0-A | サンプルテストが `vitest run` で green | |
+| P0-B | Biome 導入（lint + format、テスト overrides）+ `bun run lint` 整備 | ローカル検証済み | 100% | P0-A | `bunx biome lint .` が 0 error | @biomejs/biome 2.5.11、biome.json（preset:recommended・vcs useIgnoreFile）、`bun run lint` 0 error / 9 files、format clean |
+| P0-C | Vitest + @testing-library/react 導入（jsdom 環境）+ `bun run test:unit` 整備 | ローカル検証済み | 100% | P0-A | サンプルテストが `vitest run` で green | vitest 4.1.11 / jsdom 30 / @testing-library/react 16.3.3、vitest.config.ts+setup、サンプル 7 tests green（clamp 関数 5 + App スモーク 2） |
 | P0-D | Three.js / @react-three/fiber / @react-three/drei 導入とシーン基盤（Canvas・カメラ・ライト・地面）。**WebGPURenderer を最優先、WebGPU 不在時は WebGL2 へ自動フォールバック**（`navigator.gpu` 判定） | 未着手 | 0% | P0-A | WebGPU 対応環境と非対応環境（WebGL2）の両方で 3D シーンが表示され、フォールバック機構がコード上で明示されている | |
 | P0-E | ゲームループ骨架（`useFrame` ベース、ref 直接更新・ゼロアロケーション方針の確立） | 未着手 | 0% | P0-D | 毎フレーム回転するオブジェクト等でループ動作を確認、React State 非依存の更新であること | |
 | P0-F | Zustand 導入（ゲーム状態ストアの骨架） | 未着手 | 0% | P0-A | サンプルストアを置き、`getState()`/`subscribe` 利用の方針をコードで提示 | |
