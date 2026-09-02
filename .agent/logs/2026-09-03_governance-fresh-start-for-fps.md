@@ -1,6 +1,6 @@
 # Governance refresh: DropMod 雛形 → cod-web（ブラウザFPS）用ガバナンスへ刷新
 
-> Date: 2026-09-03(JST) / Commit: (commit 後に追記) / Branch: arena/01a062ac-cod-web
+> Date: 2026-09-03(JST) / Commit: `5308c8c`（ログ追記コミットは後続）/ Branch: arena/01a062ac-cod-web
 
 ## 1. 指示内容 (Task Summary)
 
