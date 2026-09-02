@@ -1,6 +1,6 @@
 # 仕様書を docs/arch/ に分離（仕様書 vs 計画書の区別）＋サンドボックス再構築復旧
 
-> Date: 2026-09-03(JST) / Commit: (commit 後に追記) / Branch: arena/01a062ac-cod-web
+> Date: 2026-09-03(JST) / Commit: `734b21c`（SHA追記は後続）/ Branch: arena/01a062ac-cod-web
 
 ## 1. 指示内容 (Task Summary)
 
