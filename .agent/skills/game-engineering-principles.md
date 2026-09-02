@@ -1,6 +1,7 @@
-# Game Engineering Principles — FPS 設計・実装ルール
+# Game Engineering Principles — Krunker 上位互換 FPS 設計・実装ルール
 
-> [`../../docs/CONFIG.md`](../../docs/CONFIG.md) の「🎯 AAA級品質を達成するためのエンジニアリング原則＆設計・実装黄金ルール」を作業時に引きやすくしたもの。ゲームコードを書くときは必ず本スキルを参照する。
+> [`../../docs/CONFIG.md`](../../docs/CONFIG.md) の「🎯 Krunker 上位互換・全端末 60FPS を達成するためのエンジニアリング原則＆設計・実装黄金ルール」を作業時に引きやすくしたもの。ゲームコードを書くときは必ず本スキルを参照する。
+> **最優先目標は「どの端末でも安定 60FPS 以上」**。60FPS を割るリスクのある重い表現は入れない。
 
 ## 8 つの黄金ルール（CONFIG.md より）
 
@@ -8,8 +9,8 @@
    - クライアントは BVH で即座にヒットマーカー表示。サーバーはタイムスタンプを巻き戻して正当性を検証する権威判定。
 2. **クライアント予測（Client Prediction）＋ サーバー調停（Reconciliation）**
    - 入力は即座に画面反映し、サーバーのスナップショット確定情報で差分補正してラグを隠す。
-3. **WebGPU ファースト ＋ TSL（Three Shading Language）**
-   - パーティクル演算・大量弾丸シミュレーションを WebGPU Compute Shader で GPU 並列実行。WebGL2 フォールバックを用意。
+3. **WebGPU ベース + WebGL2 フォールバック（WebGL2 が全端末の基準ライン）**
+   - WebGPU API が使えれば活用し、TSL/WebGPU Compute Shader でパーティクル・弾丸演算を GPU 並列実行。使えない端末では WebGL2 へ自動フォールバックし、**WebGL2 でも 60FPS が出ることを前提に設計**する。
 4. **React のレンダリングサイクルとゲームループを完全分離** ⭐
    - 毎フレーム更新される座標・弾丸データは **React State にしない**。Three.js オブジェクト参照（`ref`）や Zustand の `getState()` / `subscribe` で直接更新する。
 5. **ゼロ・アロケーション（Zero Allocation in Loop）で GC を徹底回避** ⭐
@@ -57,12 +58,13 @@ useFrame((state, delta) => {
 | HUD 表示用に間引いた値 | Zustand → React（必要な箇所だけ購読） | 毎フレームではなく更新時のみ再レンダー |
 | 静的設定・定数 | `src/` の定数モジュール | - |
 
-### ネットワークの役割分担
+### ネットワークの役割分担（トランスポートは議論中）
 
-- **geckos.io（UDP over WebRTC）**: 座標・入力・射撃イベント（パケットロス許容・超低遅延）
-- **Colyseus**: ルーム管理・状態同期・クライアント予測/サーバー調停の母体
-- **socket.io**: チャット・ロビー・マッチメイキング（信頼性重視）
-- サーバーは権威。当たり判定・スコア・状態確定はサーバー側（Rapier ヘッドレス物理）。
+- **権威モデルは確定**: サーバーが権威。当たり判定・スコア・状態確定はサーバー側（Rapier ヘッドレス物理）。クライアントは予測のみ。
+- **トランスポートは 2 案を比較中**:
+  - **WebSocket（socket.io / Colyseus、TCP）**: Krunker.io と同方式。順序・到達保証で実装・デプロイが簡単、bun で動く。欠点は TCP のヘッドオブラインブロッキング（1 パケットロストで後続待ち）。小部屋 FPS では Krunker 実績あり。
+  - **WebRTC-UDP（geckos.io、unreliable/unordered DataChannel）**: パケットロス許容・HOL ブロッキングなしで高速。欠点はシグナリング・STUN/TURN・UDP ポート開放が必要でデプロイ複雑、サーバーが node-datachannel ネイティブ依存で bun 互換は未検証。
+- 確定するまでネットコードはトランスポート非依存の抽象境界（NetTransport interface）の内側に書き、後で差し替え可能にする。
 
 ## テストしやすさのための分離
 

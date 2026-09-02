@@ -1,6 +1,8 @@
 # cod-web
 
-ブラウザで動く **AAA級クロスプラットフォーム・オンラインFPS**。PC（マウス＆キーボード / ゲームパッド）とモバイル（タッチ / 仮想スティック / ジェスチャー）の両対応を目標とし、権威型ゲームサーバー＋超低遅延 UDP 通信（WebRTC）＋クライアント予測・サーバー調停のアーキテクチャで開発します。
+[Krunker.io](https://krunker.io) にインスパイアされた、ブラウザで動く**クロスプラットフォーム・オンラインFPS**（Krunker の完全上位互換を目指す）。
+
+**最重要目標: どの端末（PC ブラウザ / スマートフォン / タブレット）でも安定 60FPS 以上**。Krunker と同等以上の軽量さ・低遅延・高速読み込みを優先し、PC（マウス＆キーボード / ゲームパッド）とモバイル（タッチ / 仮想スティック / ジェスチャー）の両対応とします。レンダラーは **WebGPU を最優先、WebGPU が使えない端末では WebGL2 へ自動フォールバック**します。
 
 技術スタックの全容と設計ルールは [`docs/CONFIG.md`](./docs/CONFIG.md) を参照してください。
 
@@ -8,10 +10,10 @@
 
 | 層 | 使用技術 |
 | --- | --- |
-| 3D レンダリング | Three.js（WebGPU ファースト + WebGL2 フォールバック）/ @react-three/fiber / @react-three/drei、TSL |
+| 3D レンダリング | Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**、WebGL2 が全端末の基準）/ @react-three/fiber / @react-three/drei、TSL |
 | 物理・当たり判定 | @react-three/rapier（クライアント）/ Rapier（サーバー）、three-mesh-bvh（射撃判定） |
 | ゲームロジック | ECS（miniplex / biteps）、ゲームループは React レンダリングから分離 |
-| ネットワーク | Colyseus（権威サーバー）/ geckos.io（UDP over WebRTC）/ socket.io（ロビー等）/ LiveKit（ボイス） |
+| ネットワーク | 権威型サーバー + クライアント予測・サーバー調停 + ラグ補償。トランスポート（WebSocket / WebRTC-UDP）は議論中 |
 | UI / 状態 | React + TypeScript、Zustand（ゲーム状態）、Radix UI、framer-motion、lucide-react |
 | オーディオ | Web Audio API（HRTF 立体音響）、howler.js、resonance-audio |
 | ビルド / ツール | Vite、bun、Biome（Lint/Format）、Vitest、Playwright（E2E） |
@@ -40,7 +42,7 @@ bun run test:e2e       # E2E（Playwright、CI 推奨）
 ## 開発ドキュメント
 
 - [`AGENTS.md`](./AGENTS.md) — AI Agent 開発規約（コミット手順・検証・Git 運用・コミュニケーション）。**作業時の最優先規約**
-- [`docs/CONFIG.md`](./docs/CONFIG.md) — 技術スタック完全ガイド＋AAA 品質の設計・実装黄金ルール
+- [`docs/CONFIG.md`](./docs/CONFIG.md) — 技術スタック完全ガイド＋全端末 60FPS・WebGPU/WebGL2 の設計・実装黄金ルール
 - [`docs/README.md`](./docs/README.md) — ドキュメント索引
 - [`docs/task-list.md`](./docs/task-list.md) — **タスク管理の唯一の正本**（進捗・証拠）
 - [`docs/planning/`](./docs/planning/) — フェーズ別計画書（`_TEMPLATE.md` 準拠）

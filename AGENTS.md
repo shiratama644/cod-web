@@ -3,7 +3,7 @@
 本ドキュメントは、AI Agent が本プロジェクトの開発・変更を行う際に**必ず遵守すべき開発規約**です。
 最優先事項は **「速く大量に作ること」ではなく「常に復旧可能で、壊れた状態を長時間維持しないこと」** です。
 
-本プロジェクトは **ブラウザ向け AAA級クロスプラットフォーム・オンラインFPS**（Vite + React + Three.js + 権威型ゲームサーバー）です。技術スタックとゲーム設計ルールは [`docs/CONFIG.md`](docs/CONFIG.md) を正とします。
+本プロジェクトは **[Krunker.io](https://krunker.io) にインスパイアされたブラウザ向けクロスプラットフォーム・オンラインFPS**（Vite + React + Three.js + 権威型ゲームサーバー）です。**最重要目標は「どの端末でも安定 60FPS 以上」**（Krunker の完全上位互換）。技術スタックとゲーム設計ルールは [`docs/CONFIG.md`](docs/CONFIG.md) を正とします。
 
 ---
 
@@ -170,11 +170,11 @@ bash .agent/hooks/restore-sandbox-env.sh
 ### 6.1 環境・ツールチェーン
 - **ランタイム / パッケージ管理: bun**（`bun install` / `bun run` / `bunx`、ロックファイル `bun.lock`）。Node.js 最新 LTS 上で bun を動かす。
   - bun はサンドボックスにプリインストールされていない。**npm 経由（registry は到達可）で導入する**（`bun.sh` のインストールスクリプトは SSL エラーで到達不可）。導入・復旧は [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh) に集約。バージョンは devDependency として固定する。
-- **ビルド/Dev: Vite** + React + TypeScript（strict）。**3D**: Three.js（WebGPU ファースト、WebGL2 フォールバック）/ @react-three/fiber / @react-three/drei。
+- **ビルド/Dev: Vite** + React + TypeScript（strict）。**3D**: Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**。WebGL2 を全端末 60FPS の基準レンダラーとし、WebGPU は対応端末での追加高速化）/ @react-three/fiber / @react-three/drei。
 - **状態管理**: Zustand（ゲーム状態は React State ではなく Zustand の `getState()` / `subscribe` または ref で直接更新）。Context API は新規に使わない。
 - **Lint/Format**: Biome（ESLint/Prettier は使わない）。
 - **テスト**: **Vitest** + @testing-library/react（UI）。bun 組み込みの `bun test`（bun:test）は使わない（§3.1）。E2E は Playwright（CI のみ）。
-- **ゲームサーバーのランタイムも bun を想定**（Colyseus / geckos.io 等）。ただし実結合・ランタイム互換の検証はネットワークフェーズ（Phase 1 以降）で行い、現状は方針として明記するに留める。
+- **ゲームサーバーのランタイムも bun を想定**。ただしトランスポート/フレームワーク（WebSocket 系 vs WebRTC-UDP 系）によっては bun 互換に差があるため、実結合・ランタイム互換の検証はネットワークフェーズ（Phase 1 以降）で行い、現状は方針として明記するに留める（§6.6）。
 - ツール選定の根拠は `docs/CONFIG.md` を参照し、CONFIG に無いライブラリを導入する場合は一言ユーザーに相談する。
 
 ### 6.2 サンドボックス制約（乗り越えず、迂回する）
@@ -205,7 +205,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 ### 6.6 ネットワーク / ゲームサーバー設計ルール
 - **権威型サーバー（Authoritative Server）前提**: 当たり判定・スコア・プレイヤー状態の確定はサーバー側で行う。クライアントの BVH 即時判定はあくまで体感向上（先行表示）で、サーバーが Lag Compensation で検証する（CONFIG 黄金ルール1・2）。
 - クライアント予測・サーバー調停（Reconciliation）を基本とし、クライアント入力は即座に画面反映しつつサーバーのスナップショットで差分補正する。
-- 通信は用途で分離: 座標・入力・射撃イベント = geckos.io（UDP over WebRTC、パケットロス許容）、チャット・ロビー・マッチメイキング = socket.io（信頼性）、状態同期・ルーム管理 = Colyseus。
+- **トランスポート（WebSocket vs WebRTC-UDP）は現状「議論中」であり、確定するまで特定ライブラリにハードコードしない**。参考事実: Krunker.io は socket.io（WebSocket/TCP）で動作し、クライアント予測＋ラグ補償で高速感を実現している。ブラウザで UDP 相当（unreliable/unordered DataChannel over WebRTC）を使う場合は geckos.io 等が選択肢だが、シグナリング・UDP ポート・STUN/TURN が必要でデプロイが複雑になる。決定はユーザーとの合意（計画書）に従う。
 - ネットワーク結合を含む機能は Sandbox で実結合できないため、ロジックを純粋関数・モック境界で分離し、ユニットテストで検証。実結合は CI/実機確認（「実環境検証待ち」）とする。
 
 ### 6.7 ドキュメント運用

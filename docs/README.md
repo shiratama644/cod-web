@@ -1,6 +1,6 @@
 # cod-web ドキュメント索引
 
-cod-web（ブラウザ向け AAA級クロスプラットフォーム・オンラインFPS）のドキュメント一式を種類別に整理したものです。ルート [`../README.md`](../README.md) からアプリの概要へアクセスできます。
+cod-web（[Krunker.io](https://krunker.io) インスパイアのブラウザ向けクロスプラットフォーム・オンラインFPS／全端末 60FPS 目標）のドキュメント一式を種類別に整理したものです。ルート [`../README.md`](../README.md) からアプリの概要へアクセスできます。
 
 ---
 
@@ -9,7 +9,7 @@ cod-web（ブラウザ向け AAA級クロスプラットフォーム・オンラ
 ```
 docs/
 ├── README.md            ← 本ファイル（全ドキュメントの目次）
-├── CONFIG.md            ★ 技術スタック完全ガイド + AAA品質の設計・実装黄金ルール
+├── CONFIG.md            ★ 技術スタック完全ガイド + 全端末60FPS・WebGPU/WebGL2 の設計・実装黄金ルール
 ├── task-list.md         ★ タスク管理の唯一の正本（進捗・証拠）
 ├── planning/            # 計画書（Phase 単位・_TEMPLATE.md 形式）
 │   ├── _TEMPLATE.md     # 計画書テンプレート（新規計画書は必ず本形式）

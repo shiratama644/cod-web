@@ -71,7 +71,7 @@
 - 仕様書（CONFIG.md・計画書・AGENTS.md・skills）同士に矛盾がある
 - task-list.md 記載の変更範囲を超える変更が必要（例: ゲームサーバー基盤が Phase 0 に必要になった等）
 - 破壊的変更（既存データ・公開 API 互換性）が必要
-- ユーザー判断が必要な設計論点に到達した（例: レンダラーを WebGPU 専用にするか WebGL2 を初期から併用するか、ECS を miniplex/bitecs どちらで始めるか等）
+- ユーザー判断が必要な設計論点に到達した（レンダラー方針は「WebGPU 最優先 + WebGL2 自動フォールバック」で確定済み。それ以外に新たな論点、例: ECS を miniplex/bitecs どちらで始めるか、ネットワークのトランスポート等）
 - 開始時点で作業ツリーに未確認の変更がある
 
 ## 8. 完了時に行うこと
@@ -90,7 +90,7 @@
 | P0-A | Vite + React + TS 初期化 | package.json / vite.config.ts / tsconfig / index.html / src 骨架 | - |
 | P0-B | Biome 導入 | biome.json / `bun run lint` | P0-A |
 | P0-C | Vitest 導入 | vitest.config.ts / サンプルテスト / `bun run test:unit` | P0-A |
-| P0-D | R3F シーン基盤 | three / @react-three/fiber / drei、Canvas・カメラ・ライト・地面 | P0-A |
+| P0-D | R3F シーン基盤 | three / @react-three/fiber / drei、Canvas・カメラ・ライト・地面。WebGPURenderer 最優先 + WebGL2 自動フォールバック（`navigator.gpu` 判定） | P0-A |
 | P0-E | ゲームループ骨架 | `useFrame` ベースのループ、ref 直接更新・ゼロアロケーション | P0-D |
 | P0-F | Zustand 導入 | ゲーム状態ストア骨架 | P0-A |
 | P0-G | 4 検証整備 | typecheck/lint/test:unit/build の全 PASS と hooks 整合 | P0-B/C |
@@ -112,7 +112,7 @@
 
 ## 11. リスク・Gotchas
 
-- WebGPU はブラウザ/ヘッドレス環境で差がある。Phase 0 のシーンは WebGL2 でも表示できることを確認し、WebGPU 専用機能は後続フェーズで段階導入する（要・ユーザー判断、§7）。
+- レンダラー方針は確定済み（**WebGPU 最優先 + WebGPU 不在時は WebGL2 へ自動フォールバック**、WebGL2 を全端末 60FPS の基準）。Phase 0 のシーンは WebGL2 でも表示できることを必ず確認し、フォールバック機構を初期からコードに入れる。WebGPU 固有機能（Compute/TSL）は WebGL2 で機能が欠落しない範囲で後続フェーズに段階導入。
 - Three.js はバンドルが大きい。`vite build` 後に `dist/assets/` のサイズを計測し、依存の重複がないか確認する（chunk 分割は Phase 1 以降でも可）。
 - R3F の Canvas を jsdom ユニットテストでレンダリングすると WebGL 未サポートで失敗しうる。コンポーネントは WebGL 非依存の部分を分離してテストする。
 

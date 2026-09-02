@@ -21,15 +21,18 @@
 
 ## プロジェクト概要
 
-ブラウザ向け **AAA級クロスプラットフォーム・オンラインFPS**。技術スタック・設計ルールの大本は
+[Krunker.io](https://krunker.io) にインスパイアされたブラウザ向け**クロスプラットフォーム・オンラインFPS**（Krunker の完全上位互換が目標）。**最重要目標は「どの端末でも安定 60FPS 以上」**。技術スタック・設計ルールの大本は
 [`CONFIG.md`](./CONFIG.md)。開発規約は [`../AGENTS.md`](../AGENTS.md)。
+
+> レンダラーは **WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準）。
+> ネットワークのトランスポート（WebSocket / WebRTC-UDP）は議論中・未確定。
 
 ロードマップの大枠（フェーズ分割は計画書作成時に確定）:
 
 | Phase | テーマ | 状態 |
 |---|---|---|
-| **0** | プロジェクト基盤（Vite/React/TS/Biome/Vitest、R3F シーン、ゲームループ骨架） | 計画済み・未着手 |
-| 1 以降 | プレイヤー操作 / 物理・当たり判定 / ECS / 武器・射撃 / ネットワーク（権威サーバー）/ ボイス / HUD・UI / モバイル入力 / アセットパイプライン / パフォーマンス | 未定（Phase 0 完了後に計画） |
+| **0** | プロジェクト基盤（Vite/React/TS/Biome/Vitest、R3F シーン［WebGPU+WebGL2 フォールバック］、ゲームループ骨架） | 計画済み・未着手 |
+| 1 以降 | プレイヤー操作 / 物理・当たり判定 / ECS / 武器・射撃 / ネットワーク（権威サーバー・トランスポート確定後）/ ボイス / HUD・UI / モバイル入力 / アセットパイプライン / パフォーマンス（全端末 60FPS 検証） | 未定（Phase 0 完了後に計画） |
 
 ---
 
@@ -44,14 +47,14 @@
 | P0-A | Vite + React + TypeScript プロジェクト初期化（**bun** パッケージ管理・`bun.lock`、strict、`src/` 構成、`.nvmrc`、bun を devDependency 固定） | 未着手 | 0% | - | `bun install` 成功・`bun run dev` / `bun run build` が通り、空画面が表示される | |
 | P0-B | Biome 導入（lint + format、テスト overrides）+ `bun run lint` 整備 | 未着手 | 0% | P0-A | `bunx biome lint .` が 0 error | |
 | P0-C | Vitest + @testing-library/react 導入（jsdom 環境）+ `bun run test:unit` 整備 | 未着手 | 0% | P0-A | サンプルテストが `vitest run` で green | |
-| P0-D | Three.js / @react-three/fiber / @react-three/drei 導入とシーン基盤（Canvas・カメラ・ライト・地面） | 未着手 | 0% | P0-A | ブラウザ/プレビューで 3D シーン（立方体等）が表示される | |
+| P0-D | Three.js / @react-three/fiber / @react-three/drei 導入とシーン基盤（Canvas・カメラ・ライト・地面）。**WebGPURenderer を最優先、WebGPU 不在時は WebGL2 へ自動フォールバック**（`navigator.gpu` 判定） | 未着手 | 0% | P0-A | WebGPU 対応環境と非対応環境（WebGL2）の両方で 3D シーンが表示され、フォールバック機構がコード上で明示されている | |
 | P0-E | ゲームループ骨架（`useFrame` ベース、ref 直接更新・ゼロアロケーション方針の確立） | 未着手 | 0% | P0-D | 毎フレーム回転するオブジェクト等でループ動作を確認、React State 非依存の更新であること | |
 | P0-F | Zustand 導入（ゲーム状態ストアの骨架） | 未着手 | 0% | P0-A | サンプルストアを置き、`getState()`/`subscribe` 利用の方針をコードで提示 | |
 | P0-G | 4 検証コマンド整備（typecheck / lint / test:unit / build）+ `.agent/hooks/verify-before-commit.md` の実コマンド整合確認 | 未着手 | 0% | P0-B/C | AGENTS.md §3.1 の 4 コマンドが全て実在し PASS | |
 | P0-H | ドキュメント/skills の実態追従（README のセットアップ手順検証、`.agent/skills/tech-stack.md` 等を実装後の実態に更新） | 未着手 | 0% | P0-G | docs・skills と実コードの間に不整合がない | |
 
 ※ Playwright（E2E）は CI 基盤タスクとして Phase 1 以降で計画（Sandbox では実行不可、AGENTS.md §6.2）。
-※ ゲームサーバー（Colyseus / geckos.io）基盤は Phase 1 以降のネットワークフェーズで計画。
+※ ゲームサーバー基盤は Phase 1 以降のネットワークフェーズで計画。トランスポート（WebSocket / WebRTC-UDP）は議論中で、確定後にフレームワークを選定する。
 
 ---
 

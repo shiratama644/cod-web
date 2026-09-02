@@ -28,12 +28,14 @@
 
 ## ネットワーク
 
+> ⚠️ **トランスポートは議論中・未確定**（2026-09-03）。下表は候補。確定するまで特定ライブラリにハードコードしない（AGENTS.md §6.6）。
+
 | ライブラリ | 用途 | 特性 |
 | :--- | :--- | :--- |
-| **Colyseus** | 権威ゲームサーバー（ルーム管理・状態同期） | クライアント予測・サーバー調停の母体 |
-| **geckos.io** | UDP over WebRTC | 座標・入力・射撃イベント。パケットロス許容・超低遅延 |
-| `socket.io` | WebSocket | チャット・ロビー・マッチメイキング（信頼性重視） |
-| `livekit-client` | WebRTC ボイス | 近接ボイチャ（Proximity Voice） |
+| **Colyseus** | 権威ゲームサーバー（ルーム管理・状態同期） | クライアント予測・サーバー調停の母体。WebSocket ベース・MIT・セルフホスト可 |
+| **socket.io** | WebSocket（TCP） | Krunker.io も採用する方式。チャット・ロビー・マッチメイキング。信頼性・順序保証（ヘッドオブラインブロッキングあり）。bun/Node で動く |
+| **geckos.io** | UDP over WebRTC（unreliable/unordered） | 座標・入力・射撃イベント向け。パケットロス許容・HOL ブロッキングなし。ただしシグナリング(ポート 9208)・STUN/TURN・UDP ポート開放が必要でデプロイ複雑。サーバーは node-datachannel ネイティブ依存で **bun 互換は未検証** |
+| `livekit-client` | WebRTC ボイス | 近接ボイチャ（Proximity Voice）。機能確定後に導入検討 |
 | `msgpackr` / `protobufjs` | バイナリシリアライズ | パケット圧縮 |
 
 ## UI / 状態
@@ -78,4 +80,5 @@
 <!-- Phase 0 で実際にバージョン固定・ハマりどころを記録していく。 -->
 - **bun**: Sandbox ではプリインストールされていない。`bun.sh` は SSL エラーで到達不可だが、**npm registry 経由なら導入可**（2026-09-03 に `bun 1.4.0` で install / run / test 動作確認済み）。導入は `npm install -g bun`、復旧は `restore-sandbox-env.sh`。テストランナーは Vitest を使い `bun test` は使わない（AGENTS.md §6.1）。
 - ライブラリの API 仕様に不安があれば Web 検索（threejs.org / docs.pmnd.rs / colyseus.io 等の公式を優先、AGENTS.md §7.5）。
-- Colyseus / geckos.io の bun ランタイム互換はネットワークフェーズ（Phase 1 以降）で実機検証。現状は方針のみ。
+- ネットワーク（Colyseus / socket.io / geckos.io）の選定と bun ランタイム互換はネットワークフェーズ（Phase 1 以降）で実機検証。特に geckos.io はサーバー側が node-datachannel（ネイティブ）依存のため bun で動かない可能性があり、要確認。
+- **Krunker.io は socket.io（WebSocket/TCP）で動作**し、クライアント予測＋ラグ補償で高速感を実現（2026-09-03 調査）。「ブラウザFPS＝UDP 必須」ではなく、WebSocket でも小部屋なら十分実用的。

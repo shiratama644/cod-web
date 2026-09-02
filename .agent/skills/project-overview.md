@@ -4,21 +4,22 @@
 
 ## 製品
 
-**cod-web** は、ブラウザで動く **AAA級クロスプラットフォーム・オンラインFPS**。
+**cod-web** は、[Krunker.io](https://krunker.io) にインスパイアされたブラウザ向け**クロスプラットフォーム・オンラインFPS**（Krunker の完全上位互換を目指す）。
 
+- **最重要目標: どの端末（PC ブラウザ / スマートフォン / タブレット）でも安定 60FPS 以上**。軽量さ・低遅延・高速読み込みを優先し、重厚な AAA グラフィックスは優先しない
 - PC（マウス＆キーボード / ゲームパッド）＋ モバイル（タッチ / 仮想スティック / ジェスチャー）両対応
-- アーキテクチャ: 権威型ゲームサーバー ＋ 超低遅延 UDP（WebRTC）＋ クライアント予測・サーバー調停
-- 目標: 低遅延・高フレームレート（60〜120 FPS）・高品質グラフィックス
+- アーキテクチャ: 権威型ゲームサーバー ＋ クライアント予測・サーバー調停 ＋ ラグ補償。トランスポート（WebSocket / WebRTC-UDP）は議論中
+- **レンダラー: WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準レンダラーとする）
 
 ## 技術スタック（要点）
 
 | 層 | 技術 |
 | :--- | :--- |
 | ビルド | **Vite** + React + TypeScript（strict）、bun |
-| 3D | Three.js（**WebGPU ファースト** + WebGL2 フォールバック）/ @react-three/fiber / @react-three/drei、TSL |
+| 3D | Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**、WebGL2 が全端末 60FPS の基準）/ @react-three/fiber / @react-three/drei、TSL |
 | 物理・判定 | @react-three/rapier（クライアント）/ Rapier（サーバー）、**three-mesh-bvh**（射撃判定） |
 | ECS | miniplex / @miniplex/react（R3F 向け）、bitecs（TypedArray・GCレス） |
-| ネットワーク | **Colyseus**（権威サーバー）/ **geckos.io**（UDP over WebRTC）/ socket.io（ロビー等）/ LiveKit（ボイス）/ msgpackr・protobufjs（シリアライズ） |
+| ネットワーク | 権威サーバー + クライアント予測・サーバー調停 + ラグ補償。トランスポート（WebSocket=socket.io/Colyseus 系 / WebRTC-UDP=geckos.io 系）は**議論中**。シリアライズは msgpackr/protobufjs 等 |
 | UI / 状態 | React、**Zustand**（ゲーム状態、Context 不使用）、Radix UI、framer-motion、lucide-react、troika-three-text（3Dテキスト） |
 | オーディオ | Web Audio API（HRTF）、howler.js、resonance-audio、drei PositionalAudio |
 | アセット | useGLTF/useTexture、gltfjsx、DRACO / meshoptimizer / KTX2、@gltf-transform |
