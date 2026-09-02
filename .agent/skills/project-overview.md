@@ -8,8 +8,9 @@
 
 - **最重要目標: どの端末（PC ブラウザ / スマートフォン / タブレット）でも安定 60FPS 以上**。軽量さ・低遅延・高速読み込みを優先し、重厚な AAA グラフィックスは優先しない
 - PC（マウス＆キーボード / ゲームパッド）＋ モバイル（タッチ / 仮想スティック / ジェスチャー）両対応
-- アーキテクチャ: 権威型ゲームサーバー ＋ クライアント予測・サーバー調停 ＋ ラグ補償。トランスポート（WebSocket / WebRTC-UDP）は議論中
+- アーキテクチャ: 権威型ゲームサーバー ＋ クライアント予測・サーバー調停 ＋ ラグ補償。トランスポートは **WebTransport（datagrams+streams）主 / WebSocket フォールバック**で確定（[NETWORK_DESIGN](../../docs/planning/NETWORK_DESIGN.md)）。サーバー tick・入力 30Hz、描画は可変フレームレート
 - **レンダラー: WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準レンダラーとする）
+- **描画 FPS は可変**（rAF = 60〜120Hz+。60 は下限フロアであり上限ではない）、delta time ベースでネット tick と独立
 
 ## 技術スタック（要点）
 
@@ -19,7 +20,7 @@
 | 3D | Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**、WebGL2 が全端末 60FPS の基準）/ @react-three/fiber / @react-three/drei、TSL |
 | 物理・判定 | @react-three/rapier（クライアント）/ Rapier（サーバー）、**three-mesh-bvh**（射撃判定） |
 | ECS | miniplex / @miniplex/react（R3F 向け）、bitecs（TypedArray・GCレス） |
-| ネットワーク | 権威サーバー + クライアント予測・サーバー調停 + ラグ補償。トランスポート（WebSocket=socket.io/Colyseus 系 / WebRTC-UDP=geckos.io 系）は**議論中**。シリアライズは msgpackr/protobufjs 等 |
+| ネットワーク | 権威サーバー + クライアント予測・サーバー調停 + ラグ補償。**WebTransport（HTTP/3・datagrams+streams）主 / WebSocket フォールバック**。サーバー tick・入力 30Hz。シリアライズは msgpackr。FX はアクションフラグ＋トリガーのみ送信しクライアント再生 |
 | UI / 状態 | React、**Zustand**（ゲーム状態、Context 不使用）、Radix UI、framer-motion、lucide-react、troika-three-text（3Dテキスト） |
 | オーディオ | Web Audio API（HRTF）、howler.js、resonance-audio、drei PositionalAudio |
 | アセット | useGLTF/useTexture、gltfjsx、DRACO / meshoptimizer / KTX2、@gltf-transform |

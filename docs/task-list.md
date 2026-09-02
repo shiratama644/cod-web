@@ -55,7 +55,7 @@
 | P0-H | ドキュメント/skills の実態追従（README のセットアップ手順検証、`.agent/skills/tech-stack.md` 等を実装後の実態に更新） | 未着手 | 0% | P0-G | docs・skills と実コードの間に不整合がない | |
 
 ※ Playwright（E2E）は CI 基盤タスクとして Phase 1 以降で計画（Sandbox では実行不可、AGENTS.md §6.2）。
-※ ゲームサーバー基盤は Phase 1 以降のネットワークフェーズで計画。トランスポート（WebSocket / WebRTC-UDP）は議論中で、確定後にフレームワークを選定する。
+※ ゲームサーバー基盤は Phase 1 以降のネットワークフェーズで計画。トランスポートは **WebTransport 主 / WebSocket フォールバック**で確定（[NETWORK_DESIGN](planning/NETWORK_DESIGN.md)）。Phase 0 では NetTransport 抽象境界のインターフェースのみ定義し、実装（WT/WS）は Phase 1。
 
 ---
 
