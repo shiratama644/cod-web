@@ -1,0 +1,33 @@
+{
+  "name": "cod-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Browser-based cross-platform online FPS inspired by Krunker.io (WebGPU-first, WebGL2 fallback, 60+ FPS on every device).",
+  "packageManager": "bun@1.4.0",
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
+    "bun": "1.4.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}
