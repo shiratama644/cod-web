@@ -25,7 +25,8 @@
 [`CONFIG.md`](./CONFIG.md)。開発規約は [`../AGENTS.md`](../AGENTS.md)。
 
 > レンダラーは **WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準）。
-> ネットワークのトランスポート（WebSocket / WebRTC-UDP）は議論中・未確定。
+> **描画 FPS は可変**（rAF = 60〜120Hz+。60 は全端末の下限フロアであり上限ではない）で、ネット tick 30Hz とは独立・delta time ベース。
+> ネットワーク方針は確定: **WebTransport（datagrams+streams）主 / WebSocket フォールバック**、サーバー tick・入力 30Hz、シリアライズ msgpackr、FX はアクションフラグ＋トリガーのみ送信でクライアント再生。詳細は [`planning/NETWORK_DESIGN.md`](./planning/NETWORK_DESIGN.md)。
 
 ロードマップの大枠（フェーズ分割は計画書作成時に確定）:
 

@@ -28,15 +28,20 @@
 
 ## ネットワーク
 
-> ⚠️ **トランスポートは議論中・未確定**（2026-09-03）。下表は候補。確定するまで特定ライブラリにハードコードしない（AGENTS.md §6.6）。
+> ✅ **トランスポートは確定**（2026-09-03、詳細は [`../../docs/planning/NETWORK_DESIGN.md`](../../docs/planning/NETWORK_DESIGN.md)）。**WebTransport 主 / WebSocket フォールバック**。
 
-| ライブラリ | 用途 | 特性 |
+| 技術 | 用途 | 特性 |
 | :--- | :--- | :--- |
-| **Colyseus** | 権威ゲームサーバー（ルーム管理・状態同期） | クライアント予測・サーバー調停の母体。WebSocket ベース・MIT・セルフホスト可 |
-| **socket.io** | WebSocket（TCP） | Krunker.io も採用する方式。チャット・ロビー・マッチメイキング。信頼性・順序保証（ヘッドオブラインブロッキングあり）。bun/Node で動く |
-| **geckos.io** | UDP over WebRTC（unreliable/unordered） | 座標・入力・射撃イベント向け。パケットロス許容・HOL ブロッキングなし。ただしシグナリング(ポート 9208)・STUN/TURN・UDP ポート開放が必要でデプロイ複雑。サーバーは node-datachannel ネイティブ依存で **bun 互換は未検証** |
-| `livekit-client` | WebRTC ボイス | 近接ボイチャ（Proximity Voice）。機能確定後に導入検討 |
-| `msgpackr` / `protobufjs` | バイナリシリアライズ | パケット圧縮 |
+| **WebTransport**（ブラウザ標準） | **主トランスポート** | HTTP/3・QUIC over UDP/443。datagrams（非信頼・HOL なし）= 座標・入力・状態、streams（信頼）= ダメージ確定・チャット。NAT 越え（STUN/TURN）不要。Chrome97+/FF114+/Safari26.4。**UDP/443 ブロック・非対応時は WS へ自動フォールバック** |
+| **WebSocket**（`ws` / Bun.serve） | フォールバック＆信頼チャネル | チャット・ロビー・マッチメイキング、WT 不可環境のゲームプレイ。bun ネイティブ（uWS）。Krunker.io も socket.io 方式 |
+| **Caddy**（HTTP/3 エッジ） | HTTP/3・WebTransport 終端 | bun は WT サーバー未実装のためエッジで終端し bun（WS＋ロジック）へプロキシ。bun の WT 対応後に寄せる |
+| ~~geckos.io~~ | 不採用 | WebRTC-UDP だが node-datachannel ネイティブ依存で bun 非互換の恐れ、別 UDP ポートが FW に弱い |
+| Colyseus | 権威サーバーFW（選択肢） | ルーム管理・状態同期の候補。自前軽量実装と Phase 1 で比較 |
+| `livekit-client` | WebRTC ボイス（後方フェーズ） | 近接ボイチャ。WebRTC MediaStream/SFU でゲームデータとは別系統 |
+| **msgpackr** | バイナリシリアライズ | **全メッセージで採用**。高頻度パケットは将来 bitpacking へ移行する余地を残す |
+| protobufjs | 将来の選択肢 | スキーマ厳密管理が必要になった場合 |
+
+**tick/描画**: サーバー tick・入力・状態スナップショット = **30Hz**。描画 = **可変フレームレート（60〜120Hz+、rAF 準拠、60 は下限フロア）**で tick と独立、delta time ベース。
 
 ## UI / 状態
 
@@ -80,5 +85,7 @@
 <!-- Phase 0 で実際にバージョン固定・ハマりどころを記録していく。 -->
 - **bun**: Sandbox ではプリインストールされていない。`bun.sh` は SSL エラーで到達不可だが、**npm registry 経由なら導入可**（2026-09-03 に `bun 1.4.0` で install / run / test 動作確認済み）。導入は `npm install -g bun`、復旧は `restore-sandbox-env.sh`。テストランナーは Vitest を使い `bun test` は使わない（AGENTS.md §6.1）。
 - ライブラリの API 仕様に不安があれば Web 検索（threejs.org / docs.pmnd.rs / colyseus.io 等の公式を優先、AGENTS.md §7.5）。
-- ネットワーク（Colyseus / socket.io / geckos.io）の選定と bun ランタイム互換はネットワークフェーズ（Phase 1 以降）で実機検証。特に geckos.io はサーバー側が node-datachannel（ネイティブ）依存のため bun で動かない可能性があり、要確認。
-- **Krunker.io は socket.io（WebSocket/TCP）で動作**し、クライアント予測＋ラグ補償で高速感を実現（2026-09-03 調査）。「ブラウザFPS＝UDP 必須」ではなく、WebSocket でも小部屋なら十分実用的。
+- ネットワークは **WebTransport 主 / WebSocket フォールバック**で確定（[NETWORK_DESIGN](../../docs/planning/NETWORK_DESIGN.md)）。bun は WebTransport サーバー未実装（HTTP/3 は v1.3.14 で実験サポート、WT は issue #13656 で進行中）のため、初期は Caddy エッジで HTTP/3 終端 → bun（WS＋ロジック）。WT の bun ネイティブ対応状況は Phase 1 で再調査。
+- ブラウザは WebTransport が Safari26.4（2026-03）で Baseline 入り。古い Safari・iOS WebView・UDP/443 ブロック企業網では WS へフォールバックが必須。
+- geckos.io は不採用（node-datachannel ネイティブ依存で bun 非互換の恐れ、別 UDP ポートが FW に弱い）。
+- **Krunker.io は socket.io（WebSocket/TCP）で動作**し、クライアント予測＋ラグ補償で高速感を実現。「ブラウザFPS＝UDP 必須」ではない。

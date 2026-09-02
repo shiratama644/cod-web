@@ -205,7 +205,9 @@ bash .agent/hooks/restore-sandbox-env.sh
 ### 6.6 ネットワーク / ゲームサーバー設計ルール
 - **権威型サーバー（Authoritative Server）前提**: 当たり判定・スコア・プレイヤー状態の確定はサーバー側で行う。クライアントの BVH 即時判定はあくまで体感向上（先行表示）で、サーバーが Lag Compensation で検証する（CONFIG 黄金ルール1・2）。
 - クライアント予測・サーバー調停（Reconciliation）を基本とし、クライアント入力は即座に画面反映しつつサーバーのスナップショットで差分補正する。
-- **トランスポート（WebSocket vs WebRTC-UDP）は現状「議論中」であり、確定するまで特定ライブラリにハードコードしない**。参考事実: Krunker.io は socket.io（WebSocket/TCP）で動作し、クライアント予測＋ラグ補償で高速感を実現している。ブラウザで UDP 相当（unreliable/unordered DataChannel over WebRTC）を使う場合は geckos.io 等が選択肢だが、シグナリング・UDP ポート・STUN/TURN が必要でデプロイが複雑になる。決定はユーザーとの合意（計画書）に従う。
+- **トランスポートは確定**（[`docs/planning/NETWORK_DESIGN.md`](docs/planning/NETWORK_DESIGN.md)）: **WebTransport（HTTP/3・QUIC、datagrams=非信頼 / streams=信頼）を主経路、WebSocket をフォールバック＆信頼メッセージ経路**とする。非対応・UDP/443 ブロック時は自動で WS へフォールバック。geckos.io（WebRTC-UDP）は採用しない（bun 非互換の恐れ＋別 UDP ポートで FW に弱い）。P2P ではないため STUN/TURN は不要。ネットコードはトランスポート非依存の抽象境界（NetTransport）の内側に書く。
+- **tick と描画**: サーバー tick・入力送信・状態スナップショットは **30Hz**。描画は**可変フレームレート（60〜120Hz+）**で tick と独立、全移動・アニメは delta time ベース。
+- **シリアライズは msgpackr** で開始（高頻度パケットのみ将来 bitpacking へ移行する余地を残す）。**FX/アニメはネットに流さず**、アクションフラグ（`isShooting` 等のビットフィールド）と発射トリガーだけ送り、クライアントが決定論的に再生する。
 - ネットワーク結合を含む機能は Sandbox で実結合できないため、ロジックを純粋関数・モック境界で分離し、ユニットテストで検証。実結合は CI/実機確認（「実環境検証待ち」）とする。
 
 ### 6.7 ドキュメント運用

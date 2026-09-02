@@ -13,7 +13,7 @@
 | 3D レンダリング | Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**、WebGL2 が全端末の基準）/ @react-three/fiber / @react-three/drei、TSL |
 | 物理・当たり判定 | @react-three/rapier（クライアント）/ Rapier（サーバー）、three-mesh-bvh（射撃判定） |
 | ゲームロジック | ECS（miniplex / biteps）、ゲームループは React レンダリングから分離 |
-| ネットワーク | 権威型サーバー + クライアント予測・サーバー調停 + ラグ補償。トランスポート（WebSocket / WebRTC-UDP）は議論中 |
+| ネットワーク | 権威型サーバー + クライアント予測・サーバー調停 + ラグ補償。**WebTransport（HTTP/3・datagrams+streams）主 / WebSocket フォールバック**、サーバー tick 30Hz・描画は可変フレームレート。[設計記録](docs/planning/NETWORK_DESIGN.md) |
 | UI / 状態 | React + TypeScript、Zustand（ゲーム状態）、Radix UI、framer-motion、lucide-react |
 | オーディオ | Web Audio API（HRTF 立体音響）、howler.js、resonance-audio |
 | ビルド / ツール | Vite、bun、Biome（Lint/Format）、Vitest、Playwright（E2E） |

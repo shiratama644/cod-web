@@ -14,6 +14,7 @@ docs/
 ├── planning/            # 計画書（Phase 単位・_TEMPLATE.md 形式）
 │   ├── _TEMPLATE.md     # 計画書テンプレート（新規計画書は必ず本形式）
 │   ├── PHASE00_PLAN.md  # Phase 0: プロジェクト基盤構築
+│   ├── NETWORK_DESIGN.md # ネットワーク＆リアルタイム設計の決定記録（WebTransport/WS・tick・シリアライズ・FX同期）
 │   └── complete/        # 完了レポート
 ├── audit/               # 差分・バグ監査
 └── ops/                 # 運用ドキュメント（デプロイ・CI 実務）

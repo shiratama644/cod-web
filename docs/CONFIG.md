@@ -53,15 +53,21 @@
 
 ## 4. マルチプレイヤー・低遅延ネットワーキング & ボイスチャット
 
-| ライブラリ | 役割 | 備考 |
+> **決定方針（2026-09-03、詳細は [`planning/NETWORK_DESIGN.md`](./planning/NETWORK_DESIGN.md)）**:
+> **WebTransport（HTTP/3・QUIC）を主経路、WebSocket をフォールバック＆信頼メッセージ経路**とする。datagrams（非信頼）を座標・入力・状態に、streams（信頼）をダメージ確定・チャット等に使用。非対応・UDP/443 ブロック時は自動で WebSocket へフォールバック。STUN/TURN は不要（P2P ではなくクライアント→公開権威サーバー）。
+> サーバー tick・入力は **30Hz**、描画は**可変フレームレート（60〜120Hz+）**で独立。シリアライズは **msgpackr**。FX/アニメはアクションフラグ（`isShooting` 等）＋発射トリガーのみ送りクライアント再生。
+
+| ライブラリ / 技術 | 役割 | 備考 |
 | :--- | :--- | :--- |
-| **Colyseus** | 権威型ゲームサーバーフレームワーク | ルーム管理、状態同期（State Sync）、クライアント予測・サーバー調停（Reconciliation） |
-| **geckos.io** | UDP over WebRTC | **FPSに不可欠なパケットロス許容・超低遅延通信**（プレイヤー座標・入力・射撃イベント同期） |
-| **socket.io** | WebSocket通信 | チャット、ロビー、マッチメイキングなど信頼性・確実性が求められる通信 |
-| **livekit-client** | WebRTC ボイスチャットSDK | **ゲーム内ボイスチャット**。3D空間内の距離に応じて減衰する近接ボイチャ（Proximity Voice）に対応 |
-| **playroomkit** | モバイル向け対戦SDK | モバイル端末間のP2P/ローカル対戦やパーティゲーム風の簡易同期プロトタイピング |
-| **msgpackr** | 高速MessagePackバイナリシリアライザ | JSONに比べパケットサイズを極限まで圧縮し、通信帯域を節約 |
-| **protobufjs** | Protocol Buffers（バイナリ通信） | 厳密なスキーマ定義と極小フットプリントでのネットワーク同期 |
+| **WebTransport**（ブラウザ標準 API） | **主トランスポート** | HTTP/3・QUIC over UDP/443。datagrams（非信頼・HOL なし）+ streams（信頼）を 1 接続で併用。NAT 越え不要。Chrome97+/FF114+/Safari26.4。**WS フォールバック必須** |
+| **WebSocket**（`ws` / Bun.serve ネイティブ） | **フォールバック＆信頼チャネル** | チャット・ロビー・マッチメイキング、および WT 非対応/ UDP ブロック環境のゲームプレイ。bun ネイティブで高速。Krunker.io も socket.io 方式 |
+| **Caddy**（HTTP/3 リバースプロキシ） | HTTP/3・WebTransport 終端 | bun は WT サーバー未実装のため、エッジで HTTP/3 を終端し bun（WS＋ゲームロジック）へプロキシ。bun の WT 対応後に寄せる |
+| ~~geckos.io~~ | （不採用） | WebRTC-UDP だがサーバーが node-datachannel ネイティブ依存で **bun 非互換の恐れ**、別 UDP ポートが FW に塞がれやすい。WebTransport が同じ UDP の長所をより安全に提供 |
+| Colyseus | 権威サーバーフレームワーク（選択肢） | ルーム管理・状態同期の候補。自前軽量実装と Phase 1 で比較 |
+| **livekit-client** | WebRTC ボイスチャットSDK（後方フェーズ） | 近接ボイチャ（Proximity Voice）。WebRTC MediaStream/SFU で、ゲームデータ（WebTransport）とは別系統 |
+| playroomkit | モバイル向け対戦SDK（参考・不採用候補） | P2P/ローカル対戦プロトタイプ用。本プロジェクトは権威サーバー方式のため原則不使用 |
+| **msgpackr** | 高速MessagePackバイナリシリアライザ | **全メッセージで採用**。JSON 感覚・高速。高頻度パケットは将来 bitpacking へ移行する余地を残す |
+| protobufjs | Protocol Buffers（将来の選択肢） | スキーマ厳密管理が必要になった場合の候補。初期は msgpackr |
 
 ---
 
@@ -217,5 +223,9 @@
    - **Draw Calls**: 80〜100以下（`InstancedMesh` / `BatchedMesh` の積極利用）
    - **テクスチャ**: すべて KTX2/Basis Universal 形式に圧縮し、GPU VRAM 圧迫を回避
    - **デバイス適応**: `PerformanceMonitor`（drei）でフレームレートを監視し、低性能端末では DPR（解像度スケール）・シャドウ・パーティクル数・LOD を動的に下げる品質ティアを用意。**ローエンドモバイルでも 60FPS を割らないこと**を最低ラインとする
+   - **描画フレームレートは可変**: 60FPS は「全端末が達成すべき下限フロア」であり上限ではない。`requestAnimationFrame` はディスプレイのリフレッシュレート（60/90/120/144Hz）で呼ばれるため、**60 で蓋をせずハイリフレッシュ端末では 120FPS で描画**する。全移動・アニメは delta time ベース（固定 16.67ms を仮定しない）。ネット tick（30Hz）とは独立（[`planning/NETWORK_DESIGN.md`](./planning/NETWORK_DESIGN.md)）
    - **高速読み込み**: Krunker 並みの起動の速さを目標に、初期バンドル・アセットを最小化（軽量シーンから段階ロード）
+
+> 💡 **FX/射撃アニメはネットワークに流さない**
+> マズルフラッシュ・反動・トレーサー・薬莢・パーティクル等は、`isShooting` 等の**アクションフラグ（ビットフィールド）**と `{playerId, seq, weapon}` の**発射トリガーイベント**だけを送り、各クライアントが決定論的にローカル再生する。アニメ用 transform を毎フレーム同期せずパケットを最小化する（[`planning/NETWORK_DESIGN.md`](./planning/NETWORK_DESIGN.md) §5）。
    - **解像度制御**: `PerformanceMonitor` を用いてモバイルの負荷に応じて `dpr={clamp(..., 1, 1.5)}` を動的変更
