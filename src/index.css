@@ -27,6 +27,9 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
+  /* タッチドラッグを視点操作に使うため、スクロール/リフレッシュ等の既定ジェスチャを抑止 */
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 /* R3F Canvas は全画面を占有 */

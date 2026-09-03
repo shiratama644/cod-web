@@ -169,10 +169,19 @@ export class GameClient {
     if (this.selfId != null && this.prediction) {
       const me = snap.players.find((p) => p.id === this.selfId)
       if (me) {
-        // スナップショットに pitch は含まれない（Phase 1 は yaw のみ送信）。
-        // 自視点の pitch はローカル入力が正なので、調停では現在の pitch を維持する。
+        // 位置・速度はサーバー権威。yaw/pitch（視点）はローカル入力が常に正なので
+        // ローカル値を渡し、サーバーの遅延値で視点を跳ねさせない（reconcile 側で維持）。
         this.prediction.reconcile(
-          { x: me.x, y: me.y, z: me.z, yaw: me.yaw, pitch: this.prediction.state.pitch },
+          {
+            x: me.x,
+            y: me.y,
+            z: me.z,
+            vx: me.vx,
+            vy: me.vy,
+            vz: me.vz,
+            yaw: this.prediction.state.yaw,
+            pitch: this.prediction.state.pitch,
+          },
           snap.lastAckSeq,
         )
       }

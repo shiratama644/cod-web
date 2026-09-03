@@ -137,6 +137,10 @@ export class InputController {
   /** 入力購読を開始する。視点は window レベルで監視しマルチタッチに対応する。 */
   attach(el: HTMLElement): void {
     this.el = el
+    // 視点ドラッグ対象（canvas）ではタッチのスクロール/ピンチ/プルリフレッシュ等の
+    // ブラウザ既定動作を抑止しないと、タッチドラッグがジェスチャとみなされて
+    // pointermove がキャンセルされ、視点操作できなくなる（touch-action: none は必須）。
+    el.style.touchAction = 'none'
     window.addEventListener('keydown', this.onKeyDown)
     window.addEventListener('keyup', this.onKeyUp)
     // 視点ドラッグは window で取る。ジョイスティック/ボタンは .touch-ui で除外し、
