@@ -197,9 +197,17 @@ export class GameClient {
     this.updateRemotes()
   }
 
-  /** 自プレイヤーの状態（描画はこれを参照）。 */
+  /** 自プレイヤーの最新シム状態（調停・位置確認用）。 */
   get self() {
     return this.prediction?.state ?? null
+  }
+
+  /**
+   * 自プレイヤーの描画用カメラ状態。60Hz シムを速度で描画時刻へ外挿し、
+   * 120Hz 等の可変フレームレートでも滑らかに映す（ガタつき解消）。
+   */
+  renderSelf(nowMs: number) {
+    return this.prediction ? this.prediction.renderCamera(nowMs) : null
   }
 
   /** 入力コントローラから 1 入力を取り出す（ジャンプはワンショット消費）。 */

@@ -34,6 +34,8 @@ export class ClientPrediction {
   state: PlayerState
   private pending: PendingInput[] = []
   private nextSeq = 1
+  /** 最後に予測ステップを進めた時刻（performance.now()）。描画外挿で使用。 */
+  private lastStepMs = 0
 
   constructor(
     private readonly world: CollisionWorld,
@@ -59,8 +61,32 @@ export class ClientPrediction {
     const full: PlayerInput = { ...input, seq }
     // ローカル予測: 固定ステップで即座に進める。
     stepPlayer(this.state, full, SIM_DT, this.world)
+    this.lastStepMs = performance.now()
     this.pending.push({ seq, input: full })
     return full
+  }
+
+  /**
+   * 描画フレーム（120Hz 等の可変レート）向けの一人称カメラ状態を返す。
+   *
+   * シムは 60Hz 固定ステップなので、そのままカメラに映すと 120Hz ディスプレイで
+   * 「同じ位置を2フレーム→ワープ」の階段状になりガタガタする。そこで最新シム状態から
+   * **速度で描画時刻へ最大1ティック分だけ外挿**し、可変フレームレートでも滑らかに
+   * 追従させる（リモート補間と同じ発想を自プレイヤーにも適用。遅延は実質ゼロ）。
+   * yaw/pitch は入力値をそのまま使い、視点操作は遅延させない。
+   */
+  renderCamera(nowMs: number): { x: number; y: number; z: number; yaw: number; pitch: number } {
+    // 最後のシムステップからの経過を 0..1 ティックにクランプ（1ティック以上は外挿しない）。
+    const dt = this.lastStepMs === 0 ? 0 : (nowMs - this.lastStepMs) / 1000
+    const a = Math.max(0, Math.min(dt / SIM_DT, 1))
+    const s = this.state
+    return {
+      x: s.x + s.vx * SIM_DT * a,
+      y: s.y + s.vy * SIM_DT * a,
+      z: s.z + s.vz * SIM_DT * a,
+      yaw: s.yaw,
+      pitch: s.pitch,
+    }
   }
 
   /**

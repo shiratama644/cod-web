@@ -39,10 +39,20 @@ body {
 .app {
   position: relative;
   width: 100%;
+  /* 親 (#root/body) の 100% に加え、dvh でモバイルの可変アドレスバー分も充填。
+     Fullscreen API が効かない Android でも画面いっぱいに広がるようにする。 */
   height: 100%;
   /* タッチドラッグを視点操作に使うため、スクロール/リフレッシュ等の既定ジェスチャを抑止 */
   touch-action: none;
   overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@supports (height: 100dvh) {
+  .app {
+    height: 100dvh;
+  }
 }
 
 /* R3F Canvas は全画面を占有 */

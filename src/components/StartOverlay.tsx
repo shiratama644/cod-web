@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type FullscreenElement = HTMLElement & {
   webkitRequestFullscreen?: (options?: { [key: string]: unknown }) => Promise<void> | void
@@ -48,13 +48,23 @@ function requestFullscreen(): void {
  */
 export function StartOverlay() {
   const [started, setStarted] = useState(false)
+  // 一度でも全画面に入れたか（Esc での「全画面解除→オーバーレイ復帰」は、実際に
+  // 全画面を使えていた場合のみ行う）。モバイルで Fullscreen API が拒否/非対応の環境では
+  // fullscreenchange が fs=false のまま発火して started を巻き戻してしまうため、この門が要る。
+  const didEnterFs = useRef(false)
 
   // 全画面解除（Esc 等）を検知してオーバーレイを復帰させる。
   useEffect(() => {
     const handler = () => {
       const d = document as Document & { webkitFullscreenElement?: Element | null }
       const fs = Boolean(d.fullscreenElement ?? d.webkitFullscreenElement)
-      if (!fs) setStarted(false)
+      if (fs) {
+        didEnterFs.current = true
+      } else if (didEnterFs.current) {
+        // 実際に全画面を使えていて、それを抜けた場合のみ開始画面へ戻す。
+        didEnterFs.current = false
+        setStarted(false)
+      }
     }
     document.addEventListener('fullscreenchange', handler)
     document.addEventListener('webkitfullscreenchange', handler as EventListener)
@@ -66,8 +76,8 @@ export function StartOverlay() {
 
   const enter = () => {
     requestFullscreen()
-    // モバイルでアドレスバーを畳む/スクロール領域をリセットする保険（全画面 API が
-    // 効かない環境でも画面を広く使えるように）。
+    // モバイルでアドレスバーを畳む/スクロール領域をリセットする保険（Fullscreen API が
+    // 効かない環境でも viewport 充填＝100dvh で画面いっぱいに使う）。
     try {
       window.scrollTo(0, 1)
       window.scrollTo(0, 0)

@@ -31,6 +31,7 @@ export interface InputState {
 
 const LOOK_SENS = 0.0022 // 視点感度（ドラッグ/ロック共通）
 const PITCH_LIMIT = Math.PI / 2 - 0.01
+const JOY_DEADZONE = 0.18 // 仮想スティックの放射状デッドゾーン半径（中心付近のブレ除去）
 
 /** 移動入力を -1..1 にクランプ。 */
 function clampAxis(v: number): number {
@@ -171,12 +172,22 @@ export class InputController {
 
   /**
    * 仮想ジョイスティックのアナログ移動入力を設定する（nipplejs から呼ぶ）。
+   * 放射状デッドゾーンを適用し、中心付近の微小なブレで「まっすぐ進んでいるつもりが
+   * 斜めにジグザグ」になるのを防ぐ。デッドゾーン内は 0、外はデッドゾーン境界を 0 と
+   * するように大きさを再マップ（外周で 1）する。
    * @param x -1..1（右が +）
    * @param z -1..1（前＝画面奥が +）。nipplejs の vector をそのまま渡す。
    */
   setMoveVector(x: number, z: number): void {
-    this.joyX = x
-    this.joyZ = z
+    const len = Math.hypot(x, z)
+    if (len < JOY_DEADZONE || len === 0) {
+      this.joyX = 0
+      this.joyZ = 0
+      return
+    }
+    const mag = Math.min((len - JOY_DEADZONE) / (1 - JOY_DEADZONE), 1)
+    this.joyX = (x / len) * mag
+    this.joyZ = (z / len) * mag
   }
 
   /** ジャンプを 1 回要求する（ジャンプボタン・Space 共通。次の sample で消費）。 */
