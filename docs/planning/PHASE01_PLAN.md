@@ -281,6 +281,6 @@ export const JUMP_FORCE = 7.0
 | P1-C | （SHA 記入予定） | 5 passed（Room） | `bun run server` 起動を smoke 確認（HTTP health 200・2 WS 接続で welcome/join/leave 通知）。Room はソケット非依存でテスト |
 | P1-D | （SHA 記入予定） | 4 passed（Simulation） | 固定 1/60・アキュムレータ・最大5ステップ/フレーム。入力で前進・古い seq 無視・アイドルで重力落下を検証 |
 | P1-E | （SHA 記入予定） | 5 passed（snapshot/backpressure） | 20 人スナップショット: payload **329B**（1+8+20×16）／ wire 357B(IPv4)・377B(IPv6)、≤1200。ライブ smoke: 1秒でちょうど **30 snapshot**・1人=25B |
-| P1-F | | | |
-| P1-G | | | 2 タブ同期・人工遅延操作感（ユーザー実機確認） |
+| P1-F | （SHA 記入予定） | 6 passed（prediction） | WebSocket トランスポート・WASD/PointerLock 入力・60Hz 入力送信・ClientPrediction。Vite `/ws` プロキシで同一オリジン接続 |
+| P1-G | （SHA 記入予定） | 6 passed（interpolation） | Interpolator で 100ms バッファ Lerp/外挿。**ライブ往復: Vite プロキシ経由で welcome＋23 snapshot/0.8s、入力30パケットでサーバー権威 z が 0→-3.87m**。実ブラウザ2タブ目視はユーザー実機確認待ち |
 | P1-H | | | 4 検証 PASS・ドキュメント追従 |

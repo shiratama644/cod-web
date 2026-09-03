@@ -56,6 +56,22 @@ export function createCollisionWorld(bvh: MeshBVH): CollisionWorld {
 }
 
 /**
+ * Phase 1 のデフォルト障害物（平面マップ上の簡易ボックス）。
+ * クライアント予測とサーバー権威が**同一マップ → 同一 BVH** を持つため、
+ * 障害物定義は shared に置き両者が同じものを使う（決定論）。
+ */
+export const DEFAULT_OBSTACLES: ReadonlyArray<BoxObstacle> = [
+  { cx: 10, cy: 1, cz: 0, sizeX: 2, sizeY: 2, sizeZ: 2 },
+  { cx: -8, cy: 2, cz: 6, sizeX: 4, sizeY: 4, sizeZ: 2 },
+  { cx: 0, cy: 0.75, cz: -12, sizeX: 6, sizeY: 1.5, sizeZ: 2 },
+]
+
+/** Phase 1 の既定マップ（床＋DEFAULT_OBSTACLES）。クライアント/サーバー共通。 */
+export function createDefaultWorld(): CollisionWorld {
+  return createPlaneWorld(DEFAULT_OBSTACLES)
+}
+
+/**
  * Phase 1 用の平面ワールド: y=0 の広い床＋任意の簡易ボックス障害物。
  * 床・障害物を統合した 1 つの BVH を構築する。
  */
