@@ -26,14 +26,15 @@
 
 > レンダラーは **WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準）。
 > **描画 FPS は可変**（rAF = 60〜120Hz+。60 は全端末の下限フロアであり上限ではない）で、シミュレーション tick 60Hz（送信30Hz）とは独立・delta time ベース。
-> ネットワーク方針は確定: **WebTransport（datagrams+streams）主 / WebSocket フォールバック**、サーバー tick・入力 30Hz、シリアライズ msgpackr、FX はアクションフラグ＋トリガーのみ送信でクライアント再生。詳細は [`arch/networking.md`](./arch/networking.md)。
+> ネットワーク方針は確定: **WebTransport（datagrams+streams）主 / WebSocket フォールバック**、シム tick **60Hz**・入力 **60Hz**・スナップショット送信 **30Hz**（レート分離・射撃は sub-tick）、高頻度パケットは**手動バイナリ固定レイアウト**（低頻度信頼イベントは msgpackr）、FX はアクションフラグ＋トリガーのみ送信でクライアント再生。詳細は [`arch/networking.md`](./arch/networking.md)・[`arch/server-authority.md`](./arch/server-authority.md)。
 
 ロードマップの大枠（フェーズ分割は計画書作成時に確定）:
 
 | Phase | テーマ | 状態 |
 |---|---|---|
 | **0** | プロジェクト基盤（Vite/React/TS/Biome/Vitest、R3F シーン［WebGPU+WebGL2 フォールバック］、ゲームループ骨架） | **完了**（2026-09-03、実機確認済み） |
-| 1 以降 | プレイヤー操作 / 物理・当たり判定 / ECS / 武器・射撃 / ネットワーク（権威サーバー・トランスポート確定後）/ ボイス / HUD・UI / モバイル入力 / アセットパイプライン / パフォーマンス（全端末 60FPS 検証） | 未定（Phase 0 完了後に計画） |
+| **1** | ネットワーク初期（権威 bun サーバー・shared 純粋ロジック・位置同期のみ）。**最小到達点＝動くプレイヤーが互いに見える** | **計画済み・未着手**（[PHASE01_PLAN.md](./planning/PHASE01_PLAN.md)） |
+| 2 以降 | 射撃・当たり判定・ラグ補償 / 3D マップ（GLTF＋BVH 事前生成）/ アニメ（XState）/ マッチメイキング・ラウンド制 / 購入・チャット / WebTransport 有効化 / ボイス / HUD・UI / モバイル入力 / アセットパイプライン / パフォーマンス（全端末 60FPS 検証） | 未定（Phase 1 完了後に計画） |
 
 ---
 
@@ -55,7 +56,31 @@
 | P0-H | ドキュメント/skills の実態追従（README のセットアップ手順検証、`.agent/skills/tech-stack.md` 等を実装後の実態に更新） | ローカル検証済み | 100% | P0-G | docs・skills と実コードの間に不整合がない | README を Phase 0 実態に更新（test:e2e 削除・進捗注記）、skills/tech-stack.md に Phase 0 の実バージョン・WebGPU/R3F/TS7/Biome2/Vitest/Zustand のハマりどころを追記 |
 
 ※ Playwright（E2E）は CI 基盤タスクとして Phase 1 以降で計画（Sandbox では実行不可、AGENTS.md §6.2）。
-※ ゲームサーバー基盤は Phase 1 以降のネットワークフェーズで計画。トランスポートは **WebTransport 主 / WebSocket フォールバック**で確定（[networking](arch/networking.md)）。Phase 0 では NetTransport 抽象境界のインターフェースのみ定義し、実装（WT/WS）は Phase 1。
+※ ゲームサーバー基盤は Phase 1 で実装。トランスポートは **WebTransport 主 / WebSocket フォールバック**で確定（[networking](arch/networking.md)）。Phase 0 では NetTransport 抽象境界のインターフェースのみを見込んでおり、実装（WS 先行・WT 後続）は Phase 1（[server-authority](arch/server-authority.md)）。
+
+---
+
+## Phase 1: ネットワーク初期 — 権威サーバー＋位置同期
+
+> 計画書: [`planning/PHASE01_PLAN.md`](./planning/PHASE01_PLAN.md)（_TEMPLATE.md 準拠）。
+> ゴール: **位置同期のみ＝動くプレイヤーが互いに見える**（2 タブで片方を動かすと他方で滑らかに動く）。
+> 射撃・当たり判定・ラウンド制・購入・チャット・マッチメイキング・WebTransport 有効化・GLTF マップは後続フェーズ。
+> **1 サブタスク = 1 commit を原則**。
+
+| ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
+|---|---|---|---:|---|---|---|
+| P1-A | shared/server 基盤・ビルド設定・プロトコル（`three-mesh-bvh`/`@types/bun` 追加、tsconfig/vite/vitest 解決、`shared/protocol` 定数＋型＋**バイナリ packer**、NetTransport 抽象） | 未着手 | 0% | - | packer/量子化のユニットテスト green・40人 snapshot ≤MTU | |
+| P1-B | shared キネマティック移動（純粋関数 `stepPlayer`・three-mesh-bvh CollisionWorld 境界［平面 BVH・カプセル shapecast］・データ指向 SimWorld） | 未着手 | 0% | P1-A | 決定論・重力/ジャンプ/床衝突の node ユニットテスト green | |
+| P1-C | bun サーバ骨架（`Bun.serve` ネイティブ WS・単一デフォルトルーム・参加/離脱・playerId 払い出し） | 未着手 | 0% | P1-A | `bun run server` 起動・接続/離脱のロジック統合テスト | |
+| P1-D | 60Hz 権威シミュレーション＋入力受信（アキュムレータ固定 1/60・最新入力消費・shared stepPlayer 権威実行・移動検証） | 未着手 | 0% | P1-B,P1-C | 入力駆動で位置が進む統合テスト | |
+| P1-E | 30Hz スナップショット送信＋バックプレッシャ（1 tick おきバイナリブロードキャスト・serverTick/lastAckSeq・詰まりクライアント間引き・ラグ補償履歴の器） | 未着手 | 0% | P1-D | スナップショット bytes/backpressure の統合テスト | |
+| P1-F | クライアント接続・入力送信・オフライン予測移動（WS 実装・WASD+PointerLock・60Hz 入力・prediction・自カプセル/一人称カメラ） | 未着手 | 0% | P1-A,P1-B,P1-C | オフラインで WASD 移動が快適（実機確認はユーザー） | |
+| P1-G | スナップショット受信・リモート補間・調停（100ms バッファ Lerp/外挿・リモートカプセル描画・lastAckSeq 調停 replay） | 未着手 | 0% | P1-E,P1-F | **2 タブで互いに滑らかに動く**・人工遅延で操作感維持（実機確認はユーザー） | |
+| P1-H | 検証・ドキュメント/skills 追従（4 検証 PASS・パケット実測・task-list/README/docs/skills 更新） | 未着手 | 0% | P1-A〜G | typecheck/lint/test/build 全 PASS・証拠記録 | |
+
+※ シム tick 60Hz / 入力 60Hz / スナップショット送信 30Hz（レート分離）。射撃は sub-tick（後続）。
+※ シムはデータ指向（プレーン typed 配列＋純粋関数）。bitecs/@miniplex は弾丸/bot が数千体規模になってから後入れ。
+※ 実ブラウザ・実 WS の E2E は Sandbox 不可。node 環境のユニット/ロジック統合テストで担保し、2 タブ同期はユーザー実機確認（`実環境検証待ち`）。
 
 ---
 

@@ -20,7 +20,8 @@ docs/
 │   └── game-engineering-principles.md  # FPS 設計の黄金ルール・実装パターン集
 ├── planning/            # 計画書（何を・どの順で：Phase 単位・_TEMPLATE.md 形式）
 │   ├── _TEMPLATE.md     # 計画書テンプレート（新規計画書は必ず本形式）
-│   ├── PHASE00_PLAN.md  # Phase 0: プロジェクト基盤構築
+│   ├── PHASE00_PLAN.md  # Phase 0: プロジェクト基盤構築（完了）
+│   ├── PHASE01_PLAN.md  # Phase 1: ネットワーク初期（権威サーバー＋位置同期）
 │   └── complete/        # 完了レポート
 ├── audit/               # 差分・バグ監査
 └── ops/                 # 運用ドキュメント（デプロイ・CI 実務）
