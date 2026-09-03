@@ -22,6 +22,8 @@
 | ~~@react-three/rapier / Rapier（サーバー）~~ | プレイヤー移動には**不使用**。three-mesh-bvh のキネマティックCC で足りる。動的剛体（投擲・崩壊物）が必要になったら再検討 |
 
 > **重要**: three-mesh-bvh の BVH 生成・shapecast・raycast は **CPU のみで WebGL 不要**（作者 gkjohnson 確認）。だから **ヘッドレス bun サーバーでも three core/math と three-mesh-bvh を import して同一 BVH で権威衝突計算ができる**。マップは **3D Mesh Map（GLTF）** から BVH を構築し、クライアント/サーバーで同一マップ→同一 BVH を使う。レンダラー（WebGPU/WebGL）・react/DOM はサーバーでは使わない。
+>
+> **BVH はビルド時に事前生成して serialize して配る**: 実行時に毎回 `new MeshBVH(geometry)` しない。ビルドスクリプトで `MeshBVH.serialize(bvh)` → `{roots: ArrayBuffer[], index}` をバイナリ化し、GLTF の `three_mesh_bvh` 拡張に埋め込むか `.bvh` サイドカーとして置く。ランタイムは `MeshBVH.deserialize(data, geometry)` するだけ（起動ほぼ0秒・root バッファ共有）。**サーバーは GLTFLoader（window/Image 依存）を使わず、position + BVH バッファだけ直接読んで deserialize**（テクスチャ/マテリアル不要）。移動 shapecast と射撃 raycast は同一 BVH を使い回す（ラグ補償の巻き戻しも同じ。マップは静的なので巻き戻し不要、動的プレイヤーだけ巻き戻す）。
 | `three-bvh-csg` | リアルタイム CSG（弾痕・破壊表現） |
 
 ## ECS・大量オブジェクト

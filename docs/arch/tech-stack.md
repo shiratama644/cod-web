@@ -171,6 +171,7 @@
 | **three-stdlib** | Three.js追加ローダー群 | KTX2Loader, DRACOLoader, LDrawLoader などの標準拡張ローダー |
 | **meshoptimizer** / **DRACOLoader** | 高速メッシュ圧縮・デコード | モデルサイズ削減とモバイル環境での高速ロード（meshoptimizerはデコードが極めて高速） |
 | **@gltf-transform/core** | GLTF最適化ビルドツール | モデルのポリゴン削減、テクスチャのKTX2/Basis変換、LOD自動生成、不要ノード削除 |
+| **three-mesh-bvh**（`MeshBVH.serialize` / `deserialize`） | **マップ BVH のビルド時事前生成** | GLTF の衝突ジオメトリから BVH をビルド時に 1 回構築し `serialize()` でバイナリ化（GLTF 拡張 `three_mesh_bvh` 埋め込み or `.bvh` サイドカー）。クライアント/ヘッドレスサーバーとも起動時は `deserialize()` するだけで起動ほぼ0秒・実行時解析なし。サーバーは GLTFLoader（window/Image 依存）を使わず position+BVH バッファのみ読む。[server-authority.md](./server-authority.md) §5.1 |
 
 ---
 

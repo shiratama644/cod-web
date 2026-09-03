@@ -37,6 +37,20 @@
 
 - docs-only。相対 .md リンクチェック BROKEN 0、Rapier/ecctrl の古い肯定記述を grep で一掃（不使用注記以外の残存なし）。
 
+## デベロッパーからの追加助言（② GLTF ヘッドレス読込・BVH 事前シリアライズ、同日追記）
+
+デベロッパーより 2 点の資産パイプライン助言:
+
+1. **ヘッドレス（bun）での GLTF 読込と BVH 事前シリアライズ**: サーバーで GLTFLoader を直接使うと `window`/`Image` 等のブラウザ API 依存でエラーになりうる → **ビルド時に GLTF からジオメトリを取り出して BVH を事前生成し、`MeshBVH.serialize()` でバイナリ書き出し**。サーバー/クライアントとも起動時は `MeshBVH.deserialize()` でロードするだけにすれば**起動ほぼ0秒**・サーバーで重いジオメトリ解析不要。
+2. **射撃レイキャストも同じ BVH を使い回す**: 移動衝突だけでなくヒットスキャンも `bvh.raycast()` で同一 BVH を使用 → サーバーの当たり判定・ラグ補償巻き戻し実装コストが下がる。
+
+Web 調査で API 確認: `MeshBVH.serialize(bvh)` → `{roots: ArrayBuffer[], index}`、`MeshBVH.deserialize(data, geometry)`（root バッファを共有・コピーなし、ワーカー生成にも使用）。GLTF に専用拡張 `three_mesh_bvh` でアクセサ埋め込みする定石 gist も存在。
+
+### 反映
+- `docs/arch/server-authority.md`: §5.1「マップ BVH のビルド時事前生成とヘッドレス読込」（serialize 2案＝GLTF拡張埋め込み / `.bvh` サイドカー、クライアントは GLTFLoader+deserialize、**サーバーは GLTFLoader を使わず position+BVH バッファのみ直接読んで deserialize**、`CollisionWorld` は「ビルド済み BVH を deserialize で受け取る」境界に統一）、§5.2「同一 BVH の使い回し（移動・射撃・ラグ補償。マップは静的なので巻き戻し不要）」を追加。Phase 1 は平面/簡易ジオメトリで位置同期を検証し、GLTF マップ＋事前生成パイプラインはアセット/マップ導入フェーズで整備。
+- `docs/arch/tech-stack.md`: §13 アセットパイプライン表に three-mesh-bvh の serialize/deserialize（ビルド時事前生成）行を追加。
+- `.agent/skills/tech-stack.md`: BVH 事前生成・ヘッドレス読込・同一 BVH 使い回しのノウハウを追記。
+
 ## 次
 
 設計は確定。Phase 1（位置同期）の**計画書** `docs/planning/PHASE01_PLAN.md` 作成はユーザーの「Go」待ち。
