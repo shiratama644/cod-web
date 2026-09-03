@@ -29,7 +29,7 @@
 ## ECS・大量オブジェクト
 
 - **パラダイム（確定）**: シミュレーション本体（shared/sim・権威サーバー）は**データ指向（ECS スタイル）**。エンティティ＝整数ID、状態＝フラットなコンポーネント配列、ロジック＝純粋システム関数。深い OOP 継承はホットパスで使わない（決定論・ゼロアロケ・スナップショット/巻き戻しとの相性）。境界層（React/R3F・Room・NetTransport・XState actor・WS ソケット）はクラス/OOP 可。
-- **ライブラリは後入れ・使い分け**: Phase 1（~40体）は ECS 形のプレーンな typed 配列＋純粋関数で開始し、弾丸/bot が数千体規模になったら bitecs をコアに導入（システムは配列に作用する形で書き載せ替え容易にする）。
+- **ライブラリは後入れ・使い分け**: Phase 1（~20体）は ECS 形のプレーンな typed 配列＋純粋関数で開始し、弾丸/bot が数千体規模になったら bitecs をコアに導入（システムは配列に作用する形で書き載せ替え容易にする）。
   - `bitecs`: **shared/サーバー権威シム**のコア ECS（TypedArray・GC レス・ヘッドレス・決定論）。数万エンティティを高速処理。
   - `miniplex` / `@miniplex/react`: **クライアント表現層（R3F）**専用。エンティティ↔メッシュ/ref 結合・ライフサイクル（弾丸・ドロップ・エフェクト）を宣言的に。サーバーは持たない（ヘッドレス）。
 
@@ -50,7 +50,7 @@
 
 **tick/入力/描画**: サーバー tick・スナップショット = **30Hz**、**入力送信 = 60Hz**（~16ms ごと、tick と独立。入力は ~12B なので帯域誤差）。描画 = **可変フレームレート（60〜120Hz+、rAF 準拠、60 は下限フロア）**でいずれとも独立、delta time ベース。
 
-**高頻度パケット（入力/スナップショット）は手動バイナリ固定レイアウト（DataView/ArrayBuffer）で Phase 1 から**: 入力 ~12B（seq:u32 / move:int8×2 / yaw:u16 / pitch:int8 / flags:u8 / dt:u16）、40 人スナップショット ~650B（ヘッダ serverTick+lastAckSeq 8B、1 人 16B = id:u16 / pos:int16×3 を 0.01m 固定小数点 / vel:int16×3 / yaw:u16）。**MTU ~1200B に 1 発収容**・ゼロアロケ（静的バッファ再利用）・リトルエンディアン。座標 int16 は原点 ±327m のため、広域マップは相対オフセット/int32 化が将来課題。バックプレッシャ: 送信前にソケットバッファ（bun は `ws.send` 戻り値/`bufferedAmount`/`backpressureLimit`）を見て、詰まったクライアントはスナップショットを間引く（最新だけ送る）。リモート補間は 50〜100ms バッファ＋過去2フレーム Lerp。詳細は [arch/server-authority.md](../../docs/arch/server-authority.md) §6。
+**高頻度パケット（入力/スナップショット）は手動バイナリ固定レイアウト（DataView/ArrayBuffer）で Phase 1 から**: 入力 ~12B（seq:u32 / move:int8×2 / yaw:u16 / pitch:int8 / flags:u8 / dt:u16）、20 人スナップショット ~330B（ヘッダ serverTick+lastAckSeq 8B、1 人 16B = id:u16 / pos:int16×3 を 0.01m 固定小数点 / vel:int16×3 / yaw:u16）。**MTU ~1200B に 1 発収容**（20 人でも大幅に余裕）・ゼロアロケ（静的バッファ再利用）・リトルエンディアン。座標 int16 は原点 ±327m のため、広域マップは相対オフセット/int32 化が将来課題。バックプレッシャ: 送信前にソケットバッファ（bun は `ws.send` 戻り値/`bufferedAmount`/`backpressureLimit`）を見て、詰まったクライアントはスナップショットを間引く（最新だけ送る）。リモート補間は 50〜100ms バッファ＋過去2フレーム Lerp。詳細は [arch/server-authority.md](../../docs/arch/server-authority.md) §6。
 
 ## UI / 状態
 
@@ -121,6 +121,6 @@
 - ネットワークは **WebTransport 主 / WebSocket フォールバック**で確定（[networking](../../docs/arch/networking.md)）。bun は WebTransport サーバー未実装（HTTP/3 は v1.3.14 で実験サポート、WT は issue #13656 で進行中）のため、初期は Caddy エッジで HTTP/3 終端 → bun（WS＋ロジック）。WT の bun ネイティブ対応状況は Phase 1 で再調査。
 - ブラウザは WebTransport が Safari26.4（2026-03）で Baseline 入り。古い Safari・iOS WebView・UDP/443 ブロック企業網では WS へフォールバックが必須。
 - geckos.io は不採用（node-datachannel ネイティブ依存で bun 非互換の恐れ、別 UDP ポートが FW に弱い）。
-- **権威サーバーは自前の軽量実装（bun `Bun.serve` + ネイティブ WS）**。Colyseus はライブラリ不使用で設計パターン（onCreate/onJoin/onLeave、seat reservation、固定ステップ）だけ拝借。サーバー/クライアントのプレイヤー物理は **three-mesh-bvh のキネマティックCC（浮遊カプセル・3D Mesh Map の BVH に shapecast）を shared の純粋関数で**。Rapier はプレイヤーには使わず、動的剛体が要る段階で再検討。**Phase 1 は WebSocket で位置同期**を通す（WT は Caddy 終端→bun 中継経路の検証後に有効化）。ルームは 20〜40 人で初期は AOI 不要・フルスナップショット。詳細は [arch/server-authority.md](../../docs/arch/server-authority.md)。
+- **権威サーバーは自前の軽量実装（bun `Bun.serve` + ネイティブ WS）**。Colyseus はライブラリ不使用で設計パターン（onCreate/onJoin/onLeave、seat reservation、固定ステップ）だけ拝借。サーバー/クライアントのプレイヤー物理は **three-mesh-bvh のキネマティックCC（浮遊カプセル・3D Mesh Map の BVH に shapecast）を shared の純粋関数で**。Rapier はプレイヤーには使わず、動的剛体が要る段階で再検討。**Phase 1 は WebSocket で位置同期**を通す（WT は Caddy 終端→bun 中継経路の検証後に有効化）。ルームは最大 20 人で初期は AOI 不要・フルスナップショット。詳細は [arch/server-authority.md](../../docs/arch/server-authority.md)。
 - **「uWebSockets.js を使え」は bun では追加インストール不要**: bun の WebSocket は内部で uWebSockets を使用し、TCP_NODELAY・pub/sub・backpressure が組込み済み。Node 向け `uWebSockets.js`（git パッケージ）は bun で動作しない（bun メンテナ Jarred Sumner 談）。bun ネイティブ WS をそのまま使う。
 - **Krunker.io は socket.io（WebSocket/TCP）で動作**し、クライアント予測＋ラグ補償で高速感を実現。「ブラウザFPS＝UDP 必須」ではない。
