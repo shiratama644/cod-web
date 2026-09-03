@@ -51,6 +51,39 @@ Web 調査で API 確認: `MeshBVH.serialize(bvh)` → `{roots: ArrayBuffer[], i
 - `docs/arch/tech-stack.md`: §13 アセットパイプライン表に three-mesh-bvh の serialize/deserialize（ビルド時事前生成）行を追加。
 - `.agent/skills/tech-stack.md`: BVH 事前生成・ヘッドレス読込・同一 BVH 使い回しのノウハウを追記。
 
+## 追加決定 (3): アーキテクチャ＝データ指向（ECS スタイル）
+
+**背景**: ゲームシミュレーション本体を深い OOP 継承で組むかデータ指向（ECS）にするか。ネット FPS では毎フレーム多数のオブジェクトを決定論的に回し、状態をスナップショット送信・ラグ補償で巻き戻す必要がある。
+
+**決定（ユーザー確定）**:
+- **シミュレーション本体（`shared/sim`・権威サーバー）はデータ指向（ECS スタイル）**。エンティティ＝整数 ID、状態＝フラットなコンポーネント配列、ロジック＝純粋システム関数（`stepMovement(state, input, dt, world) → state` など）。深い OOP 継承はホットパスで使わない。
+- **理由**: ①クライアント予測とサーバー権威が同一関数を回す**決定論**と相性、②ホットループの**ゼロアロケ/GC レス**、③状態がフラットで**スナップショット/巻き戻し履歴**を配列でそのまま持てる、④後で TypedArray 実装へ載せ替えやすい。
+- **境界層は通常 OOP/React でよい**: React/R3F コンポーネント・Room・NetTransport クライアント・XState actor・WS ソケットはシミュレーションのホットパスではないためクラス/React 可。
+- **ECS ライブラリは後入れ・使い分け**: Phase 1（~40 体の位置同期）は ECS 形の**プレーンな typed 配列＋純粋関数**で開始し、弾丸/bot が数千体規模になる段階で:
+  - **bitecs** → `shared/` と権威サーバーのコア ECS（TypedArray・GC レス・ヘッドレス・決定論）。
+  - **miniplex / @miniplex/react** → クライアント表現層（R3F）専用（エンティティ↔メッシュ/ref 結合・ライフサイクル宣言的管理）。サーバーは持たない。
+  - システムは「配列に作用する純粋関数」の形で書き、bitecs への載せ替えを容易にする。
+- **反映**: `docs/arch/tech-stack.md` §5（パラダイム確定ブロック＋bitecs/miniplex 役割分担表）、`docs/arch/modules.md`（shared/ecs と client ecs/ の説明・shared データ指向方針）、`.agent/skills/tech-stack.md` ECS 章。
+
+## 追加決定 (4): レート構成の分離（シム 60Hz / 送信 30Hz / 入力 60Hz / sub-tick 射撃）
+
+**背景**: 当初「全レート一律 30Hz」としていたが、ユーザーから「30 TPS は良くない、最近は 60 TPS が主流では」と指摘。調査した上で再設計。
+
+**調査（実績値）**:
+- 競技系は高 tick: **Valorant 128 / CS2 64Hz＋sub-tick / CoD MW 60-120 / R6 Siege 60 / Halo 60 / Overwatch2 ≈63**。一方 **Fortnite 30 / Apex 20 / Tarkov 12-16** と幅広い。
+- **tickrate のコストは帯域ではなくサーバー CPU**。128tick でも 100-150 kbps/人、64→128 で +20-30 kbps 程度。
+- **CS2 の sub-tick**: 射撃などのイベントを tick 境界に量子化せず**正確なクライアントタイムスタンプ（マイクロ秒）**を付け、ラグ補償で時系列順に解決。tick を上げずに命中精度を確保する仕組み。
+
+**決定（ユーザー確定: sim60_send30）**:
+- **シミュレーション tick = 60Hz**（dt = 1/60s ≈ 16.7ms、アキュムレータで固定ステップ）。
+- **入力送信 C→S = 60Hz**（シム tick と 1:1。各 tick で最新入力を 1 つ消費）。
+- **スナップショット送信 S→C = 30Hz**（1 tick おき。モバイルは 20Hz 可）。リモートは 50-100ms 補間バッファで滑らか。
+- **クライアント描画 = 可変 rAF**（60-120Hz+、60 は下限フロア）。
+- **射撃は sub-tick（CS2 型）**: tick 境界に丸めず正確なクライアントタイムスタンプを付け、ラグ補償の巻き戻しで時刻順に解決。128Hz まで上げずに命中精度を得る。
+- 全レートは `shared/protocol/constants.ts` の名前付き定数とし、Phase 1 で 30/60 をプロファイル計測。CPU が厳しければシム tick を定数で下げられる設計。
+- **分離の理由**: 60Hz シムで命中・ラグ補償履歴が密（100ms で 6 サンプル vs 3 サンプル）になり当たり判定が精緻化。送信まで 60Hz にすると帯域/モバイル/サーバー上り CPU が増えるため、送信は 30Hz 据え置きで分離。
+- **反映**: `docs/arch/networking.md`（レート基本ブロック・入力/スナップショット/ラグ補償行・サマリ表）、`docs/arch/server-authority.md`（レート表・Room/sim 記述・§5 tick ループ・§6 パケット・ロードマップ）、`docs/arch/modules.md`、README・docs/README・task-list・game-engineering-principles・skills/project-overview・skills/index の 30Hz tick 記述を全て整合。
+
 ## 次
 
 設計は確定。Phase 1（位置同期）の**計画書** `docs/planning/PHASE01_PLAN.md` 作成はユーザーの「Go」待ち。

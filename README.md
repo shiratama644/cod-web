@@ -14,7 +14,7 @@
 | 衝突・当たり判定 | **three-mesh-bvh**（キネマティック・キャラクターコントローラー＝浮遊カプセルのマップ衝突 ＋ 射撃レイ、ヘッドレス対応）。マップは 3D Mesh Map（GLTF）。剛体エンジンは当初不使用 |
 | アニメーション | Three.js AnimationMixer ＋ **XState v5**（状態遷移 FSM） |
 | ゲームロジック | ECS（miniplex / bitecs 候補、Phase 1 で選定）、ゲームループは React レンダリングから分離 |
-| ネットワーク | 権威型サーバー + クライアント予測・サーバー調停 + ラグ補償。**WebTransport（HTTP/3・datagrams+streams）主 / WebSocket フォールバック**、サーバー tick 30Hz・描画は可変フレームレート。[設計記録](docs/arch/networking.md) |
+| ネットワーク | 権威型サーバー + クライアント予測・サーバー調停 + ラグ補償。**WebTransport（HTTP/3・datagrams+streams）主 / WebSocket フォールバック**、シミュレーション tick 60Hz・スナップショット送信 30Hz・入力 60Hz、描画は可変フレームレート。[設計記録](docs/arch/networking.md) |
 | UI / 状態 | React + TypeScript、Zustand（ゲーム状態）、Radix UI、framer-motion、lucide-react |
 | オーディオ | Web Audio API（HRTF 立体音響）、howler.js、resonance-audio |
 | ビルド / ツール | Vite、bun、Biome（Lint/Format）、Vitest、Playwright（E2E） |

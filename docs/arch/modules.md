@@ -16,7 +16,7 @@
                 │ リアルタイム（WebTransport/WS）│ HTTPS（REST/CDN）
 ┌───────────────▼──────────────┐   ┌───────────▼───────────────┐
 │ Game Server（bun・権威）       │   │ Web API / CDN（HTTPS）      │
-│  30Hz 固定シミュレーション・     │   │  認証・課金・インベントリ・   │
+│  60Hz 固定シミュレーション・     │   │  認証・課金・インベントリ・   │
 │  ルーム・マッチ・ラグ補償       │   │  戦績（DB）・アセット配信     │
 └───────────────┬──────────────┘   └───────────────────────────┘
                 │
@@ -40,7 +40,7 @@
 | クライアント予測・補間・調停 | Client（ロジックは Shared） | 体感向上。純粋計算は Shared に置いてテスト |
 | 位置・当たり判定・ダメージ・スコアの**確定** | **Game Server（権威）** | チート防止。クライアント判定は先行表示のみ |
 | ラグ補償（位置履歴の巻き戻し） | Game Server（計算は Shared） | 権威判定の一部 |
-| 30Hz 固定シミュレーション | Game Server（ロジックは Shared） | 描画とは独立した固定 tick |
+| 60Hz 固定シミュレーション・30Hz 送信 | Game Server（ロジックは Shared） | 描画と独立した固定 tick。送信レートと分離 |
 | メッセージ型・シリアライズ・プロトコル定数 | **Shared** | クライアント/サーバーで同一の定義を使う |
 | 移動計算・当たり判定ロジック（純粋関数） | **Shared** | 予測と権威シミュレーションで同一コードを共有 |
 | 認証・課金・インベントリ・戦績 | Web API（HTTPS） | ACID・冪等性・DB 永続化 |
@@ -59,7 +59,7 @@ src/
 ├── game/                   # ★ ゲーム本体（React の外側のループを含む）
 │   ├── scene/              # R3F シーン（Canvas・カメラ・ライト・地面・オブジェクト）
 │   ├── loop/               # ゲームループ（useFrame・可変FPS・delta time・ゼロアロケーション）
-│   ├── ecs/                # ECS（miniplex/bitecs）。エンティティ・コンポーネント・システム
+│   ├── ecs/                # 表現層 ECS（miniplex/@miniplex/react）。エンティティ↔メッシュ結合・ライフサイクル
 │   ├── player/             # プレイヤー制御（three-mesh-bvh キネマティックCC の薄い R3F ラッパー）・カメラ・武器ビューモデル
 │   ├── input/              # 入力アダプタ（PointerLock/Keyboard/joypad/nipplejs タッチ）
 │   ├── fx/                 # エフェクト・パーティクル・トレーサー（フラグ/トリガーから決定論的再生）
@@ -88,30 +88,31 @@ shared/
 ├── protocol/
 │   ├── messages.ts         # メッセージ型（入力・状態スナップショット・イベント）
 │   ├── serialize.ts        # msgpackr シリアライズ/デシリアライズ
-│   └── constants.ts        # tick rate(30Hz)・パケットヘッダ・チャネル定義
+│   └── constants.ts        # レート定数（シム60Hz・入力60Hz・送信30Hz）・パケットヘッダ・チャネル定義
 ├── sim/                    # 純粋なゲームシミュレーション（予測と権威で共用）
 │   ├── movement.ts         # 移動計算（入力 + 状態 → 次状態。delta 引数）
 │   ├── combat.ts           # 当たり判定・ダメージ計算（純粋ロジック）
 │   └── lagcomp.ts          # ラグ補償の巻き戻し計算（位置履歴 + 時刻 → 当時の状態）
-├── ecs/                    # ECS のコンポーネント/型定義（描画非依存）
+├── ecs/                    # データ指向のコア ECS 定義（bitecs 型/コンポーネント配列。描画非依存）
 └── types.ts                # 共通型（プレイヤー・武器・状態フラグ等）
 ```
 
 - ここに置くコードは **jsdom / WebGL 不要で Vitest のユニットテストが可能**（Sandbox 制約を回避、[`../../.agent/skills/sandbox-constraints.md`](../../.agent/skills/sandbox-constraints.md)）。
 - 純粋関数（入力＝出力）にし、副作用（ネット送信・描画）は呼び出し側に分離する。
+- **データ指向（ECS スタイル）で書く**: エンティティは整数 ID、状態はフラットなコンポーネント配列（`shared/ecs/`）、ロジックはそれらに作用する純粋システム関数（`stepMovement(state, input, dt, world) → state` など）。深い OOP 継承は持ち込まない。Phase 1 は ECS 形のプレーンな typed 配列で始め、弾丸/bot が数千体規模になったら `shared/ecs` の内部を bitecs（TypedArray・GC レス）に載せ替える（システムは配列に作用する形で書き、載せ替え容易にする）。エンティティ↔メッシュ結合などの**表現層だけ**がクライアントで miniplex/@miniplex/react を使う。
 
 ## 5. Game Server モジュール（bun）
 
-権威ゲームサーバー。**30Hz 固定 tick** でシミュレーション。
+権威ゲームサーバー。**60Hz 固定 tick** でシミュレーション、**30Hz でスナップショット送信**（レート分離）。
 
 ```
 server/
 ├── index.ts                # bun サーバ起動（WebSocket 受付・Caddy からの WT プロキシ）
 ├── room/                   # ルーム・マッチメイキング・プレイヤー参加/退出
-├── sim/                    # 権威シミュレーション（shared/sim を 30Hz で回す）
+├── sim/                    # 権威シミュレーション（shared/sim を 60Hz 固定ステップで回す）
 ├── net/
 │   ├── connections.ts      # 接続管理（WS ネイティブ / WT はエッジ経由）
-│   ├── snapshot.ts         # 状態スナップショット生成（30Hz）
+│   ├── snapshot.ts         # 状態スナップショット生成（送信 30Hz。1 tick おき）
 │   └── lagcomp-store.ts    # 各プレイヤーの位置履歴（~100ms）保持
 ├── physics/                # 衝突世界（3D Mesh Map の BVH 構築・BVH キャラクター衝突。ヘッドレス可）
 └── api/                    # 信頼イベント処理（被弾確定・スコア・購入）

@@ -8,7 +8,7 @@
 
 - **最重要目標: どの端末（PC ブラウザ / スマートフォン / タブレット）でも安定 60FPS 以上**。軽量さ・低遅延・高速読み込みを優先し、重厚な AAA グラフィックスは優先しない
 - PC（マウス＆キーボード / ゲームパッド）＋ モバイル（タッチ / 仮想スティック / ジェスチャー）両対応
-- アーキテクチャ: 権威型ゲームサーバー ＋ クライアント予測・サーバー調停 ＋ ラグ補償。トランスポートは **WebTransport（datagrams+streams）主 / WebSocket フォールバック**で確定（[networking](../../docs/arch/networking.md)）。サーバー tick・入力 30Hz、描画は可変フレームレート
+- アーキテクチャ: 権威型ゲームサーバー ＋ クライアント予測・サーバー調停 ＋ ラグ補償。トランスポートは **WebTransport（datagrams+streams）主 / WebSocket フォールバック**で確定（[networking](../../docs/arch/networking.md)）。サーバーシム tick 60Hz・入力 60Hz・スナップショット送信 30Hz、描画は可変フレームレート（レート分離・sub-tick射撃）
 - **レンダラー: WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準レンダラーとする）
 - **描画 FPS は可変**（rAF = 60〜120Hz+。60 は下限フロアであり上限ではない）、delta time ベースでネット tick と独立
 
