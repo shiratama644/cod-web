@@ -6,10 +6,13 @@
  *   - 画面左下の**仮想ジョイスティック（nipplejs）**。アナログ値（-1..1）を
  *     直接反映し、キーボード入力と合成する（どちらでも動く）。
  * - **ジャンプ**: Space キー、または画面右下のジャンプボタン（ワンショット）。
- * - **視点**:
+ * - **視点**（マルチタッチ対応）:
  *   - PointerLock 対応端末（PC ブラウザ）: クリックでロックし、マウス移動で視点操作。
- *   - **PointerLock 非対応端末（Android/iOS の Edge・Chrome、マウス/タッチを問わず）**:
- *     画面を押してドラッグすると視点が動く（ドラッグルック）。
+ *   - **PointerLock 非対応端末（Android/iOS の Edge・Chrome、タッチ）**:
+ *     画面の「空き領域」を別の指でドラッグすると視点が動く。視点用のポインタは
+ *     **window レベルで監視し、ジョイスティック/ボタン（.touch-ui）から始まった
+ *     指は視点にしない**。これにより「スティックを押しながら視点ドラッグ/ジャンプ」が
+ *     同時にできる（マルチタッチ）。
  *
  * ブラウザ API（DOM イベント・PointerLock・Fullscreen）に依存するのはこのクラスと
  * オーバーレイだけ。
@@ -46,11 +49,11 @@ export class InputController {
   private joyX = 0
   private joyZ = 0
 
-  // ドラッグルック（PointerLock 非対応端末のフォールバック）の状態。
-  private dragging = false
-  private activePointerId = -1
-  private lastX = 0
-  private lastY = 0
+  // ドラッグルック（タッチ/マウス）で視点を操作しているポインタの ID。
+  // -1 なら視点ドラッグ中の指はない。スティック/ボタンの指とは独立させる（マルチタッチ）。
+  private lookPointerId = -1
+  private lastLookX = 0
+  private lastLookY = 0
 
   private readonly onKeyDown = (e: KeyboardEvent) => {
     // 物理キーボードの操作時のみ。e.code はレイアウト非依存（WASD が安定）。
@@ -71,63 +74,77 @@ export class InputController {
     this.pitchValue = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitchValue))
   }
 
+  /**
+   * そのポインタのターゲットがタッチ UI（ジョイスティック・ボタン・開始パネル）か。
+   * .touch-ui またはその子孫で始まった指は視点操作にしない（マルチタッチで同居させる）。
+   */
+  private isTouchUiTarget(target: EventTarget | null): boolean {
+    return target instanceof Element && target.closest('.touch-ui') != null
+  }
+
   private readonly onPointerDown = (e: PointerEvent) => {
-    // 主ボタン/タッチのみ。右クリック等は無視。
-    if (e.button !== 0 && e.pointerType === 'mouse') return
-    // ロック中はドラッグ不要（onPointerMove が movementX/Y で処理）。
-    if (this.locked) return
-    this.dragging = true
-    this.activePointerId = e.pointerId
-    this.lastX = e.clientX
-    this.lastY = e.clientY
-    // 以降の pointermove/up を確実に捕捉（要素外へ出ても追従）。
-    this.el?.setPointerCapture?.(e.pointerId)
-    // PC では PointerLock を試みる。モバイルでは失敗してもドラッグが動く。
-    this.requestLock()
+    if (e.pointerType === 'mouse') {
+      // PC マウス: 主ボタンのみ。PointerLock を試みる（ロック中は move の movementX/Y で視点）。
+      if (e.button !== 0) return
+      if (this.isTouchUiTarget(e.target)) return
+      if (this.locked) return
+      this.requestLock()
+      // PointerLock が効かない環境（モバイルにマウス等）はドラッグルックにも備えて
+      // このポインタを視点用に確保する。
+      this.beginLook(e)
+      return
+    }
+    // タッチ/ペン: ジョイスティック/ボタンの指は視点にしない。空き領域の指だけ視点に。
+    if (this.isTouchUiTarget(e.target)) return
+    // 視点ドラッグは同時に 1 本だけ（最初に空き領域を掴んだ指）。
+    if (this.lookPointerId !== -1) return
+    this.beginLook(e)
+  }
+
+  private beginLook(e: PointerEvent): void {
+    this.lookPointerId = e.pointerId
+    this.lastLookX = e.clientX
+    this.lastLookY = e.clientY
   }
 
   private readonly onPointerMove = (e: PointerEvent) => {
-    if (this.locked) {
-      // PointerLock 中: movementX/Y は相対移動量。clientX/Y は使えない。
+    if (this.locked && e.pointerType === 'mouse') {
+      // PointerLock 中: movementX/Y が相対移動量。
       this.applyLook(e.movementX ?? 0, e.movementY ?? 0)
       return
     }
-    if (this.dragging && e.pointerId === this.activePointerId) {
-      const dx = e.clientX - this.lastX
-      const dy = e.clientY - this.lastY
-      this.lastX = e.clientX
-      this.lastY = e.clientY
+    if (e.pointerId === this.lookPointerId) {
+      // 視点ドラッグ中のタッチ既定動作（スクロール/ピンチ）を抑止。
+      e.preventDefault()
+      const dx = e.clientX - this.lastLookX
+      const dy = e.clientY - this.lastLookY
+      this.lastLookX = e.clientX
+      this.lastLookY = e.clientY
       this.applyLook(dx, dy)
     }
   }
 
   private readonly onPointerUp = (e: PointerEvent) => {
-    if (e.pointerId !== this.activePointerId) return
-    this.dragging = false
-    this.activePointerId = -1
-    this.el?.releasePointerCapture?.(e.pointerId)
+    if (e.pointerId === this.lookPointerId) this.lookPointerId = -1
   }
 
   private readonly onLockChange = () => {
     this.locked = document.pointerLockElement === this.el
-    // ロックが外れたらドラッグ状態もリセット。
-    if (!this.locked) {
-      this.dragging = false
-      this.activePointerId = -1
-    }
+    // ロックが外れたら視点ドラッグ状態もリセット。
+    if (!this.locked) this.lookPointerId = -1
   }
 
-  /** 対象要素で入力購読を開始する。 */
+  /** 入力購読を開始する。視点は window レベルで監視しマルチタッチに対応する。 */
   attach(el: HTMLElement): void {
     this.el = el
-    // タッチでのスクロール/ピンチ等のブラウザ既定動作を抑止（視点ドラッグを優先）。
-    el.style.touchAction = 'none'
     window.addEventListener('keydown', this.onKeyDown)
     window.addEventListener('keyup', this.onKeyUp)
-    el.addEventListener('pointerdown', this.onPointerDown)
-    el.addEventListener('pointermove', this.onPointerMove)
-    el.addEventListener('pointerup', this.onPointerUp)
-    el.addEventListener('pointercancel', this.onPointerUp)
+    // 視点ドラッグは window で取る。ジョイスティック/ボタンは .touch-ui で除外し、
+    // それらの上で始まった指は視点にならない（別の指で空き領域をドラッグできる）。
+    window.addEventListener('pointerdown', this.onPointerDown)
+    window.addEventListener('pointermove', this.onPointerMove, { passive: false })
+    window.addEventListener('pointerup', this.onPointerUp)
+    window.addEventListener('pointercancel', this.onPointerUp)
     document.addEventListener('pointerlockchange', this.onLockChange)
   }
 
@@ -218,10 +235,10 @@ export class InputController {
   dispose(): void {
     window.removeEventListener('keydown', this.onKeyDown)
     window.removeEventListener('keyup', this.onKeyUp)
-    this.el?.removeEventListener('pointerdown', this.onPointerDown)
-    this.el?.removeEventListener('pointermove', this.onPointerMove)
-    this.el?.removeEventListener('pointerup', this.onPointerUp)
-    this.el?.removeEventListener('pointercancel', this.onPointerUp)
+    window.removeEventListener('pointerdown', this.onPointerDown)
+    window.removeEventListener('pointermove', this.onPointerMove)
+    window.removeEventListener('pointerup', this.onPointerUp)
+    window.removeEventListener('pointercancel', this.onPointerUp)
     document.removeEventListener('pointerlockchange', this.onLockChange)
   }
 }

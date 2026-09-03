@@ -46,9 +46,12 @@ export function TouchControls({ input }: { input: InputController }) {
       // vector.x: 右 +、vector.y: 上(奥) +。nipplejs が半径正規化済み（最大 1）。
       input.setMoveVector(clamp1(vec.x), clamp1(vec.y))
     })
-    // 指を離したら中立（停止）。
+    // 指を離した/スティックが隠れた/破棄されたら必ず中立（停止）に戻す。
+    // 離した後に変な方向へ流れる現象を防ぐため、end だけでなく hidden/removed でもリセット。
     const reset = () => input.setMoveVector(0, 0)
     manager.on('end', reset)
+    manager.on('hidden', reset)
+    manager.on('removed', reset)
 
     return () => {
       reset()
@@ -60,15 +63,17 @@ export function TouchControls({ input }: { input: InputController }) {
 
   return (
     <div className="touch-controls" aria-hidden="true">
-      {/* 左下: ジョイスティックのタッチ領域（nipplejs がこの中に描画） */}
-      <div ref={zoneRef} className="joystick-zone" />
+      {/* 左下: ジョイスティックのタッチ領域（nipplejs がこの中に描画）。
+          touch-ui なので、ここから始まった指は視点ドラッグにならない */}
+      <div ref={zoneRef} className="joystick-zone touch-ui" />
 
-      {/* 右下: ジャンプボタン */}
+      {/* 右下: ジャンプボタン。touch-ui で視点と衝突しない（押しながら別指で視点可） */}
       <button
         type="button"
-        className="jump-button"
+        className="jump-button touch-ui"
         onPointerDown={(e) => {
           e.preventDefault()
+          e.stopPropagation()
           input.queueJump()
         }}
       >

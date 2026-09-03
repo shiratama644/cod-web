@@ -18,6 +18,8 @@
 import {
   INPUT_PACKET_BYTES,
   INPUT_SEND_HZ,
+  MAX_STEPS_PER_FRAME,
+  SIM_DT,
 } from '@shared/protocol/constants'
 import { encodeInput, decodeSnapshot, readMessageType } from '@shared/protocol/packer'
 import { MSG_S2C_SNAPSHOT } from '@shared/protocol/constants'
@@ -51,6 +53,9 @@ export class GameClient {
   /** 固定 60Hz ネット/予測ループのタイマーハンドル。 */
   private tickTimer: ReturnType<typeof setInterval> | null = null
   private disposed = false
+  /** 実時間アキュムレータ（秒）。タイマーの呼び出し間隔が揺れてもシム step 数を実時間に合わせる。 */
+  private tickAccumulator = 0
+  private lastTickMs: number | null = null
   status: ConnectionStatus = 'disconnected'
   /** 状態変化時のコールバック（低頻度・HUD 用）。 */
   onStatusChange: ((s: ConnectionStatus) => void) | null = null
@@ -69,6 +74,8 @@ export class GameClient {
 
   connect(url: string = DEFAULT_WS_URL): void {
     this.disposed = false
+    this.tickAccumulator = 0
+    this.lastTickMs = null
     this.setStatus('connecting')
     this.transport.onOpen(() => this.setStatus('connected'))
     this.transport.onClose(() => this.setStatus('disconnected'))
@@ -85,23 +92,52 @@ export class GameClient {
   }
 
   /**
-   * wall-clock の 60Hz タイマーで入力送信・ローカル予測を進める。
-   * rAF の間引き/停止（側ペイン・バックグラウンド）の影響を受けない。
+   * wall-clock の高頻度タイマーで、実時間を固定 60Hz ステップ（SIM_DT）に分解して
+   * 入力送信・ローカル予測を進める。タイマーの呼び出し間隔が揺れたり数フレーム
+   * 詰まったりしても、**経過時間に比例した正しい回数だけシムを進める**。これが
+   * サーバー（同じ 60Hz 固定ステップ）と step 数で一致し、調停でのゴムバンド
+   * （引き戻し・停止後の変な移動・ジャンプ連打のカクつき）を防ぐ核心。
    */
   private startTickLoop(): void {
     if (this.tickTimer != null) return
+    // タイマーは 60Hz より少し速く回し（実時間はアキュムレータで整合）、
+    // タブのスロットルでも大きく遅れないようにする。
     this.tickTimer = setInterval(() => this.netTick(), 1000 / INPUT_SEND_HZ)
   }
 
-  /** ネット/予測の 1 固定ステップ（入力サンプリング→予測→送信）。 */
   private netTick(): void {
     if (this.disposed) return
+    const now = performance.now()
+    if (this.lastTickMs == null) {
+      this.lastTickMs = now
+      this.updateRemotes()
+      return
+    }
+    let frameMs = now - this.lastTickMs
+    this.lastTickMs = now
+    // 異常に大きな間隔（バックグラウンド復帰など）はクランプして一気に巻き戻さない。
+    if (frameMs > 250) frameMs = 250
+    this.tickAccumulator += frameMs / 1000
+
+    let steps = 0
+    while (this.tickAccumulator >= SIM_DT && steps < MAX_STEPS_PER_FRAME) {
+      this.tickAccumulator -= SIM_DT
+      this.simStep()
+      steps++
+    }
+    // 上限で余った時間は破棄（spiral of death 防止）。
+    if (steps >= MAX_STEPS_PER_FRAME) this.tickAccumulator = 0
+
+    // リモート補間もタイマーで進め、rAF が間引かれてもデータは最新に保つ。
+    this.updateRemotes()
+  }
+
+  /** 予測/送信の 1 固定ステップ（入力サンプリング→予測→サーバーへ送信）。 */
+  private simStep(): void {
     if (!this.prediction || !this.input) return
     const local = this.sampleInput()
     const sent = this.prediction.applyInput(local)
     this.encodeAndSend(sent)
-    // リモート補間もタイマーで進め、rAF が間引かれてもデータは最新に保つ。
-    this.updateRemotes()
   }
 
   /** 入力ソースを登録する。 */
