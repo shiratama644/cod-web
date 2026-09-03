@@ -276,8 +276,8 @@ export const JUMP_FORCE = 7.0
 
 | ID | コミット | テスト | 実測値・備考 |
 |---|---|---|---|
-| P1-A | | | |
-| P1-B | | | |
+| P1-A | （コミット後に SHA 記入） | 9 passed（packer/quantize） | 20人 snapshot: payload 329B（1+8+20×16）／ wire 357B(IPv4)・377B(IPv6)、payload 上限 1152B。typecheck 2構成・lint 29files・全 test 20・build 全 PASS |
+| P1-B | （SHA 記入予定） | 7 passed（movement/collision） | three-mesh-bvh は bun/node ヘッドレスで動作確認済み。平面ワールドで落下静止・ジャンプ・水平移動・壁めり込み回避・決定論を検証 |
 | P1-C | | | |
 | P1-D | | | |
 | P1-E | | | 20 人スナップショット: payload ____B（目標 ~330）／ wire ____B（IPv4 ~358 / IPv6 ~378、≤1200） |

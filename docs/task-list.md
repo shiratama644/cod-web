@@ -69,8 +69,8 @@
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
-| P1-A | shared/server 基盤・ビルド設定・プロトコル（`three-mesh-bvh`/`@types/bun` 追加、tsconfig/vite/vitest 解決、`shared/protocol` 定数＋型＋**バイナリ packer**、NetTransport 抽象） | 未着手 | 0% | - | packer/量子化のユニットテスト green・**20人** snapshot は payload ~330B（wire IPv6 ~378B）で ≤MTU | |
-| P1-B | shared キネマティック移動（純粋関数 `stepPlayer`・three-mesh-bvh CollisionWorld 境界［平面 BVH・カプセル shapecast］・データ指向 SimWorld） | 未着手 | 0% | P1-A | 決定論・重力/ジャンプ/床衝突の node ユニットテスト green | |
+| P1-A | shared/server 基盤・ビルド設定・プロトコル（`three-mesh-bvh`/`@types/bun` 追加、tsconfig/vite/vitest 解決、`shared/protocol` 定数＋型＋**バイナリ packer**、NetTransport 抽象） | ローカル検証済み | 100% | - | packer/量子化のユニットテスト green・**20人** snapshot は payload ~330B（wire IPv6 ~378B）で ≤MTU | three-mesh-bvh0.9.14/@types/bun1.4.0 導入。`shared/protocol/`(constants/messages/quantize/packer)＋`src/game/net/transport.ts`(NetTransport 抽象)。tsconfig を client/shared と server(bun types) に分離、vite/vitest に `@shared` エイリアス・vitest は shared/server の node テストを include。パック/量子化テスト **9 件**（うち payload=329B / wire IPv4=357B・IPv6=377B、payload上限1152 を断言）。typecheck(2構成)/lint(29files)/test(20 passed)/build 全 PASS |
+| P1-B | shared キネマティック移動（純粋関数 `stepPlayer`・three-mesh-bvh CollisionWorld 境界［平面 BVH・レイ衝突］・データ指向 SimWorld） | ローカル検証済み | 100% | P1-A | 決定論・重力/ジャンプ/床衝突の node ユニットテスト green | `shared/sim/collisionWorld.ts`（MeshBVH ラップ・`createPlaneWorld`・床/壁レイ）＋`movement.ts`（純粋 `stepPlayer`：yaw移動・重力・ジャンプ・壁/床解決・速度上限）。**three-mesh-bvh は bun/node ヘッドレスで動作確認済み**（DOM/WebGL 不要）。テスト **7 件**（ヘッドレスBVH・決定論・落下静止・ジャンプ・水平移動・壁めり込み回避）green。全27 test・typecheck2構成・lint33files・build 全 PASS |
 | P1-C | bun サーバ骨架（`Bun.serve` ネイティブ WS・単一デフォルトルーム・参加/離脱・playerId 払い出し） | 未着手 | 0% | P1-A | `bun run server` 起動・接続/離脱のロジック統合テスト | |
 | P1-D | 60Hz 権威シミュレーション＋入力受信（アキュムレータ固定 1/60・最新入力消費・shared stepPlayer 権威実行・移動検証） | 未着手 | 0% | P1-B,P1-C | 入力駆動で位置が進む統合テスト | |
 | P1-E | 30Hz スナップショット送信＋バックプレッシャ（1 tick おきバイナリブロードキャスト・serverTick/lastAckSeq・詰まりクライアント間引き・ラグ補償履歴の器） | 未着手 | 0% | P1-D | スナップショット bytes/backpressure の統合テスト | |
