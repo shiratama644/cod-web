@@ -92,6 +92,27 @@ describe('input packet', () => {
   it('入力パケットは約 13B（type 1 + body 12）', () => {
     expect(INPUT_PACKET_BYTES).toBe(13)
   })
+
+  it('moveX/moveZ はアナログ値(-1..1)のまま往復する（スケール忘れで巨大値にならない）', () => {
+    // 旧バグ: clampInt8(0.8) が 1 に丸められ、decode 側は生 int8 を読むと 127 等の
+    // 巨大値になりサーバー速度が MOVE_SPEED の数十倍になっていた。必ず -1..1 に収まること。
+    const buf = new ArrayBuffer(INPUT_PACKET_BYTES)
+    const view = new DataView(buf)
+    for (const ax of [0, 0.3, 0.8, -0.55, 1, -1]) {
+      for (const az of [0, 0.6, -0.9, 1]) {
+        const input: PlayerInput = { seq: 1, moveX: ax, moveZ: az, yaw: 0, pitch: 0, flags: 0, dtMs: 16 }
+        encodeInput(view, input)
+        const out = decodeInput(view, 1)
+        expect(out.moveX).toBeGreaterThanOrEqual(-1)
+        expect(out.moveX).toBeLessThanOrEqual(1)
+        expect(out.moveZ).toBeGreaterThanOrEqual(-1)
+        expect(out.moveZ).toBeLessThanOrEqual(1)
+        // int8 量子化誤差は 1/127 ≈ 0.008 以内。
+        expect(Math.abs(out.moveX - ax)).toBeLessThan(0.02)
+        expect(Math.abs(out.moveZ - az)).toBeLessThan(0.02)
+      }
+    }
+  })
 })
 
 describe('snapshot packet', () => {

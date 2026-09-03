@@ -19,9 +19,10 @@ import {
   INPUT_PACKET_BYTES,
   INPUT_SEND_HZ,
   MAX_STEPS_PER_FRAME,
+  PACKET_TYPE_BYTES,
   SIM_DT,
 } from '@shared/protocol/constants'
-import { encodeInput, decodeSnapshot, readMessageType } from '@shared/protocol/packer'
+import { encodeInput, decodeInput, decodeSnapshot, readMessageType } from '@shared/protocol/packer'
 import { MSG_S2C_SNAPSHOT } from '@shared/protocol/constants'
 import type { PlayerInput } from '@shared/protocol/messages'
 import { createDefaultWorld, type CollisionWorld } from '@shared/sim/collisionWorld'
@@ -136,8 +137,28 @@ export class GameClient {
   private simStep(): void {
     if (!this.prediction || !this.input) return
     const local = this.sampleInput()
-    const sent = this.prediction.applyInput(local)
+    // 決定論の要: クライアント予測は**ワイヤ上を流れる量子化後の入力値**と同一の値で
+    // シムを進める。生値で予測するとサーバー（decode 後）と微小〜大きくズレ、接地した
+    // 移動で誤差が累積して調停で横スナップ（カクカク）する。送信バッファを encode→decode
+    // でラウンドトリップさせ、その結果で予測する（送られる内容そのもので予測する）。
+    const wire = this.quantizeInput(local)
+    const sent = this.prediction.applyInput(wire)
     this.encodeAndSend(sent)
+  }
+
+  /** 入力を送信バッファと同じ量子化を通して decode し直した決定論版を返す。 */
+  private quantizeInput(input: Omit<PlayerInput, 'seq'>): Omit<PlayerInput, 'seq'> {
+    const tmp: PlayerInput = { ...input, seq: 0 }
+    encodeInput(this.sendView, tmp)
+    const decoded = decodeInput(this.sendView, PACKET_TYPE_BYTES)
+    return {
+      moveX: decoded.moveX,
+      moveZ: decoded.moveZ,
+      yaw: decoded.yaw,
+      pitch: decoded.pitch,
+      flags: decoded.flags,
+      dtMs: decoded.dtMs,
+    }
   }
 
   /** 入力ソースを登録する。 */

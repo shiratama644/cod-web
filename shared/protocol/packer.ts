@@ -26,10 +26,12 @@ import {
 } from './constants'
 import type { PlayerInput, Snapshot } from './messages'
 import {
+  dequantizeMoveAxis,
   dequantizePosition,
   dequantizeVelocity,
   dequantizeYaw,
   dequantizePitch,
+  quantizeMoveAxis,
   quantizePitch,
   quantizePosition,
   quantizeVelocity,
@@ -55,9 +57,9 @@ export function encodeInput(view: DataView, input: PlayerInput): number {
   o += PACKET_TYPE_BYTES
   view.setUint32(o, input.seq >>> 0, LE)
   o += 4
-  view.setInt8(o, clampInt8(input.moveX))
+  view.setInt8(o, quantizeMoveAxis(input.moveX))
   o += 1
-  view.setInt8(o, clampInt8(input.moveZ))
+  view.setInt8(o, quantizeMoveAxis(input.moveZ))
   o += 1
   view.setUint16(o, quantizeYaw(input.yaw), LE)
   o += 2
@@ -76,9 +78,9 @@ export function decodeInput(view: DataView, byteOffset = 0): PlayerInput {
   // type バイトは呼び出し側で確認済みの前提。ここでは本体を読む。
   const seq = view.getUint32(o, LE)
   o += 4
-  const moveX = view.getInt8(o)
+  const moveX = dequantizeMoveAxis(view.getInt8(o))
   o += 1
-  const moveZ = view.getInt8(o)
+  const moveZ = dequantizeMoveAxis(view.getInt8(o))
   o += 1
   const yaw = dequantizeYaw(view.getUint16(o, LE))
   o += 2
@@ -171,11 +173,6 @@ export function readMessageType(view: DataView): number {
 }
 
 // ── 入力の moveX/moveZ は -1/0/1 に正規化されている前提だが、安全のためクランプ ──
-
-function clampInt8(v: number): number {
-  const n = Math.round(v)
-  return n < -128 ? -128 : n > 127 ? 127 : n
-}
 
 function clampU16(v: number): number {
   const n = Math.round(v)

@@ -81,6 +81,8 @@ export const VEL_SCALE = 100
 export const YAW_SCALE = 65535 / (Math.PI * 2)
 /** pitch: -π/2〜+π/2 を -128〜127（i8）へ。 */
 export const PITCH_SCALE = 127 / (Math.PI / 2)
+/** 移動軸入力 moveX/moveZ（-1..1）を int8 に詰めるスケール（全幅 254）。 */
+export const MOVE_AXIS_SCALE = 127
 
 // ─────────────────────────────────────────────────────────────────────────
 // パケットサイズ予算（payload と wire を厳密に区別する）

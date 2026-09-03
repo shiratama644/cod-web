@@ -6,7 +6,7 @@
  * encode → decode を経由することで、量子化誤差が両者で一致する（決定論）。
  */
 
-import { PITCH_SCALE, POS_SCALE, VEL_SCALE, YAW_SCALE } from './constants'
+import { MOVE_AXIS_SCALE, PITCH_SCALE, POS_SCALE, VEL_SCALE, YAW_SCALE } from './constants'
 
 const TWO_PI = Math.PI * 2
 const U16_MAX = 0xffff
@@ -38,6 +38,16 @@ export function quantizeVelocity(mps: number): number {
 
 export function dequantizeVelocity(quantized: number): number {
   return quantized / VEL_SCALE
+}
+
+// ── 移動軸入力 moveX/moveZ（-1..1 → -127..127, int8） ──────────────────────
+
+export function quantizeMoveAxis(v: number): number {
+  return clampInt(v * MOVE_AXIS_SCALE, I8_MIN, I8_MAX)
+}
+
+export function dequantizeMoveAxis(quantized: number): number {
+  return quantized / MOVE_AXIS_SCALE
 }
 
 // ── yaw（0〜2π → 0〜65535, uint16） ───────────────────────────────────────
