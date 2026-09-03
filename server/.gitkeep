@@ -1,0 +1,2 @@
+# Game server (bun, headless).
+# Implemented in P1-C (Bun.serve WebSocket). tsconfig.server.json がこの dir と shared を型チェックする。

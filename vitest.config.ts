@@ -11,13 +11,21 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(rootDir, 'src'),
+      '@shared': path.resolve(rootDir, 'shared'),
     },
   },
   test: {
+    // 既定は jsdom（クライアント/R3F コンポーネント用）。
+    // shared/ と server/ の純粋ロジックはファイル先頭の
+    // `// @vitest-environment node` で DOM 非依存に切り替える。
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: [
+      'src/**/*.{test,spec}.{ts,tsx}',
+      'shared/**/*.{test,spec}.ts',
+      'server/**/*.{test,spec}.ts',
+    ],
     css: false,
   },
 })
