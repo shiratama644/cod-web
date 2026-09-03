@@ -31,6 +31,11 @@
 - WebTransport: Chrome97+/Edge/Firefox114+/Safari**26.4**（2026-03 に Baseline 入り）。古い Safari・iOS WebView・UDP/443 を塞ぐ企業/ホテル Wi-Fi では不可 → **WS フォールバック必須**。
 - bun: HTTP/3 を v1.3.14 で**実験サポート**したが、**WebTransport サーバー API は未実装**（bun issue #13656）。Node もネイティブ非対応（`@fails-components/webtransport` 等に依存）。
 
+> **2026-09-04 再調査（bun 1.4.0 時点）**:
+> - `Bun.serve({ tls, http3: true })` で **HTTP/3 over QUIC が実験サポート**（TCP に HTTP/1.1/2、UDP に H3 を同一ポートで bind、Alt-Svc 広告）。ただし **WebTransport は "a separate project" と明記され未サポート**、H3 上の WebSocket も不可（`server.upgrade()` は H3 で false）。0-RTT 無効・実験段階で本番投入は非推奨。([bun v1.3.14](https://bun.com/blog/bun-v1.3.14)、[bun v1.4](https://bun.com/blog/bun-v1.4)、[issue #13656](https://github.com/oven-sh/bun/issues/13656))
+> - したがって **bun ネイティブでの WebTransport サーバーはまだ使えない**。選択肢は §6 どおり ①HTTP/3・WebTransport 対応の**エッジ（Caddy 等）で終端**し bun へ WS 中継、②bun が WT をネイティブ安定サポートするのを待つ、のどちらか。開発/現行は **WebSocket 1 本**で十分。
+> - **「WebSocket を 5 本など複数並列に張って遅延を減らす」は採用しない**。遅延の正体は RTT でソケット数では変わらない・TCP の HOL ブロッキングは複数ソケットでもサーバー側で seq 順序整合のため結局最遅を待つ・接続/メモリ/ジッタが増えるだけ、という理由。TCP の「ロスト時の古いパケット再送待ち」を根本的に消すのは **WebTransport の unreliable datagram（QUIC）** であり、それは複数 WS では代替できない。
+
 ## 3. ネットワークモデル（トランスポート非依存・確定）
 
 - **権威サーバー + クライアント予測（Client Prediction）+ サーバー調停（Reconciliation）+ ラグ補償（Lag Compensation）+ エンティティ補間（Interpolation）**。
