@@ -2,8 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { createDefaultWorld } from '@shared/sim/collisionWorld'
 import type { PlayerInput, Snapshot } from '@shared/protocol/messages'
-import { ClientPrediction } from './prediction'
-import { Interpolator } from './interpolation'
+import { ClientPrediction } from '@/game/net/prediction'
+import { Interpolator } from '@/game/net/interpolation'
 
 function moveInput(partial: Partial<PlayerInput> = {}) {
   return {

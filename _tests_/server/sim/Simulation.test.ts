@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { SIM_DT } from '../../shared/protocol/constants'
-import type { PlayerInput } from '../../shared/protocol/messages'
-import { createPlaneWorld } from '../../shared/sim/collisionWorld'
-import { Room, type Peer } from '../room/Room'
-import { Simulation } from './Simulation'
+import { SIM_DT } from '@shared/protocol/constants'
+import type { PlayerInput } from '@shared/protocol/messages'
+import { createPlaneWorld } from '@shared/sim/collisionWorld'
+import { Room, type Peer } from '@server/room/Room'
+import { Simulation } from '@server/sim/Simulation'
 
 function noopPeer(): Peer {
   return { playerId: -1, sendText: () => {}, sendBinary: () => false, getBufferedAmount: () => 0 }

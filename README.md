@@ -24,7 +24,10 @@
 ```bash
 bun install            # 依存インストール（bun.lock 使用）
 
-# 開発時は 2 プロセスを起動する
+# 本番構成を一括起動（ビルド → ゲームサーバ＋Web クライアントを並列、ログ色分け）
+bun run start          # = scripts/execute.ts: vite build → bun run server + vite preview
+
+# 開発時は 2 プロセスを個別に起動する（HMR が効く）
 bun run server         # 権威ゲームサーバ（bun・ネイティブ WebSocket、:8080、60Hz シム/30Hz 送信）
 bun run dev            # 開発サーバ（Vite、:5173。/ws をゲームサーバへプロキシ）
 
@@ -32,14 +35,27 @@ bun run typecheck      # 型チェック（クライアント/shared とサー�
 bun run lint           # Biome lint
 bun run test:unit      # 単体テスト（Vitest run、watch ではない）
 bun run build          # 本番ビルド（vite build）
-bun run preview        # 本番ビルドのローカル確認
+bun run preview        # 本番ビルドのローカル確認（:4173、/ws をプロキシ）
 ```
 
-> **マルチプレイヤーの確認方法**: `bun run server` と `bun run dev` を起動し、
-> ブラウザで http://localhost:5173 を開く。画面をクリックで PointerLock、
-> **WASD で移動**。タブをもう 1 つ開いて同じ URL に接続すると、互いのプレイヤー
-> （カプセル）が 100ms 補間で滑らかに動いて見える。接続先は同一オリジンの
-> `/ws`（Vite がゲームサーバへプロキシ）。
+> **一括起動（`bun run start` / `scripts/execute.ts`）**: `vite build` を先に実行し、
+> 成功したら **ゲームサーバ（:8080）と Web クライアントの本番プレビュー（:4173）を
+> 並列起動**します。ログはプロセスごとに色分けされます —
+> **[BUILD]** シアン（ビルド）／**[SERVER]** 緑（ゲームサーバ）／**[CLIENT]** マゼンタ
+> （vite preview）。Ctrl+C で両プロセスを終了します。
+
+> **マルチプレイヤーの確認方法**: `bun run start`（または `bun run server` と
+> `bun run dev`）を起動し、ブラウザで http://localhost:4173 （開発時は 5173）を開く。
+> **「TAP TO START」をタップで全画面化**し、PC はクリックでマウスロック、スマホは
+> 画面を**ドラッグで視点操作**、**WASD（物理キーボード）で移動**。タブをもう 1 つ開いて
+> 同じ URL に接続すると、互いのプレイヤー（カプセル）が 100ms 補間で滑らかに動いて見える。
+> 接続先は同一オリジンの `/ws`（Vite がゲームサーバへプロキシ）。
+
+> **テストの配置**: テストファイルはすべて **`./_tests_/`** 配下に集約し、ソースと
+> **同じディレクトリ構造をミラー**します（例: `src/lib/clamp.ts` →
+> `_tests_/src/lib/clamp.test.ts`、`server/room/Room.ts` → `_tests_/server/room/Room.test.ts`）。
+> import は相対パスではなく `@/`（src）・`@shared/`（shared）・`@server/`（server）の
+> エイリアスを使います。
 
 > **ランタイム/パッケージ管理は bun**（`bun install` / `bun run` / `bunx`、ロックファイルは `bun.lock`）。
 > bun が未インストールの環境では `npm install -g bun`（npm 経由）で導入できます。

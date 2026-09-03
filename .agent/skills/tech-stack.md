@@ -133,3 +133,10 @@
 - **shared のコードはクライアント/サーバーで同一マップを使う**: 障害物配置（DEFAULT_OBSTACLES）など決定論に効く定数は shared に置き、サーバー権威とクライアント予測が同じ BVH を構築する。片方だけ別配置にすると予測と補正がズレる。
 - **tsconfig は 2 構成**: `tsconfig.json`（client+shared、DOM 型・jsx）と `tsconfig.server.json`（server+shared、`"types":["bun"]`・lib から DOM を外す）。`@shared/*` エイリアスは tsconfig の paths と vite/vitest の両方に必要。vitest は既定 jsdom だが shared/server のテストはファイル先頭 `// @vitest-environment node`。
 - **TS 7**: `baseUrl` は廃止（paths は tsconfig 基準で解決）。`import { X } from '...'` で値としてエクスポートされていない名前を import すると型エラーにならないことがある（`verbatimModuleSyntax` 未使用時）。定数の定義元ファイルと再エクスポート元を混同しない（例: `SNAPSHOT_MAX_BYTES` は packer、INPUT_FLAG_* は messages）。
+
+### テスト配置と一括起動（運用規約）
+
+- **テストは全て `./_tests_/` 配下**に書き、ソースツリー（`src/`・`shared/`・`server/`）と**同じディレクトリ構造をミラー**する。例: `src/lib/clamp.ts` → `_tests_/src/lib/clamp.test.ts`、`server/room/Room.ts` → `_tests_/server/room/Room.test.ts`、`shared/sim/movement.ts` → `_tests_/shared/sim/movement.test.ts`。ソースと同じ場所に `*.test.ts` を置かないこと。
+- テスト内の import は相対パスを使わず**エイリアス**を使う: `@/`（src）、`@shared/`（shared）、`@server/`（server）。この3エイリアスは tsconfig の paths・vite.config・vitest.config の3箇所すべてに定義が必要（`@server` は server を指す）。テストを `_tests_/` に移しても import が壊れないのはエイリアスのおかげ。
+- vitest の `include` は `_tests_/**/*.{test,spec}.{ts,tsx}` だけ。環境は既定 jsdom、shared/server の純粋ロジックはファイル先頭 `// @vitest-environment node`。tsconfig は2構成の `include` に `_tests_/src`・`_tests_/shared`（client 構成）と `_tests_/server`・`_tests_/shared`（server 構成）をそれぞれ追加して型チェック対象に含める。
+- **一括起動は `bun run start`（`scripts/execute.ts`）**: `vite build` を先に実行し、成功時のみ `bun run server`（:8080）と `vite preview`（:4173）を `Bun.spawn` で並列起動。子の stdout/stderr は行バッファして **[BUILD] シアン / [SERVER] 緑 / [CLIENT] マゼンタ**の ANSI 色タグを付けて転送する。SIGINT/SIGTERM と子プロセス異常終了で全子を SIGTERM する。`scripts/` は bun ランタイムなので tsconfig.server.json の include に含める。

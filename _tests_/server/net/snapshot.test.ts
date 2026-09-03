@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import {
   MSG_S2C_SNAPSHOT,
   snapshotPayloadBytes,
-} from '../../shared/protocol/constants'
-import { decodeSnapshot, readMessageType } from '../../shared/protocol/packer'
-import { Room, type Peer } from '../room/Room'
-import { BACKPRESSURE_LIMIT_BYTES, SnapshotBroadcaster } from './snapshot'
+} from '@shared/protocol/constants'
+import { decodeSnapshot, readMessageType } from '@shared/protocol/packer'
+import { Room, type Peer } from '@server/room/Room'
+import { BACKPRESSURE_LIMIT_BYTES, SnapshotBroadcaster } from '@server/net/snapshot'
 
 interface TestPeer extends Peer {
   binary: ArrayBuffer[]

@@ -12,6 +12,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "start": "bun run scripts/execute.ts",
     "server": "bun run server/index.ts",
     "server:dev": "bun --watch server/index.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",

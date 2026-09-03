@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { RendererHud } from './components/RendererHud'
-import { gameStoreApi, useGameStore } from './store/gameStore'
+import { RendererHud } from '@/components/RendererHud'
+import { gameStoreApi, useGameStore } from '@/store/gameStore'
 
 // 注意: <Canvas>（R3F）は jsdom で WebGL が無いためテストしない（計画書 §11）。
 // WebGL 非依存の DOM オーバーレイと、純粋な Zustand ストアのロジックを検証する。

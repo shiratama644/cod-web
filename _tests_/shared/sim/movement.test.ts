@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { SIM_DT } from '../protocol/constants'
-import type { PlayerInput } from '../protocol/messages'
-import { createPlaneWorld, type CollisionWorld } from './collisionWorld'
-import { PLAYER_RADIUS, stepPlayer } from './movement'
-import { createPlayerState, type PlayerState } from '../types'
+import { SIM_DT } from '@shared/protocol/constants'
+import type { PlayerInput } from '@shared/protocol/messages'
+import { createPlaneWorld, type CollisionWorld } from '@shared/sim/collisionWorld'
+import { PLAYER_RADIUS, stepPlayer } from '@shared/sim/movement'
+import { createPlayerState, type PlayerState } from '@shared/types'
 
 function input(partial: Partial<PlayerInput> = {}): PlayerInput {
   return {

@@ -12,7 +12,7 @@ import {
   WIRE_DATAGRAM_TARGET,
   snapshotPayloadBytes,
   wireBytes,
-} from './constants'
+} from '@shared/protocol/constants'
 import {
   SNAPSHOT_MAX_BYTES,
   decodeInput,
@@ -20,8 +20,8 @@ import {
   encodeInput,
   encodeSnapshot,
   readMessageType,
-} from './packer'
-import type { PlayerInput, Snapshot } from './messages'
+} from '@shared/protocol/packer'
+import type { PlayerInput, Snapshot } from '@shared/protocol/messages'
 import {
   dequantizePitch,
   dequantizePosition,
@@ -29,7 +29,7 @@ import {
   quantizePitch,
   quantizePosition,
   quantizeYaw,
-} from './quantize'
+} from '@shared/protocol/quantize'
 
 describe('quantize round-trip', () => {
   it('位置は 0.01m 精度で往復する（誤差 ≤ 0.01m）', () => {

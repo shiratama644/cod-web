@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { MAX_PLAYERS } from '../../shared/protocol/constants'
-import { Room, type Peer } from './Room'
+import { MAX_PLAYERS } from '@shared/protocol/constants'
+import { Room, type Peer } from '@server/room/Room'
 
 function makePeer(): Peer & { sent: string[] } {
   const sent: string[] = []
