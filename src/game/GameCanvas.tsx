@@ -26,8 +26,11 @@ export function GameCanvas() {
     <Canvas
       // R3F v9: gl に非同期ファクトリを渡すと WebGPURenderer を初期化できる。
       gl={createGl}
-      camera={{ position: [4, 4, 6], fov: 60, near: 0.1, far: 200 }}
+      camera={{ position: [4, 4, 6], fov: 60, near: 0.1, far: 2000 }}
       dpr={[1, 2]}
+      // 物理キーボード（モバイルに繋いだ BT/USB キーボード含む）のイベントを
+      // 確実に受けるため、canvas をフォーカス可能にする。
+      tabIndex={-1}
     >
       <SceneContents />
     </Canvas>

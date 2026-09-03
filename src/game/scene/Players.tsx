@@ -71,7 +71,7 @@ export function Players({ client }: { client: GameClient }) {
       {/* マップ: 床（y=0） */}
       <mesh position={[0, -0.5, 0]} receiveShadow>
         <boxGeometry args={[400, 1, 400]} />
-        <meshStandardMaterial color="#1c2330" />
+        <meshStandardMaterial color="#7a8a6a" />
       </mesh>
 
       {/* マップ: 障害物（shared と同一配置）。キーは静的な座標から生成。 */}

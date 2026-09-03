@@ -49,3 +49,76 @@ body {
   border-radius: 6px;
   pointer-events: none;
 }
+
+/* ── 開始オーバーレイ（全画面開始・操作説明） ───────────────────────── */
+.start-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 24px;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: center;
+  background: radial-gradient(ellipse at center, rgba(10, 16, 28, 0.55), rgba(10, 16, 28, 0.85));
+  backdrop-filter: blur(2px);
+  z-index: 10;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+.start-panel {
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+  padding: 28px 26px;
+  background: rgba(12, 18, 30, 0.78);
+  border: 1px solid rgba(159, 231, 255, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.start-title {
+  margin: 0;
+  font-size: clamp(28px, 6vw, 44px);
+  letter-spacing: 2px;
+  color: #9fe7ff;
+  text-shadow: 0 0 18px rgba(159, 231, 255, 0.5);
+}
+
+.start-sub {
+  margin: 8px 0 18px;
+  font-size: clamp(14px, 3.6vw, 18px);
+  color: #cfe6ff;
+}
+
+.start-help {
+  margin: 0;
+  padding-left: 18px;
+  text-align: left;
+  font-size: clamp(12px, 3.2vw, 15px);
+  line-height: 1.7;
+  color: #b9c6d6;
+}
+
+.start-help kbd {
+  padding: 1px 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  color: #9fe7ff;
+  background: rgba(159, 231, 255, 0.12);
+  border: 1px solid rgba(159, 231, 255, 0.35);
+  border-radius: 5px;
+}
+
+.start-help em {
+  color: #ffd884;
+  font-style: normal;
+  font-weight: 700;
+}
