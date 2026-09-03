@@ -18,11 +18,17 @@ body,
   height: 100%;
 }
 
-/* モバイルでアドレスバー分も含めた画面高を確保（全画面 API が効かない端末の保険） */
+/* モバイルでアドレスバー分も含めた画面高を確保（全画面 API が効かない端末の保険）。
+   dvh 非対応端末は 100vh にフォールバック（先に vh、対応端末では dvh で上書き）。 */
 html,
 body {
   height: 100vh;
-  height: 100dvh;
+}
+@supports (height: 100dvh) {
+  html,
+  body {
+    height: 100dvh;
+  }
 }
 
 body {
