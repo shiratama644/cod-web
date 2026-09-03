@@ -80,7 +80,7 @@ function spawn(kind: Kind, cmd: string[], cwd = process.cwd()) {
 }
 
 async function main(): Promise<number> {
-  logLine('build', 'production build を開始します… (vite build)')
+  logLine('build', 'Starting production build... (vite build)')
 
   // ── 1. ビルド（バッファして最後にまとめて色付け出力） ──────────────────
   const build = Bun.spawn(['bun', 'run', 'build'], {
@@ -92,10 +92,10 @@ async function main(): Promise<number> {
   pipeOutput('build', build)
   const buildExit = await build.exited
   if (buildExit !== 0) {
-    logLine('build', `❌ ビルドが失敗しました（exit ${buildExit}）。サーバは起動しません。`)
+    logLine('build', `X Build failed (exit ${buildExit}). Servers will not be started.`)
     return buildExit ?? 1
   }
-  logLine('build', '✅ ビルド成功。ゲームサーバとクライアントを起動します。')
+  logLine('build', 'OK Build succeeded. Starting game server and client...')
 
   // ── 2. game server と vite preview を並列起動 ──────────────────────────
   const server = spawn('server', ['bun', 'run', 'server'])
@@ -108,7 +108,7 @@ async function main(): Promise<number> {
   ]
 
   const shutdown = (signal: string) => {
-    logLine('build', `${signal} を受信しました。子プロセスを終了します…`)
+    logLine('build', `Received ${signal}. Terminating child processes...`)
     for (const c of children) {
       try {
         c.proc.kill('SIGTERM')
@@ -129,7 +129,7 @@ async function main(): Promise<number> {
   )
 
   for (const e of exits) {
-    logLine('build', `${e.name} が終了しました（exit ${e.code}）。`)
+    logLine('build', `${e.name} exited (exit ${e.code}).`)
   }
   // どちらかが非ゼロで落ちたら、もう片方も畳む。
   const failed = exits.find((e) => e.code !== 0)
@@ -143,6 +143,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((err) => {
-    logLine('build', `❌ 予期せぬエラー: ${err instanceof Error ? err.stack ?? err.message : String(err)}`)
+    logLine('build', `X Unexpected error: ${err instanceof Error ? err.stack ?? err.message : String(err)}`)
     process.exit(1)
   })
