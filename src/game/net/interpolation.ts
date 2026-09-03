@@ -12,6 +12,13 @@
 import { INTERP_DELAY_MS } from '@shared/protocol/constants'
 import type { Snapshot, SnapshotPlayer } from '@shared/protocol/messages'
 
+/**
+ * パケット途切れ時に最新速度で外挿してよい最大秒数。これを超えたら最新位置に
+ * ホールドして、速度で実態から離れすぎるのを防ぐ（次スナップショットでの
+ * チカチカ/ワープを抑える）。100ms 遅延に対し 2 フレーム分程度。
+ */
+const EXTRAPOLATE_MAX_SEC = INTERP_DELAY_MS / 1000 / 2
+
 interface TimedSample {
   timeMs: number
   players: Map<number, SnapshotPlayer>
@@ -76,15 +83,20 @@ export class Interpolator {
 
 
     if (!after) {
-      // 最新より先のレンダー時刻（遅延でサンプルが無い）→ 最新から外挿。
-      const dt = (renderMs - before.timeMs) / 1000
+      // 最新より先のレンダー時刻（パケット途切れ）→ 最新から短く外挿する。
+      // 外挿が長すぎると速度で実態から離れて飛び、次スナップショットで
+      // チカチカする。クランプを設け、それ以上は最新位置に留める（ホールド）。
+      const rawDt = (renderMs - before.timeMs) / 1000
+      const withinCap = rawDt <= EXTRAPOLATE_MAX_SEC
+      const dt = Math.min(rawDt, EXTRAPOLATE_MAX_SEC)
       for (const p of before.players.values()) {
         if (p.id === selfId) continue
         out.set(p.id, {
           id: p.id,
-          x: p.x + p.vx * dt,
-          y: p.y + p.vy * dt,
-          z: p.z + p.vz * dt,
+          // クランプ内は最新速度で外挿、超えたら最新位置にホールド（速度 0 扱い）。
+          x: withinCap ? p.x + p.vx * dt : p.x,
+          y: withinCap ? p.y + p.vy * dt : p.y,
+          z: withinCap ? p.z + p.vz * dt : p.z,
           yaw: p.yaw,
         })
       }

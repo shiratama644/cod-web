@@ -147,3 +147,6 @@
 - **影は R3F `<Canvas shadows>` と light の castShadow 両方が必要**: Canvas に shadows を付け、directionalLight に castShadow + shadow-mapSize + shadow-camera 範囲（±70m 程度）を設定し、床に receiveShadow・障害物/プレイヤーに castShadow/receiveShadow。モバイル 60FPS 優先で directional 1 本・2048 マップに留める。空に描いた太陽の方位と directionalLight の position は equirect の UV 変換（u=0.5+atan2(z,x)/2π, v=0.5−asin(y)/π）で揃える。
 - **ネット/予測ループは rAF で回さない**: requestAnimationFrame はタブが非表示/側ペイン/最小化だと間引き・停止する。入力送信・クライアント予測を useFrame（rAF）で駆動すると、見えない側のプレイヤーが数秒遅れて動く深刻なラグになる。**入力サンプリング・予測・送信は wall-clock の setInterval(60Hz) で駆動し、rAF（GameClient.frame）はリモート補間結果を描画用にサンプリングするだけ**にする。受信は WebSocket コールバックなので元から rAF 非依存。
 - **リモートプレイヤーのメッシュは 1 フレーム欠測で即削除しない**: スナップショット欠落/補間の隙間で remove→add が起き「点滅」する。Map に `lastSeenMs` を持ち、**GRACE_MS（~600ms）戻らなかったときだけ削除**する。
+
+- **サーバーは入力を「最新1つ」で上書きせず FIFO キューで持つ**: クライアントは 60Hz で入力を送るが、ジッタで 1 サーバー tick に入力が 2 個届いたり 0 個の tick があったりする。「最新だけ保持」だと (a) 古い入力の**ジャンプフラグが捨てられてジャンプ不発**、(b) 入力 0 の tick が「停止」扱いでクライアント予測とズレ、**調停でプレイヤーが後ろへ引き戻される/カクつく/相手カプセルがチカチカ**する。WebSocket(TCP) は順序保証するので、**playerId ごとに seq 順のキューを持ち、tick ごとに先頭を 1 つずつ消費**（巻き戻り seq はガード、長すぎるキューは cap）。入力キューが空の tick は重力のみ・**視点 yaw/pitch は現在値を維持**（IDLE で yaw=0 に戻さない）。
+- **クライアント補間の外挿はクランプする**: パケット途切れ時に最新速度で無限に外挿すると実態から離れて飛び、次スナップショットでチカチカ/ワープする。外挿は INTERP_DELAY/2（≈50ms）程度に制限し、超えたら最新位置にホールド。

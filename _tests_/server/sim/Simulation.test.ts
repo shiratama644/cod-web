@@ -70,6 +70,40 @@ describe('Simulation — 権威シミュレーション', () => {
     expect(room.getPlayer(id)?.lastInputSeq).toBe(10)
   })
 
+  it('1 tick に複数入力が届いても取りこぼさず順に消費する（ジャンプフラグが消えない）', () => {
+    const room = new Room()
+    const id = room.join(noopPeer()) as number
+    const sim = new Simulation(room, createPlaneWorld())
+    // 着地させる
+    for (let i = 0; i < 90; i++) sim.step()
+    const p = room.getPlayer(id) as NonNullable<ReturnType<typeof room.getPlayer>>
+    expect(p.grounded).toBe(true)
+
+    // 同じ tick で 2 つ入力が到着（ジッタでバッチ着信）。2 つ目がジャンプ。
+    sim.receiveInput(id, input({ seq: 200, moveZ: 1 }))
+    sim.receiveInput(id, input({ seq: 201, flags: 1 /* JUMP */ }))
+
+    sim.step() // 1 つ目を消費（前進）
+    sim.step() // 2 つ目を消費（ジャンプ）→ 取りこぼされない
+    expect(p.grounded).toBe(false) // ジャンプで離床
+    expect(p.lastInputSeq).toBe(201)
+  })
+
+  it('入力が無い tick でも視点（yaw/pitch）は現在値に維持される（yaw=0 に戻らない）', () => {
+    const room = new Room()
+    const id = room.join(noopPeer()) as number
+    const sim = new Simulation(room, createPlaneWorld())
+    for (let i = 0; i < 90; i++) sim.step()
+
+    sim.receiveInput(id, input({ seq: 300, yaw: 1.5, pitch: 0.3 }))
+    sim.step()
+    // 以降は入力を一切送らない tick
+    for (let i = 0; i < 5; i++) sim.step()
+    const p = room.getPlayer(id) as NonNullable<ReturnType<typeof room.getPlayer>>
+    expect(p.yaw).toBeCloseTo(1.5, 5)
+    expect(p.pitch).toBeCloseTo(0.3, 5)
+  })
+
   it('update() はアキュムレータで固定ステップに分解する（60Hz ≈ 16.7ms）', () => {
     const room = new Room()
     room.join(noopPeer())
