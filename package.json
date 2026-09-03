@@ -12,7 +12,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "server": "bun run server/index.ts",
+    "server:dev": "bun --watch server/index.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "test:unit": "vitest run"
@@ -23,6 +25,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "three": "^0.185.1",
+    "three-mesh-bvh": "^0.9.14",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -30,6 +33,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
+    "@types/bun": "^1.4.0",
     "@types/node": "^26.4.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",

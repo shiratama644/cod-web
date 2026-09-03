@@ -16,7 +16,7 @@
                 │ リアルタイム（WebTransport/WS）│ HTTPS（REST/CDN）
 ┌───────────────▼──────────────┐   ┌───────────▼───────────────┐
 │ Game Server（bun・権威）       │   │ Web API / CDN（HTTPS）      │
-│  30Hz 固定シミュレーション・     │   │  認証・課金・インベントリ・   │
+│  60Hz 固定シミュレーション・     │   │  認証・課金・インベントリ・   │
 │  ルーム・マッチ・ラグ補償       │   │  戦績（DB）・アセット配信     │
 └───────────────┬──────────────┘   └───────────────────────────┘
                 │
@@ -28,7 +28,7 @@
 ```
 
 - **Client** と **Game Server** はともに **Shared** に依存する（双方向依存はしない）。
-- **Game Server は React / DOM / Three.js に依存しない**（ヘッドレスで動く純粋ロジック＋物理）。
+- **Game Server はレンダラー（WebGPU/WebGL）/ React / DOM に依存しない**（ヘッドレス）。ただし **three の core/math（Vector3・Capsule・Geometry 等）と three-mesh-bvh は CPU のみで WebGL 不要**なので、`shared` の衝突計算（BVH）経由でサーバーも使う（同一マップ・同一 BVH で権威計算）。
 - **課金・認証・永続化** はリアルタイムのゲームサーバーと分離し、HTTPS API + DB で扱う（[`networking.md`](./networking.md) §4.3）。
 
 ## 2. 責務分担の原則
@@ -40,7 +40,7 @@
 | クライアント予測・補間・調停 | Client（ロジックは Shared） | 体感向上。純粋計算は Shared に置いてテスト |
 | 位置・当たり判定・ダメージ・スコアの**確定** | **Game Server（権威）** | チート防止。クライアント判定は先行表示のみ |
 | ラグ補償（位置履歴の巻き戻し） | Game Server（計算は Shared） | 権威判定の一部 |
-| 30Hz 固定シミュレーション | Game Server（ロジックは Shared） | 描画とは独立した固定 tick |
+| 60Hz 固定シミュレーション・30Hz 送信 | Game Server（ロジックは Shared） | 描画と独立した固定 tick。送信レートと分離 |
 | メッセージ型・シリアライズ・プロトコル定数 | **Shared** | クライアント/サーバーで同一の定義を使う |
 | 移動計算・当たり判定ロジック（純粋関数） | **Shared** | 予測と権威シミュレーションで同一コードを共有 |
 | 認証・課金・インベントリ・戦績 | Web API（HTTPS） | ACID・冪等性・DB 永続化 |
@@ -59,8 +59,8 @@ src/
 ├── game/                   # ★ ゲーム本体（React の外側のループを含む）
 │   ├── scene/              # R3F シーン（Canvas・カメラ・ライト・地面・オブジェクト）
 │   ├── loop/               # ゲームループ（useFrame・可変FPS・delta time・ゼロアロケーション）
-│   ├── ecs/                # ECS（miniplex/bitecs）。エンティティ・コンポーネント・システム
-│   ├── player/             # プレイヤー制御（ecctrl/rapier 移動）・カメラ・武器ビューモデル
+│   ├── ecs/                # 表現層 ECS（miniplex/@miniplex/react）。エンティティ↔メッシュ結合・ライフサイクル
+│   ├── player/             # プレイヤー制御（three-mesh-bvh キネマティックCC の薄い R3F ラッパー）・カメラ・武器ビューモデル
 │   ├── input/              # 入力アダプタ（PointerLock/Keyboard/joypad/nipplejs タッチ）
 │   ├── fx/                 # エフェクト・パーティクル・トレーサー（フラグ/トリガーから決定論的再生）
 │   ├── net/                # ネット層（Client）
@@ -81,44 +81,45 @@ src/
 
 ## 4. Shared モジュール（クライアント/サーバー共有）
 
-bun でもブラウザでも動く、**DOM/Three/React に依存しない純粋 TypeScript**。
+bun でもブラウザでも動く、**DOM / React / WebGL レンダラーに依存しない**純粋ロジック。衝突計算は three の core/math と three-mesh-bvh（いずれも CPU のみ・WebGL 不要）を使用可。
 
 ```
 shared/
 ├── protocol/
 │   ├── messages.ts         # メッセージ型（入力・状態スナップショット・イベント）
 │   ├── serialize.ts        # msgpackr シリアライズ/デシリアライズ
-│   └── constants.ts        # tick rate(30Hz)・パケットヘッダ・チャネル定義
+│   └── constants.ts        # レート定数（シム60Hz・入力60Hz・送信30Hz）・パケットヘッダ・チャネル定義
 ├── sim/                    # 純粋なゲームシミュレーション（予測と権威で共用）
 │   ├── movement.ts         # 移動計算（入力 + 状態 → 次状態。delta 引数）
 │   ├── combat.ts           # 当たり判定・ダメージ計算（純粋ロジック）
 │   └── lagcomp.ts          # ラグ補償の巻き戻し計算（位置履歴 + 時刻 → 当時の状態）
-├── ecs/                    # ECS のコンポーネント/型定義（描画非依存）
+├── ecs/                    # データ指向のコア ECS 定義（bitecs 型/コンポーネント配列。描画非依存）
 └── types.ts                # 共通型（プレイヤー・武器・状態フラグ等）
 ```
 
 - ここに置くコードは **jsdom / WebGL 不要で Vitest のユニットテストが可能**（Sandbox 制約を回避、[`../../.agent/skills/sandbox-constraints.md`](../../.agent/skills/sandbox-constraints.md)）。
 - 純粋関数（入力＝出力）にし、副作用（ネット送信・描画）は呼び出し側に分離する。
+- **データ指向（ECS スタイル）で書く**: エンティティは整数 ID、状態はフラットなコンポーネント配列（`shared/ecs/`）、ロジックはそれらに作用する純粋システム関数（`stepMovement(state, input, dt, world) → state` など）。深い OOP 継承は持ち込まない。Phase 1 は ECS 形のプレーンな typed 配列で始め、弾丸/bot が数千体規模になったら `shared/ecs` の内部を bitecs（TypedArray・GC レス）に載せ替える（システムは配列に作用する形で書き、載せ替え容易にする）。エンティティ↔メッシュ結合などの**表現層だけ**がクライアントで miniplex/@miniplex/react を使う。
 
 ## 5. Game Server モジュール（bun）
 
-権威ゲームサーバー。**30Hz 固定 tick** でシミュレーション。
+権威ゲームサーバー。**60Hz 固定 tick** でシミュレーション、**30Hz でスナップショット送信**（レート分離）。
 
 ```
 server/
 ├── index.ts                # bun サーバ起動（WebSocket 受付・Caddy からの WT プロキシ）
 ├── room/                   # ルーム・マッチメイキング・プレイヤー参加/退出
-├── sim/                    # 権威シミュレーション（shared/sim を 30Hz で回す）
+├── sim/                    # 権威シミュレーション（shared/sim を 60Hz 固定ステップで回す）
 ├── net/
 │   ├── connections.ts      # 接続管理（WS ネイティブ / WT はエッジ経由）
-│   ├── snapshot.ts         # 状態スナップショット生成（30Hz）
+│   ├── snapshot.ts         # 状態スナップショット生成（送信 30Hz。1 tick おき）
 │   └── lagcomp-store.ts    # 各プレイヤーの位置履歴（~100ms）保持
-├── physics/                # ヘッドレス物理（Rapier、将来）
+├── physics/                # 衝突世界（3D Mesh Map の BVH 構築・BVH キャラクター衝突。ヘッドレス可）
 └── api/                    # 信頼イベント処理（被弾確定・スコア・購入）
 ```
 
 - 接続層: WebSocket は bun ネイティブ（uWS）。WebTransport は Caddy エッジで終端してサーバーへプロキシ（[`networking.md`](./networking.md) §6）。bun の WT ネイティブ対応後に寄せる。
-- サーバーは **React/Three/DOM を import しない**。描画ロジックを持たない。
+- サーバーは **React / DOM / WebGL レンダラー（three/webgpu・WebGLRenderer）を使わない**。描画ロジックを持たない。衝突のため three の core/math と three-mesh-bvh（いずれも CPU のみ）を shared 経由で使うことは可。
 
 ## 6. Web API / CDN（HTTPS 層）
 
@@ -133,10 +134,10 @@ web/（または別サービス）
 
 ## 7. 依存方向のルール（変更してはいけない）
 
-- `shared` は誰にも依存しない（一番内側）。
+- `shared` は一番内側。client/server の層には依存しない（依存してよいのは three の core/math と three-mesh-bvh など CPU のみのライブラリ、React/DOM/レンダラーは不可）。
 - `client` と `server` は `shared` に依存してよいが、**互いに依存しない**。
-- `server` は `three` / `react` / DOM API を import しない（ヘッドレス）。
-- 純粋ゲームロジックは必ず `shared` に置き、クライアントの描画/入力/FX コードに埋め込まない。
+- `server` は `react` / DOM API / WebGL レンダラー（WebGPU/WebGLRenderer）を使わない（ヘッドレス）。three core/math と three-mesh-bvh は shared 経由で利用可（CPU のみ・WebGL 不要）。
+- 純粋ゲームロジック（移動・BVH 衝突・当たり判定・ラグ補償計算）は必ず `shared` に置き、クライアントの描画/入力/FX コードに埋め込まない。
 - ネット送信・描画といった副作用は、純粋ロジック（shared）の外側の薄いアダプタ層（client/net, server/net）に閉じ込める。
 
 ## 8. リポジトリ構成（bun workspaces）

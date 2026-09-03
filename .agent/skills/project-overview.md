@@ -8,7 +8,7 @@
 
 - **最重要目標: どの端末（PC ブラウザ / スマートフォン / タブレット）でも安定 60FPS 以上**。軽量さ・低遅延・高速読み込みを優先し、重厚な AAA グラフィックスは優先しない
 - PC（マウス＆キーボード / ゲームパッド）＋ モバイル（タッチ / 仮想スティック / ジェスチャー）両対応
-- アーキテクチャ: 権威型ゲームサーバー ＋ クライアント予測・サーバー調停 ＋ ラグ補償。トランスポートは **WebTransport（datagrams+streams）主 / WebSocket フォールバック**で確定（[networking](../../docs/arch/networking.md)）。サーバー tick・入力 30Hz、描画は可変フレームレート
+- アーキテクチャ: 権威型ゲームサーバー ＋ クライアント予測・サーバー調停 ＋ ラグ補償。トランスポートは **WebTransport（datagrams+streams）主 / WebSocket フォールバック**で確定（[networking](../../docs/arch/networking.md)）。サーバーシム tick 60Hz・入力 60Hz・スナップショット送信 30Hz、描画は可変フレームレート（レート分離・sub-tick射撃）
 - **レンダラー: WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準レンダラーとする）
 - **描画 FPS は可変**（rAF = 60〜120Hz+。60 は下限フロアであり上限ではない）、delta time ベースでネット tick と独立
 
@@ -18,9 +18,10 @@
 | :--- | :--- |
 | ビルド | **Vite** + React + TypeScript（strict）、bun |
 | 3D | Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**、WebGL2 が全端末 60FPS の基準）/ @react-three/fiber / @react-three/drei、TSL |
-| 物理・判定 | @react-three/rapier（クライアント）/ Rapier（サーバー）、**three-mesh-bvh**（射撃判定） |
+| 衝突・判定 | **three-mesh-bvh** 統一（キネマティックCC＝浮遊カプセルのマップ衝突 ＋ 射撃レイ、ヘッドレス可）。マップは 3D Mesh Map（GLTF BVH）。剛体エンジンは当初不使用 |
+| アニメーション | Three.js AnimationMixer ＋ **XState v5**（状態遷移 FSM）。連続ブレンドはブレンドスペース |
 | ECS | miniplex / @miniplex/react（R3F 向け）、bitecs（TypedArray・GCレス） |
-| ネットワーク | 権威サーバー + クライアント予測・サーバー調停 + ラグ補償。**WebTransport（HTTP/3・datagrams+streams）主 / WebSocket フォールバック**。サーバー tick・入力 30Hz。シリアライズは msgpackr。FX はアクションフラグ＋トリガーのみ送信しクライアント再生 |
+| ネットワーク | 権威サーバー + クライアント予測・サーバー調停 + ラグ補償。Phase 1 は **WebSocket（bun ネイティブ＝uWS コア）で位置同期を先行**、WT（HTTP/3・datagrams+streams）は Caddy 終端で後から有効化。サーバー tick/スナップショット 30Hz・入力 60Hz。高頻度パケットは手動バイナリ固定レイアウト、低頻度イベントは msgpackr。FX はフラグ＋トリガーのみ送信しクライアント再生 |
 | UI / 状態 | React、**Zustand**（ゲーム状態、Context 不使用）、Radix UI、framer-motion、lucide-react、troika-three-text（3Dテキスト） |
 | オーディオ | Web Audio API（HRTF）、howler.js、resonance-audio、drei PositionalAudio |
 | アセット | useGLTF/useTexture、gltfjsx、DRACO / meshoptimizer / KTX2、@gltf-transform |

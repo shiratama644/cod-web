@@ -1,0 +1,116 @@
+/**
+ * 権威ゲームサーバー（bun・ヘッドレス）。
+ *
+ * Phase 1: bun ネイティブ WebSocket（uWS コア）で単一デフォルトルームを運用する。
+ *   - 接続時にプレイヤーを Room に参加させ playerId を払い出す。
+ *   - 60Hz 固定シミュレーション（アキュムレータ）で shared の `stepPlayer` を権威実行。
+ *   - 入力パケット（バイナリ・60Hz）を受信してシムへ渡す。
+ *   - スナップショット送信（30Hz）は P1-E で接続する。
+ *
+ * レンダラー（WebGPU/WebGL）/ React / DOM は一切使わない。衝突・移動は
+ * shared の純粋ロジック（three core/math + three-mesh-bvh、CPU のみ）を使う。
+ */
+
+import { decodeInput, readMessageType } from '../shared/protocol/packer'
+import { MSG_C2S_INPUT } from '../shared/protocol/constants'
+import { Room, type Peer } from './room/Room'
+import { Simulation } from './sim/Simulation'
+import { SnapshotBroadcaster } from './net/snapshot'
+import { buildServerWorld } from './physics/world'
+
+const PORT = Number(process.env.PORT ?? 8080)
+const HOST = '0.0.0.0'
+
+/** WebSocket の data に乗せる接続ごとの状態。 */
+interface SocketData {
+  playerId: number
+}
+
+const room = new Room()
+const world = buildServerWorld()
+const sim = new Simulation(room, world)
+const snapshots = new SnapshotBroadcaster()
+
+const server = Bun.serve<SocketData>({
+  port: PORT,
+  hostname: HOST,
+  fetch(req, server) {
+    // WebSocket アップグレード（接続ごとの data 初期値）
+    if (server.upgrade(req, { data: { playerId: -1 } })) {
+      return // アップグレード成功時は Response 不要
+    }
+    // 通常 HTTP は簡単なヘルスチェック応答のみ
+    return new Response('cod-web game server (bun) — connect via WebSocket', {
+      status: 200,
+    })
+  },
+  websocket: {
+    open(ws) {
+      const peer: Peer = {
+        playerId: -1,
+        sendText: (data) => ws.send(data),
+        sendBinary: (data) => {
+          // bun の ws.send は詰まっていると -1 を返すことがある。
+          const sent = ws.send(data)
+          return sent < 0
+        },
+        getBufferedAmount: () => (ws as unknown as { bufferedAmount?: number }).bufferedAmount ?? 0,
+      }
+      const id = room.join(peer)
+      if (id === null) {
+        ws.send(JSON.stringify({ kind: 'full' }))
+        ws.close(1013, 'room full')
+        return
+      }
+      peer.playerId = id
+      ws.data = { playerId: id }
+      console.log(`[server] player joined: id=${id} (room=${room.playerCount})`)
+    },
+    message(ws, message) {
+      if (typeof message === 'string') {
+        // 制御テキストメッセージは現状なし（welcome/join/leave はサーバー発）。
+        return
+      }
+      // バイナリ: 入力パケット（Input Packet）。
+      const bytes = message instanceof ArrayBuffer ? message : toArrayBuffer(message)
+      const view = new DataView(bytes)
+      if (readMessageType(view) !== MSG_C2S_INPUT) return
+      const input = decodeInput(view, 1)
+      const playerId = ws.data?.playerId
+      if (playerId != null && playerId > 0) sim.receiveInput(playerId, input)
+    },
+    close(ws) {
+      const id = ws.data?.playerId
+      if (id != null && id > 0) {
+        room.leave(id)
+        console.log(`[server] player left: id=${id} (room=${room.playerCount})`)
+      }
+    },
+  },
+})
+
+// ── 60Hz 固定シミュレーションループ ──
+// Simulation がアキュムレータで固定 1/60 ステップに分解し、ステップを進める。
+// 各シム tick でスナップショット送信を試み、broadcaster が 1 tick おき（30Hz）に
+// ブロードキャストする。
+const TICK_HZ = 60
+setInterval(() => {
+  const before = sim.currentTick()
+  sim.update(performance.now())
+  const after = sim.currentTick()
+  // この回で進んだ各 tick について送信判定（通常 0〜1 tick）。
+  for (let t = before + 1; t <= after; t++) {
+    snapshots.maybeSend(room, t)
+  }
+}, 1000 / TICK_HZ)
+
+/** Bun の Buffer（Uint8Array）を ArrayBuffer へ変換する。 */
+function toArrayBuffer(buf: ArrayBuffer | Uint8Array): ArrayBuffer {
+  if (buf instanceof ArrayBuffer) return buf
+  // Bun の WebSocket メッセージは Buffer/Uint8Array になることがある。
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
+}
+
+console.log(`[server] cod-web game server listening on ws://${HOST}:${server.port}`)
+
+export { room, sim }

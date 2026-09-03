@@ -31,7 +31,7 @@
 | 仕様書 | 内容 |
 | :--- | :--- |
 | [docs/arch/tech-stack.md](../../docs/arch/tech-stack.md) | 技術スタック完全ガイド＋設計・実装黄金ルール（WebGPU→WebGL2 フォールバック、可変 FPS 等） |
-| [docs/arch/networking.md](../../docs/arch/networking.md) | ネットワーク＆リアルタイム設計（WebTransport 主 / WebSocket フォールバック、30Hz、msgpackr、FX クライアント再生） |
+| [docs/arch/networking.md](../../docs/arch/networking.md) | ネットワーク＆リアルタイム設計（WebTransport 主 / WebSocket フォールバック、シム60Hz・送信30Hz、msgpackr、FX クライアント再生） |
 | [docs/arch/game-engineering-principles.md](../../docs/arch/game-engineering-principles.md) | FPS 設計の黄金ルール・実装パターン集 |
 
 > 実装テクニック・ハマりどころ・コードベース知識は **skills** に貯め、設計の事実そのものは **docs/arch** を正本とする。

@@ -17,15 +17,21 @@
 
 | ライブラリ | 役割 |
 | :--- | :--- |
-| `@react-three/rapier` | クライアント物理（WASM 版 Rapier）。プレイヤー移動・剛体・投射物 |
-| Rapier（サーバー） | 権威物理。チート防止・サーバー調停に必須 |
-| `three-mesh-bvh` | 高速 BVH レイキャスト。**射撃判定をクライアント側でローカル即時判定**（数万ポリゴンもミリ秒未満） |
+| `three-mesh-bvh` | **衝突も射撃も統一**。高速 BVH レイキャスト/shapecast。**プレイヤーのキネマティックCC（疑似リジッドボディ・浮遊カプセル）のマップ衝突**と射撃判定の両方に使う |
+| BVHEcctrl（pmndrs） | 物理エンジン不要の R3F 向け BVH キャラクターコントローラ。**設計参考のみ**（コアは shared の純粋関数で決定論・共有、R3F は薄く巻く） |
+| ~~@react-three/rapier / Rapier（サーバー）~~ | プレイヤー移動には**不使用**。three-mesh-bvh のキネマティックCC で足りる。動的剛体（投擲・崩壊物）が必要になったら再検討 |
+
+> **重要**: three-mesh-bvh の BVH 生成・shapecast・raycast は **CPU のみで WebGL 不要**（作者 gkjohnson 確認）。だから **ヘッドレス bun サーバーでも three core/math と three-mesh-bvh を import して同一 BVH で権威衝突計算ができる**。マップは **3D Mesh Map（GLTF）** から BVH を構築し、クライアント/サーバーで同一マップ→同一 BVH を使う。レンダラー（WebGPU/WebGL）・react/DOM はサーバーでは使わない。
+>
+> **BVH はビルド時に事前生成して serialize して配る**: 実行時に毎回 `new MeshBVH(geometry)` しない。ビルドスクリプトで `MeshBVH.serialize(bvh)` → `{roots: ArrayBuffer[], index}` をバイナリ化し、GLTF の `three_mesh_bvh` 拡張に埋め込むか `.bvh` サイドカーとして置く。ランタイムは `MeshBVH.deserialize(data, geometry)` するだけ（起動ほぼ0秒・root バッファ共有）。**サーバーは GLTFLoader（window/Image 依存）を使わず、position + BVH バッファだけ直接読んで deserialize**（テクスチャ/マテリアル不要）。移動 shapecast と射撃 raycast は同一 BVH を使い回す（ラグ補償の巻き戻しも同じ。マップは静的なので巻き戻し不要、動的プレイヤーだけ巻き戻す）。
 | `three-bvh-csg` | リアルタイム CSG（弾痕・破壊表現） |
 
 ## ECS・大量オブジェクト
 
-- `miniplex` / `@miniplex/react`: R3F 向け ECS。弾丸・ドロップアイテム・エフェクトのライフサイクルをデータ指向で処理。
-- `bitecs`: TypedArray ベースの高性能 ECS。サーバー/クライアント共通で数万エンティティを GC レス処理。
+- **パラダイム（確定）**: シミュレーション本体（shared/sim・権威サーバー）は**データ指向（ECS スタイル）**。エンティティ＝整数ID、状態＝フラットなコンポーネント配列、ロジック＝純粋システム関数。深い OOP 継承はホットパスで使わない（決定論・ゼロアロケ・スナップショット/巻き戻しとの相性）。境界層（React/R3F・Room・NetTransport・XState actor・WS ソケット）はクラス/OOP 可。
+- **ライブラリは後入れ・使い分け**: Phase 1（~20体）は ECS 形のプレーンな typed 配列＋純粋関数で開始し、弾丸/bot が数千体規模になったら bitecs をコアに導入（システムは配列に作用する形で書き載せ替え容易にする）。
+  - `bitecs`: **shared/サーバー権威シム**のコア ECS（TypedArray・GC レス・ヘッドレス・決定論）。数万エンティティを高速処理。
+  - `miniplex` / `@miniplex/react`: **クライアント表現層（R3F）**専用。エンティティ↔メッシュ/ref 結合・ライフサイクル（弾丸・ドロップ・エフェクト）を宣言的に。サーバーは持たない（ヘッドレス）。
 
 ## ネットワーク
 
@@ -37,12 +43,14 @@
 | **WebSocket**（`ws` / Bun.serve） | フォールバック＆信頼チャネル | チャット・ロビー・マッチメイキング、WT 不可環境のゲームプレイ。bun ネイティブ（uWS）。Krunker.io も socket.io 方式 |
 | **Caddy**（HTTP/3 エッジ） | HTTP/3・WebTransport 終端 | bun は WT サーバー未実装のためエッジで終端し bun（WS＋ロジック）へプロキシ。bun の WT 対応後に寄せる |
 | ~~geckos.io~~ | 不採用 | WebRTC-UDP だが node-datachannel ネイティブ依存で bun 非互換の恐れ、別 UDP ポートが FW に弱い |
-| Colyseus | 権威サーバーFW（選択肢） | ルーム管理・状態同期の候補。自前軽量実装と Phase 1 で比較 |
+| ~~Colyseus~~ | 不採用（パターン参考のみ） | WS ファーストで独自 schema 同期が 30Hz/msgpackr/WT 方針と二重化するため使わない。ルームライフサイクル・seat reservation・固定ステップ netcode の**設計パターンだけ**自前サーバーに取り込む（[arch/server-authority.md](../../docs/arch/server-authority.md)） |
 | `livekit-client` | WebRTC ボイス（後方フェーズ） | 近接ボイチャ。WebRTC MediaStream/SFU でゲームデータとは別系統 |
-| **msgpackr** | バイナリシリアライズ | **全メッセージで採用**。高頻度パケットは将来 bitpacking へ移行する余地を残す |
+| **msgpackr** | バイナリシリアライズ | **低頻度の信頼イベント**（チャット・ルーム・購入）で採用。高頻度は手動バイナリ固定レイアウト（下記） |
 | protobufjs | 将来の選択肢 | スキーマ厳密管理が必要になった場合 |
 
-**tick/描画**: サーバー tick・入力・状態スナップショット = **30Hz**。描画 = **可変フレームレート（60〜120Hz+、rAF 準拠、60 は下限フロア）**で tick と独立、delta time ベース。
+**tick/入力/描画**: サーバー tick・スナップショット = **30Hz**、**入力送信 = 60Hz**（~16ms ごと、tick と独立。入力は ~12B なので帯域誤差）。描画 = **可変フレームレート（60〜120Hz+、rAF 準拠、60 は下限フロア）**でいずれとも独立、delta time ベース。
+
+**高頻度パケット（入力/スナップショット）は手動バイナリ固定レイアウト（DataView/ArrayBuffer）で Phase 1 から**: 入力 ~12B（seq:u32 / move:int8×2 / yaw:u16 / pitch:int8 / flags:u8 / dt:u16）、20 人スナップショット ~330B（ヘッダ serverTick+lastAckSeq 8B、1 人 16B = id:u16 / pos:int16×3 を 0.01m 固定小数点 / vel:int16×3 / yaw:u16）。**MTU ~1200B に 1 発収容**（20 人でも大幅に余裕）・ゼロアロケ（静的バッファ再利用）・リトルエンディアン。座標 int16 は原点 ±327m のため、広域マップは相対オフセット/int32 化が将来課題。バックプレッシャ: 送信前にソケットバッファ（bun は `ws.send` 戻り値/`bufferedAmount`/`backpressureLimit`）を見て、詰まったクライアントはスナップショットを間引く（最新だけ送る）。リモート補間は 50〜100ms バッファ＋過去2フレーム Lerp。詳細は [arch/server-authority.md](../../docs/arch/server-authority.md) §6。
 
 ## UI / 状態
 
@@ -69,7 +77,7 @@
 
 - パーティクル: `three.quarks` 等。`InstancedMesh` / `BatchedMesh` で Draw Call 削減。
 - ポストプロセス: `@react-three/postprocessing`。
-- アニメーション: Three.js ミキサー + IK / FSM、WebGPU compute は TSL で記述。
+- アニメーション: **状態遷移は XState v5 の FSM で駆動**（idle/walk/run/jump/fall/crouch/ADS/射撃/リロード。`createMachine`/`createActor`、状態変化で drei `useAnimations` のミキサーを再生、one-shot 遷移は mixer の `finished` を待つ）。連続ブレンド（idle↔walk↔run）はブレンドスペース。状態質の切替（接地↔空中等）を FSM で。サーバーは FSM を持たず権威フラグ（isGrounded/移動速度）だけ送る。IK は three-stdlib/three-ik の CCDIKSolver。WebGPU compute は TSL。
 
 ## ツールチェーン
 
@@ -113,4 +121,15 @@
 - ネットワークは **WebTransport 主 / WebSocket フォールバック**で確定（[networking](../../docs/arch/networking.md)）。bun は WebTransport サーバー未実装（HTTP/3 は v1.3.14 で実験サポート、WT は issue #13656 で進行中）のため、初期は Caddy エッジで HTTP/3 終端 → bun（WS＋ロジック）。WT の bun ネイティブ対応状況は Phase 1 で再調査。
 - ブラウザは WebTransport が Safari26.4（2026-03）で Baseline 入り。古い Safari・iOS WebView・UDP/443 ブロック企業網では WS へフォールバックが必須。
 - geckos.io は不採用（node-datachannel ネイティブ依存で bun 非互換の恐れ、別 UDP ポートが FW に弱い）。
+- **権威サーバーは自前の軽量実装（bun `Bun.serve` + ネイティブ WS）**。Colyseus はライブラリ不使用で設計パターン（onCreate/onJoin/onLeave、seat reservation、固定ステップ）だけ拝借。サーバー/クライアントのプレイヤー物理は **three-mesh-bvh のキネマティックCC（浮遊カプセル・3D Mesh Map の BVH に shapecast）を shared の純粋関数で**。Rapier はプレイヤーには使わず、動的剛体が要る段階で再検討。**Phase 1 は WebSocket で位置同期**を通す（WT は Caddy 終端→bun 中継経路の検証後に有効化）。ルームは最大 20 人で初期は AOI 不要・フルスナップショット。詳細は [arch/server-authority.md](../../docs/arch/server-authority.md)。
+- **「uWebSockets.js を使え」は bun では追加インストール不要**: bun の WebSocket は内部で uWebSockets を使用し、TCP_NODELAY・pub/sub・backpressure が組込み済み。Node 向け `uWebSockets.js`（git パッケージ）は bun で動作しない（bun メンテナ Jarred Sumner 談）。bun ネイティブ WS をそのまま使う。
 - **Krunker.io は socket.io（WebSocket/TCP）で動作**し、クライアント予測＋ラグ補償で高速感を実現。「ブラウザFPS＝UDP 必須」ではない。
+
+### Phase 1 で判明したハマりどころ（ネットワーク実装）
+
+- **three-mesh-bvh は bun/node のヘッドレスでそのまま動く**: `new MeshBVH(geometry)`・`bvh.raycastFirst(ray, DoubleSide)`・shapecast は DOM/WebGL を要求しない。サーバー/shared は three の core/math（Vector3/Ray/BoxGeometry/BufferAttribute…）と three-mesh-bvh だけ import し、**GLTFLoader（window/Image 依存）はサーバーで使わない**。`bvh.raycast(ray, side)` は `Intersection[]` を返す（point/distance/faceIndex を持つ）。
+- **bun の WS 型**: `Bun.serve<SocketData>({ websocket: {...} })` のジェネリクスは data 型 1 つだけ。`server.upgrade(req, { data: { ... } })` は第 2 引数の data が必須。`ws.data` で接続ごとの状態（playerId）を持つ。
+- **クライアントはサーバーを直叩きしない**: ブラウザは同一オリジンの `/ws` に接続し、Vite dev/preview の `server.proxy['/ws'] = { target: 'http://localhost:8080', ws: true, rewrite: () => '/' }` で bun ゲームサーバへ中継する（ライブプレビューのプロキシ配下でも localhost 直叩きを避けられる）。本番は Caddy が同パスを中継。
+- **shared のコードはクライアント/サーバーで同一マップを使う**: 障害物配置（DEFAULT_OBSTACLES）など決定論に効く定数は shared に置き、サーバー権威とクライアント予測が同じ BVH を構築する。片方だけ別配置にすると予測と補正がズレる。
+- **tsconfig は 2 構成**: `tsconfig.json`（client+shared、DOM 型・jsx）と `tsconfig.server.json`（server+shared、`"types":["bun"]`・lib から DOM を外す）。`@shared/*` エイリアスは tsconfig の paths と vite/vitest の両方に必要。vitest は既定 jsdom だが shared/server のテストはファイル先頭 `// @vitest-environment node`。
+- **TS 7**: `baseUrl` は廃止（paths は tsconfig 基準で解決）。`import { X } from '...'` で値としてエクスポートされていない名前を import すると型エラーにならないことがある（`verbatimModuleSyntax` 未使用時）。定数の定義元ファイルと再エクスポート元を混同しない（例: `SNAPSHOT_MAX_BYTES` は packer、INPUT_FLAG_* は messages）。
