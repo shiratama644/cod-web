@@ -33,7 +33,7 @@
 | Phase | テーマ | 状態 |
 |---|---|---|
 | **0** | プロジェクト基盤（Vite/React/TS/Biome/Vitest、R3F シーン［WebGPU+WebGL2 フォールバック］、ゲームループ骨架） | **完了**（2026-09-03、実機確認済み） |
-| **1** | ネットワーク初期（権威 bun サーバー・shared 純粋ロジック・位置同期のみ）。**最小到達点＝動くプレイヤーが互いに見える** | **計画済み・未着手**（[PHASE01_PLAN.md](./planning/PHASE01_PLAN.md)） |
+| **1** | ネットワーク初期（権威 bun サーバー・shared 純粋ロジック・位置同期のみ）。**最小到達点＝動くプレイヤーが互いに見える** | **ローカル検証済み・実機確認待ち**（P1-A〜H、[PHASE01_PLAN.md](./planning/PHASE01_PLAN.md)。サーバー往復はライブ smoke 済、実ブラウザ 2 タブ目視のみユーザー確認待ち） |
 | 2 以降 | 射撃・当たり判定・ラグ補償 / 3D マップ（GLTF＋BVH 事前生成）/ アニメ（XState）/ マッチメイキング・ラウンド制 / 購入・チャット / WebTransport 有効化 / ボイス / HUD・UI / モバイル入力 / アセットパイプライン / パフォーマンス（全端末 60FPS 検証） | 未定（Phase 1 完了後に計画） |
 
 ---
@@ -76,7 +76,7 @@
 | P1-E | 30Hz スナップショット送信＋バックプレッシャ（1 tick おきバイナリブロードキャスト・serverTick/lastAckSeq・詰まりクライアント間引き・ラグ補償履歴の器） | ローカル検証済み | 100% | P1-D | スナップショット bytes/backpressure の統合テスト | `server/net/snapshot.ts`（リングバッファ3本・1 tickおき送信・クライアント別 lastAckSeq・bufferedAmount で詰まりクライアント間引き）＋`lagcomp-store.ts`（~100ms 位置履歴の器・判定は射撃フェーズ）。index.ts の 60Hz ループで各 tick 送信判定。テスト **5 件**（30Hz間引き・形式/全プレイヤー・backpressure・lastAckSeq・20人=329B）green。**ライブ smoke: 1秒でちょうど 30 snapshot 受信・1人=25B**。全41 test・typecheck2構成・lint0 warning・build PASS |
 | P1-F | クライアント接続・入力送信・オフライン予測移動（WS 実装・WASD+PointerLock・60Hz 入力・prediction・自カプセル/一人称カメラ） | ローカル検証済み | 100% | P1-A,P1-B,P1-C | オフラインで WASD 移動が快適（実機確認はユーザー） | `src/game/net/websocket.ts`(WS NetTransport)・`input/InputController.ts`(WASD+PointerLock・ジャンプワンショット)・`net/prediction.ts`(ClientPrediction：固定step予測・seq採番・reconcile replay)・`net/GameClient.ts`(60Hz入力送信・welcomeでselfId)・`scene/GameScene/Players.tsx`(一人称カメラ・shared と同一マップ描画)。Vite `/ws` プロキシ設定。テスト **6 件**（予測・ack破棄・調停補正）green |
 | P1-G | スナップショット受信・リモート補間・調停（100ms バッファ Lerp/外挿・リモートカプセル描画・lastAckSeq 調停 replay） | 実環境検証待ち | 100% | P1-E,P1-F | **2 タブで互いに滑らかに動く**・人工遅延で操作感維持（実機確認はユーザー） | `net/interpolation.ts`(Interpolator：100msバッファ・過去2サンプルLerp・yaw最短補間・不足時外挿・自player除外)＋GameClientでsnapshot受信→push＋自player reconcile。リモートはカプセルメッシュをref直接更新・離退で除去。テスト **6 件**（Lerp・初期・自除外）green。**ライブ smoke: Viteプロキシ経由でwelcome＋23 snapshot/0.8s受信、入力30パケットでサーバー権威 z が 0→-3.87m 移動（往復確認）**。実ブラウザ2タブの目視はユーザー実機確認待ち |
-| P1-H | 検証・ドキュメント/skills 追従（4 検証 PASS・パケット実測・task-list/README/docs/skills 更新） | 未着手 | 0% | P1-A〜G | typecheck/lint/test/build 全 PASS・証拠記録 | |
+| P1-H | 検証・ドキュメント/skills 追従（4 検証 PASS・パケット実測・task-list/README/docs/skills 更新） | ローカル検証済み | 100% | P1-A〜G | typecheck/lint/test/build 全 PASS・証拠記録 | typecheck(client/shared＋server 2構成) 0 error・biome lint 50 files 0 error/0 warning・**vitest 47 件全 green**（packer/quantize 9・movement/collision 7・Room 5・Simulation 4・snapshot 5・prediction/interpolation 12＋既存 5・clamp 5・App 6）・vite build OK。README に 2 プロセス起動（server＋dev）と 2 タブ確認手順、skills に bun WS 型/three-mesh-bvh ヘッドレス/Vite プロキシ/tsconfig 2構成 のハマりどころを追記 |
 
 ※ シム tick 60Hz / 入力 60Hz / スナップショット送信 30Hz（レート分離）。射撃は sub-tick（後続）。
 ※ シムはデータ指向（プレーン typed 配列＋純粋関数）。bitecs/@miniplex は弾丸/bot が数千体規模になってから後入れ。

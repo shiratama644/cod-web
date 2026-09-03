@@ -23,22 +23,36 @@
 
 ```bash
 bun install            # 依存インストール（bun.lock 使用）
-bun run dev            # 開発サーバ（Vite）
-bun run typecheck      # 型チェック（tsc --noEmit）
+
+# 開発時は 2 プロセスを起動する
+bun run server         # 権威ゲームサーバ（bun・ネイティブ WebSocket、:8080、60Hz シム/30Hz 送信）
+bun run dev            # 開発サーバ（Vite、:5173。/ws をゲームサーバへプロキシ）
+
+bun run typecheck      # 型チェック（クライアント/shared とサーバの 2 構成）
 bun run lint           # Biome lint
 bun run test:unit      # 単体テスト（Vitest run、watch ではない）
 bun run build          # 本番ビルド（vite build）
 bun run preview        # 本番ビルドのローカル確認
 ```
 
+> **マルチプレイヤーの確認方法**: `bun run server` と `bun run dev` を起動し、
+> ブラウザで http://localhost:5173 を開く。画面をクリックで PointerLock、
+> **WASD で移動**。タブをもう 1 つ開いて同じ URL に接続すると、互いのプレイヤー
+> （カプセル）が 100ms 補間で滑らかに動いて見える。接続先は同一オリジンの
+> `/ws`（Vite がゲームサーバへプロキシ）。
+
 > **ランタイム/パッケージ管理は bun**（`bun install` / `bun run` / `bunx`、ロックファイルは `bun.lock`）。
 > bun が未インストールの環境では `npm install -g bun`（npm 経由）で導入できます。
 > なおテストランナーは Vitest を使用し、bun 組み込みの `bun test` は使いません（jsdom +
 > @testing-library との互換性優先）。ゲームサーバーのランタイムも bun を想定しています。
 
-> **進捗: Phase 0（プロジェクト基盤）** — `bun install` で Vite + React 19 + TypeScript + R3F
-> （three/webgpu 最優先・WebGL2 自動フォールバック）+ Biome + Vitest + Zustand の基盤が動作します。
-> ゲームプレイ・ネットワークは Phase 1 以降。タスク状況は [`docs/task-list.md`](./docs/task-list.md) を参照。
+> **進捗: Phase 1（ネットワーク初期・位置同期）実装中** — Phase 0 の基盤（Vite + React 19 +
+> TypeScript + R3F［three/webgpu 最優先・WebGL2 自動フォールバック］+ Biome + Vitest + Zustand）の上に、
+> bun の権威ゲームサーバ（60Hz シミュレーション・30Hz スナップショット・ネイティブ WebSocket）と
+> shared の純粋ゲームロジック（three-mesh-bvh のキネマティック移動・バイナリパケット）、クライアント
+> 予測・リモート補間・調停を実装。**動くプレイヤーが互いに見える位置同期**がゴール。射撃・ラグ補償判定・
+> マッチメイキング等は後続フェーズ。タスク状況は [`docs/task-list.md`](./docs/task-list.md)、計画は
+> [`docs/planning/PHASE01_PLAN.md`](./docs/planning/PHASE01_PLAN.md) を参照。
 
 ## 開発ドキュメント
 

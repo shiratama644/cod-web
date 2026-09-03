@@ -124,3 +124,12 @@
 - **権威サーバーは自前の軽量実装（bun `Bun.serve` + ネイティブ WS）**。Colyseus はライブラリ不使用で設計パターン（onCreate/onJoin/onLeave、seat reservation、固定ステップ）だけ拝借。サーバー/クライアントのプレイヤー物理は **three-mesh-bvh のキネマティックCC（浮遊カプセル・3D Mesh Map の BVH に shapecast）を shared の純粋関数で**。Rapier はプレイヤーには使わず、動的剛体が要る段階で再検討。**Phase 1 は WebSocket で位置同期**を通す（WT は Caddy 終端→bun 中継経路の検証後に有効化）。ルームは最大 20 人で初期は AOI 不要・フルスナップショット。詳細は [arch/server-authority.md](../../docs/arch/server-authority.md)。
 - **「uWebSockets.js を使え」は bun では追加インストール不要**: bun の WebSocket は内部で uWebSockets を使用し、TCP_NODELAY・pub/sub・backpressure が組込み済み。Node 向け `uWebSockets.js`（git パッケージ）は bun で動作しない（bun メンテナ Jarred Sumner 談）。bun ネイティブ WS をそのまま使う。
 - **Krunker.io は socket.io（WebSocket/TCP）で動作**し、クライアント予測＋ラグ補償で高速感を実現。「ブラウザFPS＝UDP 必須」ではない。
+
+### Phase 1 で判明したハマりどころ（ネットワーク実装）
+
+- **three-mesh-bvh は bun/node のヘッドレスでそのまま動く**: `new MeshBVH(geometry)`・`bvh.raycastFirst(ray, DoubleSide)`・shapecast は DOM/WebGL を要求しない。サーバー/shared は three の core/math（Vector3/Ray/BoxGeometry/BufferAttribute…）と three-mesh-bvh だけ import し、**GLTFLoader（window/Image 依存）はサーバーで使わない**。`bvh.raycast(ray, side)` は `Intersection[]` を返す（point/distance/faceIndex を持つ）。
+- **bun の WS 型**: `Bun.serve<SocketData>({ websocket: {...} })` のジェネリクスは data 型 1 つだけ。`server.upgrade(req, { data: { ... } })` は第 2 引数の data が必須。`ws.data` で接続ごとの状態（playerId）を持つ。
+- **クライアントはサーバーを直叩きしない**: ブラウザは同一オリジンの `/ws` に接続し、Vite dev/preview の `server.proxy['/ws'] = { target: 'http://localhost:8080', ws: true, rewrite: () => '/' }` で bun ゲームサーバへ中継する（ライブプレビューのプロキシ配下でも localhost 直叩きを避けられる）。本番は Caddy が同パスを中継。
+- **shared のコードはクライアント/サーバーで同一マップを使う**: 障害物配置（DEFAULT_OBSTACLES）など決定論に効く定数は shared に置き、サーバー権威とクライアント予測が同じ BVH を構築する。片方だけ別配置にすると予測と補正がズレる。
+- **tsconfig は 2 構成**: `tsconfig.json`（client+shared、DOM 型・jsx）と `tsconfig.server.json`（server+shared、`"types":["bun"]`・lib から DOM を外す）。`@shared/*` エイリアスは tsconfig の paths と vite/vitest の両方に必要。vitest は既定 jsdom だが shared/server のテストはファイル先頭 `// @vitest-environment node`。
+- **TS 7**: `baseUrl` は廃止（paths は tsconfig 基準で解決）。`import { X } from '...'` で値としてエクスポートされていない名前を import すると型エラーにならないことがある（`verbatimModuleSyntax` 未使用時）。定数の定義元ファイルと再エクスポート元を混同しない（例: `SNAPSHOT_MAX_BYTES` は packer、INPUT_FLAG_* は messages）。
