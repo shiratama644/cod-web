@@ -16,6 +16,13 @@ export interface Peer {
   playerId: number
   /** 制御メッセージ（welcome/join/leave）を送る関数（テキスト JSON）。 */
   sendText: (data: string) => void
+  /**
+   * バイナリ（スナップショット）を送る関数。戻り値で送信バッファの詰まりを返す
+   * （true なら送信キューが閾値超 = バックプレッシャ）。
+   */
+  sendBinary: (data: ArrayBuffer) => boolean
+  /** 現在の送信バッファ量（バイト）。バックプレッシャ判定に使う。 */
+  getBufferedAmount: () => number
 }
 
 export class Room {
@@ -39,6 +46,11 @@ export class Room {
 
   getPlayer(id: number): PlayerState | undefined {
     return this.players.get(id)
+  }
+
+  /** 指定プレイヤーの接続ピア（スナップショット個別送信に使用）。 */
+  getPeer(id: number): Peer | undefined {
+    return this.peers.get(id)
   }
 
   /**

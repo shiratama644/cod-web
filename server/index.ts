@@ -15,6 +15,7 @@ import { decodeInput, readMessageType } from '../shared/protocol/packer'
 import { MSG_C2S_INPUT } from '../shared/protocol/constants'
 import { Room, type Peer } from './room/Room'
 import { Simulation } from './sim/Simulation'
+import { SnapshotBroadcaster } from './net/snapshot'
 import { buildServerWorld } from './physics/world'
 
 const PORT = Number(process.env.PORT ?? 8080)
@@ -28,6 +29,7 @@ interface SocketData {
 const room = new Room()
 const world = buildServerWorld()
 const sim = new Simulation(room, world)
+const snapshots = new SnapshotBroadcaster()
 
 const server = Bun.serve<SocketData>({
   port: PORT,
@@ -47,6 +49,12 @@ const server = Bun.serve<SocketData>({
       const peer: Peer = {
         playerId: -1,
         sendText: (data) => ws.send(data),
+        sendBinary: (data) => {
+          // bun の ws.send は詰まっていると -1 を返すことがある。
+          const sent = ws.send(data)
+          return sent < 0
+        },
+        getBufferedAmount: () => (ws as unknown as { bufferedAmount?: number }).bufferedAmount ?? 0,
       }
       const id = room.join(peer)
       if (id === null) {
@@ -81,12 +89,20 @@ const server = Bun.serve<SocketData>({
   },
 })
 
-// ── 60Hz 固定シミュレーションループ（アキュムレータは Simulation が管理） ──
-// スナップショット送信（30Hz）は P1-E でこのループに接続する。
-const TICK_MS = 1000 / 60
+// ── 60Hz 固定シミュレーションループ ──
+// Simulation がアキュムレータで固定 1/60 ステップに分解し、ステップを進める。
+// 各シム tick でスナップショット送信を試み、broadcaster が 1 tick おき（30Hz）に
+// ブロードキャストする。
+const TICK_HZ = 60
 setInterval(() => {
+  const before = sim.currentTick()
   sim.update(performance.now())
-}, TICK_MS)
+  const after = sim.currentTick()
+  // この回で進んだ各 tick について送信判定（通常 0〜1 tick）。
+  for (let t = before + 1; t <= after; t++) {
+    snapshots.maybeSend(room, t)
+  }
+}, 1000 / TICK_HZ)
 
 /** Bun の Buffer（Uint8Array）を ArrayBuffer へ変換する。 */
 function toArrayBuffer(buf: ArrayBuffer | Uint8Array): ArrayBuffer {

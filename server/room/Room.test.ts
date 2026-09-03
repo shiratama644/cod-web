@@ -8,6 +8,8 @@ function makePeer(): Peer & { sent: string[] } {
   return {
     playerId: -1,
     sendText: (d: string) => sent.push(d),
+    sendBinary: () => false,
+    getBufferedAmount: () => 0,
     sent,
   }
 }

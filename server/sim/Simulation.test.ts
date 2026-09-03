@@ -7,7 +7,7 @@ import { Room, type Peer } from '../room/Room'
 import { Simulation } from './Simulation'
 
 function noopPeer(): Peer {
-  return { playerId: -1, sendText: () => {} }
+  return { playerId: -1, sendText: () => {}, sendBinary: () => false, getBufferedAmount: () => 0 }
 }
 
 function input(partial: Partial<PlayerInput> = {}): PlayerInput {

@@ -280,7 +280,7 @@ export const JUMP_FORCE = 7.0
 | P1-B | （SHA 記入予定） | 7 passed（movement/collision） | three-mesh-bvh は bun/node ヘッドレスで動作確認済み。平面ワールドで落下静止・ジャンプ・水平移動・壁めり込み回避・決定論を検証 |
 | P1-C | （SHA 記入予定） | 5 passed（Room） | `bun run server` 起動を smoke 確認（HTTP health 200・2 WS 接続で welcome/join/leave 通知）。Room はソケット非依存でテスト |
 | P1-D | （SHA 記入予定） | 4 passed（Simulation） | 固定 1/60・アキュムレータ・最大5ステップ/フレーム。入力で前進・古い seq 無視・アイドルで重力落下を検証 |
-| P1-E | | | 20 人スナップショット: payload ____B（目標 ~330）／ wire ____B（IPv4 ~358 / IPv6 ~378、≤1200） |
+| P1-E | （SHA 記入予定） | 5 passed（snapshot/backpressure） | 20 人スナップショット: payload **329B**（1+8+20×16）／ wire 357B(IPv4)・377B(IPv6)、≤1200。ライブ smoke: 1秒でちょうど **30 snapshot**・1人=25B |
 | P1-F | | | |
 | P1-G | | | 2 タブ同期・人工遅延操作感（ユーザー実機確認） |
 | P1-H | | | 4 検証 PASS・ドキュメント追従 |
