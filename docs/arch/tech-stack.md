@@ -5,7 +5,7 @@
 >
 > **コア構成**: React + Three.js + TypeScript + Vite（パッケージ管理/ランタイムは **bun**）
 > **対応プラットフォーム**: PC（マウス＆キーボード / ゲームパッド） ＋ モバイル（タッチ / 仮想スティック / ジェスチャー）
-> **アーキテクチャ**: 権威型サーバー ＋ クライアント予測・サーバー調停（Reconciliation） ＋ ラグ補償（Lag Compensation）。トランスポート（WebSocket / WebRTC-UDP）は検討中（本リポジトリの議論参照）
+> **アーキテクチャ**: 権威型サーバー ＋ クライアント予測・サーバー調停（Reconciliation） ＋ ラグ補償（Lag Compensation）。トランスポートは **WebTransport 主 / WebSocket フォールバックで確定**（[`networking.md`](./networking.md)）。サーバー設計（ルーム規模・自前実装・物理・Phase 1 範囲）は [`server-authority.md`](./server-authority.md)
 > **開発方針**: 各機能モジュールごとに最適な専門ライブラリを採用し、**全端末での安定 60FPS** と低遅延・高速読み込みを両立する。
 
 ---
@@ -32,7 +32,7 @@
 | ライブラリ | 役割 | 備考 |
 | :--- | :--- | :--- |
 | **@react-three/rapier** | 物理シミュレーション（クライアント） | Rust製RapierのWASM版。プレイヤーの移動、高精度な剛体挙動・落下・投射物演算に最適 |
-| **@dimforge/rapier3d** | 純粋なRapier（サーバーサイド/ヘッドレス） | Node.js等のサーバー環境で動作し、チート防止・権威ある物理演算に必須 |
+| **@dimforge/rapier3d** | 純粋なRapier（サーバーサイド/ヘッドレス） | Node.js/bun のサーバー環境で動作。**ただし Phase 1 は自前キネマティック移動（shared 純粋関数）を先行**し、地形/動的オブジェクトが複雑化した段階で置換する（[server-authority.md](./server-authority.md) §5） |
 | **three-mesh-bvh** | 高速BVH（境界ボリューム階層） / 精密レイキャスト | **FPSの射撃判定に必須**。超高速Raycastingにより数万ポリゴンの当たり判定・ヘッドショット判定・壁交差をミリ秒未満で計算 |
 | **three-bvh-csg** | リアルタイムCSG（ブーリアン演算） | 壁に弾痕や穴を開ける破壊表現（デストラクション）の実装 |
 
@@ -55,7 +55,7 @@
 
 > **決定方針（2026-09-03、詳細は [`networking.md`](./networking.md)）**:
 > **WebTransport（HTTP/3・QUIC）を主経路、WebSocket をフォールバック＆信頼メッセージ経路**とする。datagrams（非信頼）を座標・入力・状態に、streams（信頼）をダメージ確定・チャット等に使用。非対応・UDP/443 ブロック時は自動で WebSocket へフォールバック。STUN/TURN は不要（P2P ではなくクライアント→公開権威サーバー）。
-> サーバー tick・入力は **30Hz**、描画は**可変フレームレート（60〜120Hz+）**で独立。シリアライズは **msgpackr**。FX/アニメはアクションフラグ（`isShooting` 等）＋発射トリガーのみ送りクライアント再生。
+> サーバー tick・スナップショットは **30Hz**、入力送信は **60Hz**、描画は**可変フレームレート（60〜120Hz+）**で互いに独立。高頻度パケットは**手動バイナリ固定レイアウト**（入力~12B・40人スナップショット~650B、固定小数点量子化・ゼロアロケ）、低頻度の信頼イベントは **msgpackr**。FX/アニメはアクションフラグ（`isShooting` 等）＋発射トリガーのみ送りクライアント再生。詳細は [server-authority.md](./server-authority.md) §6。
 
 | ライブラリ / 技術 | 役割 | 備考 |
 | :--- | :--- | :--- |
@@ -63,10 +63,10 @@
 | **WebSocket**（`ws` / Bun.serve ネイティブ） | **フォールバック＆信頼チャネル** | チャット・ロビー・マッチメイキング、および WT 非対応/ UDP ブロック環境のゲームプレイ。bun ネイティブで高速。Krunker.io も socket.io 方式 |
 | **Caddy**（HTTP/3 リバースプロキシ） | HTTP/3・WebTransport 終端 | bun は WT サーバー未実装のため、エッジで HTTP/3 を終端し bun（WS＋ゲームロジック）へプロキシ。bun の WT 対応後に寄せる |
 | ~~geckos.io~~ | （不採用） | WebRTC-UDP だがサーバーが node-datachannel ネイティブ依存で **bun 非互換の恐れ**、別 UDP ポートが FW に塞がれやすい。WebTransport が同じ UDP の長所をより安全に提供 |
-| Colyseus | 権威サーバーフレームワーク（選択肢） | ルーム管理・状態同期の候補。自前軽量実装と Phase 1 で比較 |
+| ~~Colyseus~~ | （ライブラリ不採用・**パターン参考のみ**） | WS ファーストで独自 schema 同期が 30Hz/msgpackr/WebTransport 方針と二重化するため使わない。ルームライフサイクル・seat reservation・固定ステップ netcode の設計パターンを自前サーバーに取り込む（[server-authority.md](./server-authority.md)） |
 | **livekit-client** | WebRTC ボイスチャットSDK（後方フェーズ） | 近接ボイチャ（Proximity Voice）。WebRTC MediaStream/SFU で、ゲームデータ（WebTransport）とは別系統 |
 | playroomkit | モバイル向け対戦SDK（参考・不採用候補） | P2P/ローカル対戦プロトタイプ用。本プロジェクトは権威サーバー方式のため原則不使用 |
-| **msgpackr** | 高速MessagePackバイナリシリアライザ | **全メッセージで採用**。JSON 感覚・高速。高頻度パケットは将来 bitpacking へ移行する余地を残す |
+| **msgpackr** | 高速MessagePackバイナリシリアライザ | **低頻度の信頼イベント**（チャット・ルーム・購入・スコア）で採用。高頻度（入力/スナップショット）は手動バイナリ固定レイアウト（[server-authority.md](./server-authority.md) §6） |
 | protobufjs | Protocol Buffers（将来の選択肢） | スキーマ厳密管理が必要になった場合の候補。初期は msgpackr |
 
 ---

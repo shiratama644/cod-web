@@ -15,6 +15,7 @@ docs/
 │   ├── tech-stack.md    # 技術スタック完全ガイド + 全端末60FPS・WebGPU/WebGL2 の設計・実装黄金ルール
 │   ├── modules.md       # モジュール＆アーキ構成（client/shared/server/web の層・責務分担・依存ルール）
 │   ├── networking.md    # ネットワーク＆リアルタイム設計（WebTransport/WS・tick・msgpackr・FX同期）＋プロトコル分類マトリクス
+│   ├── server-authority.md  # 権威サーバー設計（ルーム規模・自前実装・物理・30Hzシム・Phase1位置同期）
 │   ├── protocol.md      # （統合済みポインター。正本は networking.md §4）
 │   └── game-engineering-principles.md  # FPS 設計の黄金ルール・実装パターン集
 ├── planning/            # 計画書（何を・どの順で：Phase 単位・_TEMPLATE.md 形式）
