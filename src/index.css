@@ -18,6 +18,13 @@ body,
   height: 100%;
 }
 
+/* モバイルでアドレスバー分も含めた画面高を確保（全画面 API が効かない端末の保険） */
+html,
+body {
+  height: 100vh;
+  height: 100dvh;
+}
+
 body {
   background: #0b0e14;
   color: #e6e8ec;

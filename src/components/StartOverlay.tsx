@@ -1,5 +1,40 @@
 import { useEffect, useState } from 'react'
 
+type FullscreenElement = HTMLElement & {
+  webkitRequestFullscreen?: (options?: { [key: string]: unknown }) => Promise<void> | void
+}
+
+/**
+ * 全画面化を試みる。モバイル Chromium / Samsung Internet は documentElement より
+ * **要素（canvas / body）の requestFullscreen** が確実で、Android は webkit プレフィックス
+ * 付きでないと動かない端末があるため、候補を順に試す。必ずユーザージェスチャ内で呼ぶ。
+ */
+function requestFullscreen(): void {
+  const options: FullscreenOptions = { navigationUI: 'hide' }
+  const candidates: Element[] = [
+    document.querySelector('canvas') as Element | null,
+    document.body,
+    document.documentElement,
+  ].filter(Boolean) as Element[]
+
+  for (const el0 of candidates) {
+    const el = el0 as FullscreenElement
+    try {
+      if (el.requestFullscreen) {
+        const p = el.requestFullscreen(options)
+        if (p && typeof p.then === 'function') p.catch(() => {})
+        return // 標準 API で起動できたら終了（成功可否は fullscreenchange で判定）
+      }
+      if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen({ navigationUI: 'hide' })
+        return
+      }
+    } catch {
+      // この要素では入れなかっただけ。次の候補を試す。
+    }
+  }
+}
+
 /**
  * 開始オーバーレイ（DOM）。
  *
@@ -30,17 +65,14 @@ export function StartOverlay() {
   }, [])
 
   const enter = () => {
-    const root = document.documentElement as HTMLElement & {
-      webkitRequestFullscreen?: () => Promise<void> | void
-    }
+    requestFullscreen()
+    // モバイルでアドレスバーを畳む/スクロール領域をリセットする保険（全画面 API が
+    // 効かない環境でも画面を広く使えるように）。
     try {
-      if (root.requestFullscreen) {
-        root.requestFullscreen().catch(() => {})
-      } else if (root.webkitRequestFullscreen) {
-        root.webkitRequestFullscreen()
-      }
+      window.scrollTo(0, 1)
+      window.scrollTo(0, 0)
     } catch {
-      /* fullscreen 非対応環境 */
+      /* no-op */
     }
     // 物理キーボード入力の保険としてフォーカスを確定する。
     window.focus()

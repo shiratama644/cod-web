@@ -25,6 +25,7 @@ const GRACE_MS = 600
 // 繰り返し使う一時オブジェクト（ゼロアロケ）。
 const _euler = new THREE.Euler(0, 0, 0, 'YXZ')
 const _remote = new THREE.Vector3()
+const _target = new THREE.Vector3()
 
 interface RemoteMesh {
   mesh: THREE.Mesh
@@ -39,15 +40,32 @@ export function Players({ client }: { client: GameClient }) {
   const capsuleGeo = useMemo(() => new THREE.CapsuleGeometry(0.4, PLAYER_HEIGHT - 0.8, 4, 8), [])
   const remoteMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ff5a5a', roughness: 0.6 }), [])
 
-  useFrame(({ camera }) => {
+  // 自カメラ位置のスムージング用ベクトル（初回は null で目標へ初期化）。
+  const camPos = useRef<THREE.Vector3 | null>(null)
+
+  useFrame(({ camera }, delta) => {
     const now = performance.now()
 
     // ── 自プレイヤー: 一人称カメラ ──
     const self = client.self
     if (self) {
-      // カメラ位置は足元 + 目線高さ。yaw/pitch はオイラー YXZ。
       const eye = self.y + PLAYER_HEIGHT - 0.2
-      camera.position.set(self.x, eye, self.z)
+      const tx = self.x
+      const ty = eye
+      const tz = self.z
+
+      if (!camPos.current) {
+        camPos.current = new THREE.Vector3(tx, ty, tz)
+      } else {
+        // 予測シムは 60Hz 固定ステップだが、画面は 120Hz 等で動く。カメラを予測位置へ
+        // 毎フレーム直接スナップすると「同じ位置を2フレーム→13cm ワープ」の階段状になり
+        // （ジャンプの縦弧で顕著）ガタガタする。位置だけ指数スムージングで追従させる。
+        // 時定数 ~16ms（60/s）とし、1フレーム程度の遅れに留めてガタつきを消す。
+        const a = 1 - Math.exp(-delta * 60)
+        camPos.current.lerp(_target.set(tx, ty, tz), a)
+      }
+      camera.position.copy(camPos.current)
+      // 視点の向き（yaw/pitch）はローカル入力が常に正なので遅延ゼロで直接当てる。
       _euler.set(self.pitch, self.yaw, 0)
       camera.quaternion.setFromEuler(_euler)
     }
