@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import { useCallback } from 'react'
 import { gameStoreApi } from '@/store/gameStore'
+import type { InputController } from './input/InputController'
 import type { RendererBackend } from './renderer/createRenderer'
 import { createRenderer } from './renderer/createRenderer'
 import { SceneContents } from './scene/SceneContents'
@@ -14,7 +15,7 @@ import { SceneContents } from './scene/SceneContents'
  *
  * 決定したバックエンドは Zustand ストアへ書き込む（初期化時 1 回のみ。低頻度値）。
  */
-export function GameCanvas() {
+export function GameCanvas({ input }: { input: InputController }) {
   const createGl = useCallback(async (glProps: Record<string, unknown>) => {
     const { renderer, backend } = await createRenderer(glProps)
     // React フックを使えない場所（R3F のレンダラー生成）からは getState 経由で書く。
@@ -34,7 +35,7 @@ export function GameCanvas() {
       // 確実に受けるため、canvas をフォーカス可能にする。
       tabIndex={-1}
     >
-      <SceneContents />
+      <SceneContents input={input} />
     </Canvas>
   )
 }

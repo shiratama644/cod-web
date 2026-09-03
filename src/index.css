@@ -122,3 +122,54 @@ body {
   font-style: normal;
   font-weight: 700;
 }
+
+/* ── モバイル向けタッチ操作（仮想ジョイスティック＋ジャンプボタン） ─── */
+.touch-controls {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none; /* コンテナ自体は素通り。子の操作系だけ pointer を掴む */
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+/* 左下のジョイスティック領域。nipplejs がこの中にパッド/スティックを描画する。 */
+.joystick-zone {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  width: 168px;
+  height: 168px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* nipplejs の台座に輪郭を付与（背景色は nipplejs オプション color で指定） */
+.joystick-zone .back {
+  border: 2px solid rgba(159, 231, 255, 0.5);
+}
+
+/* 右下のジャンプボタン */
+.jump-button {
+  position: absolute;
+  right: 26px;
+  bottom: 46px;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 120, 90, 0.32);
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 1px;
+  pointer-events: auto;
+  touch-action: none;
+  backdrop-filter: blur(2px);
+  -webkit-tap-highlight-color: transparent;
+}
+.jump-button:active {
+  background: rgba(255, 120, 90, 0.6);
+  transform: scale(0.94);
+}

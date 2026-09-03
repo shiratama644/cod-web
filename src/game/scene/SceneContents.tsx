@@ -1,3 +1,4 @@
+import type { InputController } from '../input/InputController'
 import { GameScene } from './GameScene'
 import { Skybox } from './Skybox'
 
@@ -12,7 +13,7 @@ import { Skybox } from './Skybox'
  * （<Skybox />）。drei <Sky> は GLSL ShaderMaterial のため WebGPU で白箱化する。
  * 影: Canvas 側で shadows を有効化し、directionalLight が shadow を投影する。
  */
-export function SceneContents() {
+export function SceneContents({ input }: { input: InputController }) {
   return (
     <>
       {/* 空（Canvas テクスチャ・WebGPU/WebGL2 両対応）＋遠景フォグ */}
@@ -38,7 +39,7 @@ export function SceneContents() {
       />
 
       {/* ネットワークゲーム本体（マップ・自プレイヤー・リモートプレイヤー） */}
-      <GameScene />
+      <GameScene input={input} />
     </>
   )
 }

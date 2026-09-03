@@ -1,16 +1,18 @@
 /**
- * 入力アダプタ（PC ＋ モバイル共通の最小構成）。
+ * 入力アダプタ（PC ＋ モバイル共通）。
  *
- * - **移動**: キーボード WASD / 矢印キー（PC、またはスマホに繋いだ物理キーボード）。
- *   キーイベントは window で購読するので、フォーカスがどこにあっても入る。
+ * - **移動**:
+ *   - キーボード WASD / 矢印キー（PC、またはスマホに繋いだ物理キーボード）。
+ *   - 画面左下の**仮想ジョイスティック（nipplejs）**。アナログ値（-1..1）を
+ *     直接反映し、キーボード入力と合成する（どちらでも動く）。
+ * - **ジャンプ**: Space キー、または画面右下のジャンプボタン（ワンショット）。
  * - **視点**:
  *   - PointerLock 対応端末（PC ブラウザ）: クリックでロックし、マウス移動で視点操作。
  *   - **PointerLock 非対応端末（Android/iOS の Edge・Chrome、マウス/タッチを問わず）**:
- *     画面を押してドラッグすると視点が動く（ドラッグルック）。PointerLock の有無に
- *     関係なく動くので、スマホに繋いだマウスでもタッチでも視点操作できる。
+ *     画面を押してドラッグすると視点が動く（ドラッグルック）。
  *
  * ブラウザ API（DOM イベント・PointerLock・Fullscreen）に依存するのはこのクラスと
- * オーバーレイだけ。モバイルのタッチ移動用ジョイスティックは後続フェーズ。
+ * オーバーレイだけ。
  */
 
 import type { PlayerInput } from '@shared/protocol/messages'
@@ -27,6 +29,11 @@ export interface InputState {
 const LOOK_SENS = 0.0022 // 視点感度（ドラッグ/ロック共通）
 const PITCH_LIMIT = Math.PI / 2 - 0.01
 
+/** 移動入力を -1..1 にクランプ。 */
+function clampAxis(v: number): number {
+  return v > 1 ? 1 : v < -1 ? -1 : v
+}
+
 export class InputController {
   private readonly keys = new Set<string>()
   private yawValue = 0
@@ -34,6 +41,10 @@ export class InputController {
   private jumpQueued = false
   private el: HTMLElement | null = null
   private locked = false
+
+  // 仮想ジョイスティックのアナログ入力（-1..1）。nipplejs から setMoveVector で渡る。
+  private joyX = 0
+  private joyZ = 0
 
   // ドラッグルック（PointerLock 非対応端末のフォールバック）の状態。
   private dragging = false
@@ -45,7 +56,7 @@ export class InputController {
     // 物理キーボードの操作時のみ。e.code はレイアウト非依存（WASD が安定）。
     this.keys.add(e.code)
     if (e.code === 'Space') {
-      this.jumpQueued = true
+      this.queueJump()
       e.preventDefault()
     }
   }
@@ -137,6 +148,21 @@ export class InputController {
     this.requestLock()
   }
 
+  /**
+   * 仮想ジョイスティックのアナログ移動入力を設定する（nipplejs から呼ぶ）。
+   * @param x -1..1（右が +）
+   * @param z -1..1（前＝画面奥が +）。nipplejs の vector をそのまま渡す。
+   */
+  setMoveVector(x: number, z: number): void {
+    this.joyX = x
+    this.joyZ = z
+  }
+
+  /** ジャンプを 1 回要求する（ジャンプボタン・Space 共通。次の sample で消費）。 */
+  queueJump(): void {
+    this.jumpQueued = true
+  }
+
   /** PointerLock 中か（PC）。モバイルでは常に false（ドラッグで操作）。 */
   get isLocked(): boolean {
     return this.locked
@@ -156,12 +182,24 @@ export class InputController {
    */
   sample(seq: number, dtMs: number): PlayerInput {
     const k = this.keys
-    let moveX = 0
-    let moveZ = 0
-    if (k.has('KeyW') || k.has('ArrowUp')) moveZ += 1
-    if (k.has('KeyS') || k.has('ArrowDown')) moveZ -= 1
-    if (k.has('KeyD') || k.has('ArrowRight')) moveX += 1
-    if (k.has('KeyA') || k.has('ArrowLeft')) moveX -= 1
+    // キーボード由来の移動（-1/0/1）。
+    let keyX = 0
+    let keyZ = 0
+    if (k.has('KeyW') || k.has('ArrowUp')) keyZ += 1
+    if (k.has('KeyS') || k.has('ArrowDown')) keyZ -= 1
+    if (k.has('KeyD') || k.has('ArrowRight')) keyX += 1
+    if (k.has('KeyA') || k.has('ArrowLeft')) keyX -= 1
+
+    // キーボードと仮想ジョイスティックを合成し、-1..1 にクランプ。
+    let moveX = clampAxis(keyX + this.joyX)
+    let moveZ = clampAxis(keyZ + this.joyZ)
+    // 斜めのアナログ入力で長さが 1 を超えないように正規化（スティックは既に
+    // 半径 1 だが、キーボード合成時は 1 を超えうるため）。
+    const len = Math.hypot(moveX, moveZ)
+    if (len > 1) {
+      moveX /= len
+      moveZ /= len
+    }
 
     const flags = this.jumpQueued ? INPUT_FLAG_JUMP : 0
     this.jumpQueued = false
