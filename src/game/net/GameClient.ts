@@ -5,15 +5,19 @@
  * `frame(dtSec)` を呼ぶだけにする。高頻度値（座標）は React state を経由せず
  * このオブジェクトが保持し、描画側が ref を直接更新する（黄金ルール4/5）。
  *
- * - 60Hz 固定で入力をサンプリングしてサーバーへ送り、ローカル予測を進める。
- * - 受信したスナップショットは Interpolator へ（リモート補間）と自プレイヤーの
- *   調停に使う。
+ * - **入力サンプリング・ローカル予測・サーバーへの送信は wall-clock の固定
+ *   タイマー（60Hz）で駆動する**。requestAnimationFrame はタブがバックグラウンド/
+ *   非表示（側ペインや最小化）になると間引かれたり停止したりするため、ネット/予測を
+ *   rAF で回すと見えない側のプレイヤーが数秒遅れて動く「ラグ」になる。タイマー駆動なら
+ *   表示状態に依らず入力は 60Hz でサーバーへ届く。
+ * - 毎レンダーフレーム（rAF）は描画のためだけにリモート補間結果をサンプリングする。
+ * - 受信したスナップショットは WebSocket コールバックで Interpolator へ（リモート補間）
+ *   と自プレイヤーの調停に使う（受信自体は rAF 非依存）。
  */
 
 import {
   INPUT_PACKET_BYTES,
   INPUT_SEND_HZ,
-  SIM_DT,
 } from '@shared/protocol/constants'
 import { encodeInput, decodeSnapshot, readMessageType } from '@shared/protocol/packer'
 import { MSG_S2C_SNAPSHOT } from '@shared/protocol/constants'
@@ -43,8 +47,10 @@ export class GameClient {
   private readonly interpolator = new Interpolator()
   private input: InputController | null = null
 
-  private sendAccumulator = 0
   private selfId: number | null = null
+  /** 固定 60Hz ネット/予測ループのタイマーハンドル。 */
+  private tickTimer: ReturnType<typeof setInterval> | null = null
+  private disposed = false
   status: ConnectionStatus = 'disconnected'
   /** 状態変化時のコールバック（低頻度・HUD 用）。 */
   onStatusChange: ((s: ConnectionStatus) => void) | null = null
@@ -62,6 +68,7 @@ export class GameClient {
   }
 
   connect(url: string = DEFAULT_WS_URL): void {
+    this.disposed = false
     this.setStatus('connecting')
     this.transport.onOpen(() => this.setStatus('connected'))
     this.transport.onClose(() => this.setStatus('disconnected'))
@@ -72,6 +79,29 @@ export class GameClient {
       t.onText((text) => this.onControlText(text))
     }
     this.transport.connect(url)
+
+    // 60Hz 固定のネット/予測ループを開始（rAF 非依存）。
+    this.startTickLoop()
+  }
+
+  /**
+   * wall-clock の 60Hz タイマーで入力送信・ローカル予測を進める。
+   * rAF の間引き/停止（側ペイン・バックグラウンド）の影響を受けない。
+   */
+  private startTickLoop(): void {
+    if (this.tickTimer != null) return
+    this.tickTimer = setInterval(() => this.netTick(), 1000 / INPUT_SEND_HZ)
+  }
+
+  /** ネット/予測の 1 固定ステップ（入力サンプリング→予測→送信）。 */
+  private netTick(): void {
+    if (this.disposed) return
+    if (!this.prediction || !this.input) return
+    const local = this.sampleInput()
+    const sent = this.prediction.applyInput(local)
+    this.encodeAndSend(sent)
+    // リモート補間もタイマーで進め、rAF が間引かれてもデータは最新に保つ。
+    this.updateRemotes()
   }
 
   /** 入力ソースを登録する。 */
@@ -114,30 +144,11 @@ export class GameClient {
   }
 
   /**
-   * 毎レンダーフレーム呼ぶ。入力送信は 60Hz 固定、予測は入力送信と同じレート、
-   * リモート補間は可変フレームごとにサンプリング。
+   * 毎レンダーフレーム（rAF）呼ぶ。描画に使うリモート補間結果を最新化するだけ。
+   * 入力送信・予測は wall-clock の 60Hz タイマー（netTick）が駆動するため、
+   * ここでは送らない（rAF が間引かれる側ペインでも同期が止まらない）。
    */
-  frame(dtSec: number): void {
-    if (!this.prediction || !this.input) {
-      // まだ welcome 前。スナップショットだけ溜める。
-      this.updateRemotes()
-      return
-    }
-
-    // 60Hz 固定で入力サンプリング→ローカル予測→サーバーへ送信
-    this.sendAccumulator += dtSec
-    const inputInterval = 1 / INPUT_SEND_HZ
-    let steps = 0
-    while (this.sendAccumulator >= inputInterval && steps < 4) {
-      this.sendAccumulator -= inputInterval
-      // InputController から移動入力を取り出す（ジャンプはワンショット消費）。
-      // seq は ClientPrediction が採番する。
-      const local = this.sampleInput()
-      const sent = this.prediction.applyInput(local)
-      this.encodeAndSend(sent)
-      steps++
-    }
-
+  frame(_dtSec: number): void {
     this.updateRemotes()
   }
 
@@ -148,10 +159,12 @@ export class GameClient {
 
   /** 入力コントローラから 1 入力を取り出す（ジャンプはワンショット消費）。 */
   private sampleInput(): Omit<PlayerInput, 'seq'> {
+    // 固定 60Hz タイマー駆動なので、入力の dt は常に 1 ティック分で確定する。
+    const dtMs = Math.round((1000 / INPUT_SEND_HZ))
     const c = this.input
-    if (!c) return { moveX: 0, moveZ: 0, yaw: 0, pitch: 0, flags: 0, dtMs: Math.round(SIM_DT * 1000) }
+    if (!c) return { moveX: 0, moveZ: 0, yaw: 0, pitch: 0, flags: 0, dtMs }
     // seq は prediction が採番するので、ここでは仮 seq でサンプルし適用時に上書きされる
-    const sampled = c.sample(0, Math.round(SIM_DT * 1000))
+    const sampled = c.sample(0, dtMs)
     return {
       moveX: sampled.moveX,
       moveZ: sampled.moveZ,
@@ -177,6 +190,11 @@ export class GameClient {
   }
 
   dispose(): void {
+    this.disposed = true
+    if (this.tickTimer != null) {
+      clearInterval(this.tickTimer)
+      this.tickTimer = null
+    }
     this.transport.close()
   }
 }

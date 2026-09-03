@@ -28,6 +28,8 @@ export function GameCanvas() {
       gl={createGl}
       camera={{ position: [4, 4, 6], fov: 60, near: 0.1, far: 2000 }}
       dpr={[1, 2]}
+      // 影（モバイル負荷を考慮し directional 1 本のみ・2048 シャドウマップ）。
+      shadows
       // 物理キーボード（モバイルに繋いだ BT/USB キーボード含む）のイベントを
       // 確実に受けるため、canvas をフォーカス可能にする。
       tabIndex={-1}

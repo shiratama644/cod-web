@@ -140,3 +140,10 @@
 - テスト内の import は相対パスを使わず**エイリアス**を使う: `@/`（src）、`@shared/`（shared）、`@server/`（server）。この3エイリアスは tsconfig の paths・vite.config・vitest.config の3箇所すべてに定義が必要（`@server` は server を指す）。テストを `_tests_/` に移しても import が壊れないのはエイリアスのおかげ。
 - vitest の `include` は `_tests_/**/*.{test,spec}.{ts,tsx}` だけ。環境は既定 jsdom、shared/server の純粋ロジックはファイル先頭 `// @vitest-environment node`。tsconfig は2構成の `include` に `_tests_/src`・`_tests_/shared`（client 構成）と `_tests_/server`・`_tests_/shared`（server 構成）をそれぞれ追加して型チェック対象に含める。
 - **一括起動は `bun run start`（`scripts/execute.ts`）**: `vite build` を先に実行し、成功時のみ `bun run server`（:8080）と `vite preview`（:4173）を `Bun.spawn` で並列起動。子の stdout/stderr は行バッファして **[BUILD] シアン / [SERVER] 緑 / [CLIENT] マゼンタ**の ANSI 色タグを付けて転送する。SIGINT/SIGTERM と子プロセス異常終了で全子を SIGTERM する。`scripts/` は bun ランタイムなので tsconfig.server.json の include に含める。
+
+### WebGPU レンダラーと資材の注意（Phase 1 で判明）
+
+- **drei の `<Sky>`（GLSL ShaderMaterial）は WebGPU で白い箱になる**: WebGPU 対応端末（Galaxy S24 Ultra 等最近のスマホ/PC）では WebGPURenderer が優先され、drei Sky のカスタム GLSL シェーダが正しく描画されず白ドーム化＋太陽も出ない。**空は drei Sky を使わず、2D Canvas で描いたグラデ＋太陽＋雲を `THREE.CanvasTexture` にして `mapping = EquirectangularReflectionMapping` で `<primitive attach="background">`** で貼る（src/game/scene/Skybox.tsx）。CanvasTexture は通常テクスチャパスを通るので **WebGPU/WebGL2 どちらでも同じ青空**。drei を Sky だけのために import しない（バンドル 646→110 モジュールと大幅減）。
+- **影は R3F `<Canvas shadows>` と light の castShadow 両方が必要**: Canvas に shadows を付け、directionalLight に castShadow + shadow-mapSize + shadow-camera 範囲（±70m 程度）を設定し、床に receiveShadow・障害物/プレイヤーに castShadow/receiveShadow。モバイル 60FPS 優先で directional 1 本・2048 マップに留める。空に描いた太陽の方位と directionalLight の position は equirect の UV 変換（u=0.5+atan2(z,x)/2π, v=0.5−asin(y)/π）で揃える。
+- **ネット/予測ループは rAF で回さない**: requestAnimationFrame はタブが非表示/側ペイン/最小化だと間引き・停止する。入力送信・クライアント予測を useFrame（rAF）で駆動すると、見えない側のプレイヤーが数秒遅れて動く深刻なラグになる。**入力サンプリング・予測・送信は wall-clock の setInterval(60Hz) で駆動し、rAF（GameClient.frame）はリモート補間結果を描画用にサンプリングするだけ**にする。受信は WebSocket コールバックなので元から rAF 非依存。
+- **リモートプレイヤーのメッシュは 1 フレーム欠測で即削除しない**: スナップショット欠落/補間の隙間で remove→add が起き「点滅」する。Map に `lastSeenMs` を持ち、**GRACE_MS（~600ms）戻らなかったときだけ削除**する。
