@@ -26,6 +26,7 @@
     "nipplejs": "^1.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "screenfull": "^6.0.2",
     "three": "^0.185.1",
     "three-mesh-bvh": "^0.9.14",
     "zustand": "^5.0.15"

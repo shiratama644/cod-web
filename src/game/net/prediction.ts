@@ -34,8 +34,14 @@ export class ClientPrediction {
   state: PlayerState
   private pending: PendingInput[] = []
   private nextSeq = 1
-  /** 最後に予測ステップを進めた時刻（performance.now()）。描画外挿で使用。 */
-  private lastStepMs = 0
+  /**
+   * 最新シム状態が対応する「描画時刻」（performance.now()）。
+   * 60Hz 固定ステップを消化した直後、アキュムレータに残った端数時間を
+   * 「未来側」に加えた時刻をセットする（状態はその時刻のもの、という意味）。
+   * これにより可変フレームレートでも外挿が連続し、タイマー遅れでの複数ステップ
+   * 一気消化時にも 1 ティック分のワープ（カクつき）が出ない。
+   */
+  private renderAnchorMs = 0
 
   constructor(
     private readonly world: CollisionWorld,
@@ -61,9 +67,18 @@ export class ClientPrediction {
     const full: PlayerInput = { ...input, seq }
     // ローカル予測: 固定ステップで即座に進める。
     stepPlayer(this.state, full, SIM_DT, this.world)
-    this.lastStepMs = performance.now()
     this.pending.push({ seq, input: full })
     return full
+  }
+
+  /**
+   * 固定ステップ消化後に呼び、最新シム状態が対応する描画時刻（アンカー）を設定する。
+   * @param nowMs       現在時刻（netTick が呼ばれた performance.now()）
+   * @param accumRemain アキュムレータに残った端数秒（次ステップまでの未消化時間）。
+   *                    状態は「現在＋この端数」の未来時刻に位置する、としてアンカーを張る。
+   */
+  markSimAnchor(nowMs: number, accumRemain: number): void {
+    this.renderAnchorMs = nowMs + accumRemain * 1000
   }
 
   /**
@@ -76,8 +91,10 @@ export class ClientPrediction {
    * yaw/pitch は入力値をそのまま使い、視点操作は遅延させない。
    */
   renderCamera(nowMs: number): { x: number; y: number; z: number; yaw: number; pitch: number } {
-    // 最後のシムステップからの経過を 0..1 ティックにクランプ（1ティック以上は外挿しない）。
-    const dt = this.lastStepMs === 0 ? 0 : (nowMs - this.lastStepMs) / 1000
+    // アンカー（最新シム状態の対応時刻）からの経過を 0..1 ティックにクランプ。
+    // アンカーはフレーム冒頭で「現在＋アキュムレータ端数（未来側）」に張るので、
+    // dt は通常 0〜SIM_DT になり、フレーム間で連続した外挿位置が得られる。
+    const dt = this.renderAnchorMs === 0 ? 0 : (nowMs - this.renderAnchorMs) / 1000
     const a = Math.max(0, Math.min(dt / SIM_DT, 1))
     const s = this.state
     return {

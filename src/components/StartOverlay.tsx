@@ -1,64 +1,32 @@
 import { useEffect, useRef, useState } from 'react'
-
-type FullscreenElement = HTMLElement & {
-  webkitRequestFullscreen?: (options?: { [key: string]: unknown }) => Promise<void> | void
-}
-
-/**
- * 全画面化を試みる。モバイル Chromium / Samsung Internet は documentElement より
- * **要素（canvas / body）の requestFullscreen** が確実で、Android は webkit プレフィックス
- * 付きでないと動かない端末があるため、候補を順に試す。必ずユーザージェスチャ内で呼ぶ。
- */
-function requestFullscreen(): void {
-  const options: FullscreenOptions = { navigationUI: 'hide' }
-  const candidates: Element[] = [
-    document.querySelector('canvas') as Element | null,
-    document.body,
-    document.documentElement,
-  ].filter(Boolean) as Element[]
-
-  for (const el0 of candidates) {
-    const el = el0 as FullscreenElement
-    try {
-      if (el.requestFullscreen) {
-        const p = el.requestFullscreen(options)
-        if (p && typeof p.then === 'function') p.catch(() => {})
-        return // 標準 API で起動できたら終了（成功可否は fullscreenchange で判定）
-      }
-      if (el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen({ navigationUI: 'hide' })
-        return
-      }
-    } catch {
-      // この要素では入れなかっただけ。次の候補を試す。
-    }
-  }
-}
+import screenfull from 'screenfull'
 
 /**
  * 開始オーバーレイ（DOM）。
  *
  * - ゲーム開始前に全画面への入り口を提示する。タップ/クリックはユーザージェスチャ
  *   なので、ここで **全画面（Fullscreen API）** を要求する。全画面はジェスチャ外からは
- *   許可されないため、このボタンが必須（モバイルのブラウザ全画面対策）。
- * - 開始後、オーバーレイが消えると canvas がタップ可能になり、InputController が
+ *   許可されないため、このボタンが必須。
+ * - 全画面化には **screenfull** を使用（ベンダープレフィックス・Safari/Chrome 差異・
+ *   イベント名をラップしてくれる）。非対応端末（iOS Safari 等）では isEnabled が
+ *   false になり、全画面をスキップしてそのまま開始する（100dvh で画面充填）。
+ * - 開始後、オーバーレイが消れば canvas がタップ可能になり、InputController が
  *   PointerLock（PC）/ ドラッグルック（モバイル）を開始する。
- * - Esc 等で全画面を抜けるとオーバーレイを再表示する（再開の入り口）。
- * - 全画面 API が無効/拒否されても started には遷移し、ドラッグ操作はそのまま使える。
+ * - Esc 等で全画面を抜けるとオーバーレイを再表示する（再開の入り口）。ただし
+ *   **一度でも全画面に入れた場合のみ**。非対応で change イベントが false で発火し、
+ *   開始画面へ巻き戻る誤作動を防ぐ。
  */
 export function StartOverlay() {
   const [started, setStarted] = useState(false)
   // 一度でも全画面に入れたか（Esc での「全画面解除→オーバーレイ復帰」は、実際に
-  // 全画面を使えていた場合のみ行う）。モバイルで Fullscreen API が拒否/非対応の環境では
-  // fullscreenchange が fs=false のまま発火して started を巻き戻してしまうため、この門が要る。
+  // 全画面を使えていた場合のみ行う）。
   const didEnterFs = useRef(false)
 
-  // 全画面解除（Esc 等）を検知してオーバーレイを復帰させる。
+  // 全画面状態の変化を screenfull 経由で購読（プレフィックス差を吸収）。
   useEffect(() => {
-    const handler = () => {
-      const d = document as Document & { webkitFullscreenElement?: Element | null }
-      const fs = Boolean(d.fullscreenElement ?? d.webkitFullscreenElement)
-      if (fs) {
+    if (!screenfull.isEnabled) return
+    const onChange = () => {
+      if (screenfull.isFullscreen) {
         didEnterFs.current = true
       } else if (didEnterFs.current) {
         // 実際に全画面を使えていて、それを抜けた場合のみ開始画面へ戻す。
@@ -66,16 +34,31 @@ export function StartOverlay() {
         setStarted(false)
       }
     }
-    document.addEventListener('fullscreenchange', handler)
-    document.addEventListener('webkitfullscreenchange', handler as EventListener)
+    screenfull.on('change', onChange)
     return () => {
-      document.removeEventListener('fullscreenchange', handler)
-      document.removeEventListener('webkitfullscreenchange', handler as EventListener)
+      screenfull.off('change', onChange)
     }
   }, [])
 
   const enter = () => {
-    requestFullscreen()
+    // 全画面対応端末なら要求（ユーザージェスチャ内）。失敗/非対応でも続行する。
+    if (screenfull.isEnabled) {
+      // canvas を全画面要素にすると描画領域が確実に画面いっぱいになる。なければ
+      // screenfull の既定（documentElement）にフォールバックする。
+      const canvas = document.querySelector('canvas')
+      try {
+        const p = canvas
+          ? screenfull.request(canvas, { navigationUI: 'hide' })
+          : screenfull.request(undefined, { navigationUI: 'hide' })
+        if (p && typeof (p as Promise<void>).catch === 'function') {
+          (p as Promise<void>).catch(() => {
+            /* 全画面拒否は無視してゲームは開始する */
+          })
+        }
+      } catch {
+        /* 全画面不可端末は無視 */
+      }
+    }
     // モバイルでアドレスバーを畳む/スクロール領域をリセットする保険（Fullscreen API が
     // 効かない環境でも viewport 充填＝100dvh で画面いっぱいに使う）。
     try {

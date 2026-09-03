@@ -51,12 +51,14 @@ export class GameClient {
   private input: InputController | null = null
 
   private selfId: number | null = null
-  /** 固定 60Hz ネット/予測ループのタイマーハンドル。 */
-  private tickTimer: ReturnType<typeof setInterval> | null = null
   private disposed = false
-  /** 実時間アキュムレータ（秒）。タイマーの呼び出し間隔が揺れてもシム step 数を実時間に合わせる。 */
-  private tickAccumulator = 0
-  private lastTickMs: number | null = null
+  /**
+   * 実時間アキュムレータ（秒）。レンダーフレーム（rAF）ごとに経過時間を積み、
+   * 固定 60Hz ステップ（SIM_DT）に分解してシム・送信を進める。
+   * rAF（120Hz 等）は 1 フレームが SIM_DT 未満なのでステップの「まとめ消化」が
+   * 起きず、カメラ外挿が 1 ティック分ワープするカクつきが消える。
+   */
+  private simAccumulator = 0
   status: ConnectionStatus = 'disconnected'
   /** 状態変化時のコールバック（低頻度・HUD 用）。 */
   onStatusChange: ((s: ConnectionStatus) => void) | null = null
@@ -75,8 +77,7 @@ export class GameClient {
 
   connect(url: string = DEFAULT_WS_URL): void {
     this.disposed = false
-    this.tickAccumulator = 0
-    this.lastTickMs = null
+    this.simAccumulator = 0
     this.setStatus('connecting')
     this.transport.onOpen(() => this.setStatus('connected'))
     this.transport.onClose(() => this.setStatus('disconnected'))
@@ -87,50 +88,7 @@ export class GameClient {
       t.onText((text) => this.onControlText(text))
     }
     this.transport.connect(url)
-
-    // 60Hz 固定のネット/予測ループを開始（rAF 非依存）。
-    this.startTickLoop()
-  }
-
-  /**
-   * wall-clock の高頻度タイマーで、実時間を固定 60Hz ステップ（SIM_DT）に分解して
-   * 入力送信・ローカル予測を進める。タイマーの呼び出し間隔が揺れたり数フレーム
-   * 詰まったりしても、**経過時間に比例した正しい回数だけシムを進める**。これが
-   * サーバー（同じ 60Hz 固定ステップ）と step 数で一致し、調停でのゴムバンド
-   * （引き戻し・停止後の変な移動・ジャンプ連打のカクつき）を防ぐ核心。
-   */
-  private startTickLoop(): void {
-    if (this.tickTimer != null) return
-    // タイマーは 60Hz より少し速く回し（実時間はアキュムレータで整合）、
-    // タブのスロットルでも大きく遅れないようにする。
-    this.tickTimer = setInterval(() => this.netTick(), 1000 / INPUT_SEND_HZ)
-  }
-
-  private netTick(): void {
-    if (this.disposed) return
-    const now = performance.now()
-    if (this.lastTickMs == null) {
-      this.lastTickMs = now
-      this.updateRemotes()
-      return
-    }
-    let frameMs = now - this.lastTickMs
-    this.lastTickMs = now
-    // 異常に大きな間隔（バックグラウンド復帰など）はクランプして一気に巻き戻さない。
-    if (frameMs > 250) frameMs = 250
-    this.tickAccumulator += frameMs / 1000
-
-    let steps = 0
-    while (this.tickAccumulator >= SIM_DT && steps < MAX_STEPS_PER_FRAME) {
-      this.tickAccumulator -= SIM_DT
-      this.simStep()
-      steps++
-    }
-    // 上限で余った時間は破棄（spiral of death 防止）。
-    if (steps >= MAX_STEPS_PER_FRAME) this.tickAccumulator = 0
-
-    // リモート補間もタイマーで進め、rAF が間引かれてもデータは最新に保つ。
-    this.updateRemotes()
+    // 固定ステップの予測/送信はレンダーループ（frame()）にアキュムレータ統合済み。
   }
 
   /** 予測/送信の 1 固定ステップ（入力サンプリング→予測→サーバーへ送信）。 */
@@ -210,11 +168,36 @@ export class GameClient {
   }
 
   /**
-   * 毎レンダーフレーム（rAF）呼ぶ。描画に使うリモート補間結果を最新化するだけ。
-   * 入力送信・予測は wall-clock の 60Hz タイマー（netTick）が駆動するため、
-   * ここでは送らない（rAF が間引かれる側ペインでも同期が止まらない）。
+   * 毎レンダーフレーム（rAF）呼ぶ。実時間を固定 60Hz ステップ（SIM_DT）に分解して
+   * 入力送信・ローカル予測を進め、ついでにリモート補間結果も最新化する。
+   *
+   * rAF は 120Hz 等で回るため 1 フレームが SIM_DT 未満で、ステップの「まとめ消化」が
+   * 起きず、カメラ外挿が 1 ティック分ワープするカクつきが出ない。サーバーも同じ 60Hz
+   * 固定ステップなので、入力は毎秒 60 件届いて step 数が一致する（調停が破綻しない）。
+   * バックグラウンドで rAF が間引かれても、復帰時に経過時間から正しい step 数へ追いつく。
    */
-  frame(_dtSec: number): void {
+  frame(dtSec: number): void {
+    if (!this.disposed) {
+      // 呼び出し側（R3F useFrame）の delta を実時間として積む。rAF のタイムスタンプと
+      // 同じクロックなので、カメラ外挿（performance.now）とも連続する。
+      let frameSec = dtSec
+      // 異常に大きい間隔（バックグラウンド復帰など）はクランプして一気に巻き戻さない。
+      if (frameSec > 0.25) frameSec = 0.25
+      this.simAccumulator += frameSec
+
+      let steps = 0
+      while (this.simAccumulator >= SIM_DT && steps < MAX_STEPS_PER_FRAME) {
+        this.simAccumulator -= SIM_DT
+        this.simStep()
+        steps++
+      }
+      // 上限で余った時間は破棄（spiral of death 防止）。
+      if (steps >= MAX_STEPS_PER_FRAME) this.simAccumulator = 0
+
+      // 最新シム状態が対応する描画時刻（アンカー）を、端数（未来側）として予測へ通知。
+      // これで描画外挿がフレーム間で連続し、ステップ境界でのワープを防ぐ。
+      this.prediction?.markSimAnchor(performance.now(), this.simAccumulator)
+    }
     this.updateRemotes()
   }
 
@@ -265,10 +248,6 @@ export class GameClient {
 
   dispose(): void {
     this.disposed = true
-    if (this.tickTimer != null) {
-      clearInterval(this.tickTimer)
-      this.tickTimer = null
-    }
     this.transport.close()
   }
 }
