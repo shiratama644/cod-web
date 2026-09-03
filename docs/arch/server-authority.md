@@ -20,7 +20,8 @@
 | ルーム形態/規模 | インスタンスルーム、**20〜40 人/ルーム**、FFA/TDM | Krunker 互換。フルスナップショットで十分、初期は AOI 不要 |
 | サーバー実装 | **自前の軽量実装（bun `Bun.serve` + ネイティブ WebSocket + 自前ルーム/スナップショット）** | WT/WS・30Hz・msgpackr・独自予測調停に完全適合。薄く掌握できる |
 | フレームワーク | **Colyseus ライブラリは使わない**。ルームライフサイクル・seat reservation・固定ステップ netcode の**設計パターンのみ参考** | Colyseus は WS ファーストで独自 schema 同期が 30Hz/msgpackr/WT 方針と二重化。パターンは有用なので自前に取り込む |
-| サーバー物理 | **まず自前キネマティック移動**（カプセル・重力・地面/壁/段差の簡易衝突）を **shared の純粋関数**で。Rapier（ヘッドレス）は複雑化する段階で後から | 30Hz・ヘッドレスで十分軽く、決定論的で予測/調停と相性が良い。初期工数が小さい |
+| キャラクター物理 | **物理エンジン不使用。three-mesh-bvh でキネマティック・キャラクターコントローラー（疑似リジッドボディ・浮遊カプセル）を自前実装**。マップは **3D Mesh Map（GLTF）の BVH** に衝突・射撃レイを統一。コアは **shared の純粋関数**でクライアント/サーバー共有 | BVH は CPU のみでヘッドレス bun でも動作（作者確認済み）。軽量・決定論的で予測/調停と相性◎。Rapier は動的剛体が要る段階まで不使用 |
+| アニメーション | **XState v5 の FSM** で状態遷移（idle/walk/run/jump/fall/crouch/ADS/射撃/リロード）。連続ブレンドはブレンドスペース | サーバーは FSM を持たず権威フラグのみ。アニメはクライアント決定論的再生 |
 | 初期トランスポート | **Phase 1 は WebSocket バイナリをエンドツーエンドで先行**（bun ネイティブ WS）。WebTransport は Caddy エッジ終端の経路を検証してから有効化 | bun は WT サーバー未実装（[`networking.md`](./networking.md) §2/§6）。Krunker 自身も WS/TCP。NetTransport 抽象の背後に WT を後挿し。**パケットはバイナリ固定レイアウトなので WS↔WT で共通** |
 | WS サーバー基盤 | **bun ネイティブ WebSocket（= uWebSockets コア）**。Node の `uWebSockets.js` パッケージは bun で動作しないため入れない | bun の WS は内部で uWebSockets を使用し、**TCP_NODELAY・pub/sub・backpressure が組込み済み**（bun メンテナ談）。アドオン不要で uWS の低遅延が得られ、bun ランタイム統一を維持 |
 | 高頻度シリアライズ | **入力・スナップショットは手動バイナリ固定レイアウト（DataView / ArrayBuffer）で Phase 1 から**。JSON/msgpackr は高頻度パケットには使わない | 40 人スナップショットを **~650B に収め MTU（~1200B）1 データグラム/セグメントで送信**。ゼロアロケ・GC レス。低頻度の信頼イベント（チャット・ルーム・購入、後続）は msgpackr のまま |
@@ -40,10 +41,12 @@ Caddy（エッジ）  ── TLS 終端。将来 HTTP/3・WebTransport を終端
 bun ゲームサーバー（Bun.serve）
   - ネイティブ WebSocket（uWS）で接続処理
   - ルーム管理・30Hz 固定シミュレーション・スナップショット生成
-  - ヘッドレス（three/react/DOM に依存しない）
+  - ヘッドレ: レンダラー(WebGPU/WebGL)・react・DOM は使わない。
+    three の core/math と three-mesh-bvh（いずれも CPU のみ・WebGL 不要）
+    で 3D Mesh Map の BVH 衝突を権威計算
   ▲
-  │ shared/ の純粋ゲームロジック（移動・当たり判定・ラグ補償計算）
-  │   をクライアント予測とサーバー権威の両方から呼ぶ
+  │ shared/ の純粋ゲームロジック（キネマティックCC・BVH衝突・ラグ補償計算）
+  │   をクライアント予測とサーバー権威の両方から呼ぶ（同一 BVH・同一コード）
 ```
 
 - **WebTransport の段階的ロールイン**: クライアントは `NetTransport` インターフェース（Phase 0 で境界のみ定義）の実装として WT/WS を持つ。Phase 1 では WS 実装をエンドツーエンドで通し、WT は「Caddy で WT を終端 → bun へ中継する経路（datagrams/streams をどう bun に渡すか）」を別途検証してから切り替える。**WT が使えない間も WS がフォールバックとして本来のゲームプレイを保証**する。
@@ -62,13 +65,16 @@ Colyseus のライフサイクル概念を自前実装に取り入れる（ラ�
 ## 5. 固定タイムステップ・シミュレーション（権威）
 
 - サーバーは **30Hz 固定 tick**（dt = 1/30s）でルームをシミュレートする（描画とも入力 60Hz とも独立）。60Hz で届く入力は各 tick で最新値を消費する（溜まっていれば最新、無ければ前回値を維持）。
-- 移動は **shared の純粋関数**で決定論的に計算する（クライアント予測とサーバー権威が**同一関数**を呼む）:
+- 移動は **shared の純粋関数**で決定論的に計算する（クライアント予測とサーバー権威が**同一関数・同一 BVH** を呼ぶ）:
   - 入力: 移動入力（前後左右・ジャンプ・しゃがみ等）、視点（yaw/pitch）、ボタン状態。
   - 出力: プレイヤーの位置・速度・接地状態。
-  - 初期物理: **自前キネマティック**。カプセル衝突・重力・地面判定・壁/段差の簡易衝突（静的ジオメトリに対する AABB/平面判定）。
-  - 純粋関数の形: `stepPlayer(player: PlayerState, input: InputCommand, dt: number, world: StaticWorld): PlayerState`（副作用なし、入力＝出力）。
-  - 複雑な剛体・動的オブジェクト・入り組んだ地形が必要になった段階で、サーバーを **@dimforge/rapier3d（ヘッドレス Rapier）** に置換する余地を残す（インターフェースは `stepPlayer` のまま）。
-- サーバーは**移動の妥当性を検証**（速度上限・テレポート/座標ジャンプの棄却・範囲外チェック）。不正な移動は補正する。
+  - **物理エンジンは使わない**。**three-mesh-bvh** で**キネマティック・キャラクターコントローラー（疑似リジッドボディ・浮遊カプセル）**を自前実装する:
+    - プレイヤーを**カプセル**とし、重力を積分しつつ BVH に対して **shapecast（カプセル vs 三角形）** で地面・壁・坂・段差との衝突を解決する（浮遊高さをスプリング/レイで維持し、坂・階段を自然に登る。定石は pmndrs の BVHEcctrl・three-mesh-bvh 公式の characterController 例）。
+    - **マップは 3D Mesh Map（GLTF）**。そのジオメトリから BVH を構築し、衝突も射撃レイも同一 BVH に対して行う。クライアント/サーバーで**同一マップ → 同一 BVH** を持つことで予測と権威が一致する。
+  - **ヘッドレス対応**: three-mesh-bvh の BVH 生成・shapecast・raycast は **CPU のみで WebGL を使わない**（作者 gkjohnson 確認済み）。よって bun サーバーでも `three` の core/math（Vector3/Capsule/Geometry 等）と `three-mesh-bvh` を import して同一計算ができる。サーバーはレンダラー（three/webgpu・three の WebGLRenderer）や react/DOM は使わない。
+  - 純粋関数の形: `stepPlayer(player: PlayerState, input: InputCommand, dt: number, world: CollisionWorld): PlayerState`（`CollisionWorld` は BVH をラップした衝突世界。副作用を外に出さない）。
+  - Rapier 等の本物の剛体エンジンは、投擲物・崩れる動的オブジェクト等が必要になるまで導入しない（プレイヤー移動には不要）。
+- サーバーは**移動の妥当性を検証**（速度上限・テレポート/座標ジャンプの棄却・範囲外チェック・BVH 外へのめり込み補正）。不正な移動は補正する。
 
 ## 6. パケット設計（位置同期フェーズ）
 
@@ -131,9 +137,11 @@ Colyseus のライフサイクル概念を自前実装に取り入れる（ラ�
 予測と権威シミュレーションを完全に一致させるため、移動は **`shared/` の純粋な TS 関数**として実装し、両者が同じものを呼ぶ（[`modules.md`](./modules.md) の shared/sim）。
 
 - 状態 `PlayerState { x, y, z, vx, vy, vz, isGrounded }`、入力 `PlayerInput { moveX, moveZ, yaw, jump, dt }`。
-- 処理: ①yaw から移動方向ベクトルを算出し速度へ（歩行 SPEED）、②重力とジャンプ（接地時のみ JUMP_FORCE）、③座標を積分、④簡易衝突（初期は `y <= 0` を地面とする。後に静的ジオメトリの AABB/平面・段差判定を追加）。
-- **決定論のための注意**: パケット上は量子化（yaw は uint16 等）されるが、移動計算には**デコード後の値を必ず使う**こと（クライアント/サーバーで量子化誤差が同じになるようにする）。浮動小数の丸め差を避けたい部分は固定小数点で計算する余地を残す。
-- `mapColliders` のような世界情報は引数で受け取り、純粋関数を保つ。初期実装の参考コード（SPEED=8.0 / GRAVITY=-20.0 / JUMP_FORCE=7.0）はチューニング対象。
+- 処理: ①yaw から移動方向ベクトルを算出し水平速度へ（歩行 SPEED）、②重力とジャンプ（接地時のみ JUMP_FORCE）、③座標を積分、④**カプセルを BVH に shapecast して衝突解決**（地面・壁・坂・段差、浮遊高さの維持）。
+  - 衝突世界は `CollisionWorld`（**3D Mesh Map から構築した three-mesh-bvh の BVH** をラップ）として引数で受け取る。初期段階のチュートリアル/スモークでは「`y<=0` の平面マップ＋ BVH」でもよいが、本番は GLTF メッシュの BVH に対して解く。
+- **決定論のための注意**: パケット上は量子化（yaw は uint16 等）されるが、移動計算には**デコード後の値を必ず使う**こと（クライアント/サーバーで量子化誤差が同じになるようにする）。BVH は同一マップから同一に構築され、shapecast 結果も両者で一致する前提。
+- アニメーションは別系統: **XState v5 のアニメ FSM**（idle/walk/run/jump/fall/crouch…）がクライアントで状態遷移を駆動する（[tech-stack.md](./tech-stack.md) §8）。サーバーは FSM を持たず、接地/移動速度/フラグといった権威状態を送るだけ。
+- 参考定数（SPEED=8.0 / GRAVITY=-20.0 / JUMP_FORCE=7.0 や BVHEcctrl の gravity/floatHeight/maxSlope 等）はチューニング対象。
 
 ### 6.6 ラグ補償（設計のみ・射撃フェーズで使用）
 - サーバーは各プレイヤーの直近 **約100ms の位置/姿勢履歴**を保持する。
@@ -164,6 +172,6 @@ Phase 1 のネットワーク初期タスク。デベロッパー提案の 5 ス
 ## 9. 残る論点（将来の判断）
 
 - WebTransport を Caddy 終端から bun へどう中継するか（datagrams/streams のバックエンド経路）— WT 有効化フェーズで検証。
-- サーバー物理を Rapier に移すタイミング（地形/動的オブジェクトが複雑化した時点）。
+- 動的剛体（投擲物・崩れるオブジェクト等）が必要になった場合の剛体エンジン（Rapier 等）要否。プレイヤー移動は three-mesh-bvh のキネマティックCC で固定。
 - マッチメイキング/ロビー・再接続・スケール（Redis 等）の具体方式。
 - アンチチートの深さ（移動検証は初期から、ダメージ/射撃検証は射撃フェーズ）。

@@ -17,9 +17,11 @@
 
 | ライブラリ | 役割 |
 | :--- | :--- |
-| `@react-three/rapier` | クライアント物理（WASM 版 Rapier）。プレイヤー移動・剛体・投射物 |
-| Rapier（サーバー） | 権威物理。チート防止・サーバー調停に必須 |
-| `three-mesh-bvh` | 高速 BVH レイキャスト。**射撃判定をクライアント側でローカル即時判定**（数万ポリゴンもミリ秒未満） |
+| `three-mesh-bvh` | **衝突も射撃も統一**。高速 BVH レイキャスト/shapecast。**プレイヤーのキネマティックCC（疑似リジッドボディ・浮遊カプセル）のマップ衝突**と射撃判定の両方に使う |
+| BVHEcctrl（pmndrs） | 物理エンジン不要の R3F 向け BVH キャラクターコントローラ。**設計参考のみ**（コアは shared の純粋関数で決定論・共有、R3F は薄く巻く） |
+| ~~@react-three/rapier / Rapier（サーバー）~~ | プレイヤー移動には**不使用**。three-mesh-bvh のキネマティックCC で足りる。動的剛体（投擲・崩壊物）が必要になったら再検討 |
+
+> **重要**: three-mesh-bvh の BVH 生成・shapecast・raycast は **CPU のみで WebGL 不要**（作者 gkjohnson 確認）。だから **ヘッドレス bun サーバーでも three core/math と three-mesh-bvh を import して同一 BVH で権威衝突計算ができる**。マップは **3D Mesh Map（GLTF）** から BVH を構築し、クライアント/サーバーで同一マップ→同一 BVH を使う。レンダラー（WebGPU/WebGL）・react/DOM はサーバーでは使わない。
 | `three-bvh-csg` | リアルタイム CSG（弾痕・破壊表現） |
 
 ## ECS・大量オブジェクト
@@ -71,7 +73,7 @@
 
 - パーティクル: `three.quarks` 等。`InstancedMesh` / `BatchedMesh` で Draw Call 削減。
 - ポストプロセス: `@react-three/postprocessing`。
-- アニメーション: Three.js ミキサー + IK / FSM、WebGPU compute は TSL で記述。
+- アニメーション: **状態遷移は XState v5 の FSM で駆動**（idle/walk/run/jump/fall/crouch/ADS/射撃/リロード。`createMachine`/`createActor`、状態変化で drei `useAnimations` のミキサーを再生、one-shot 遷移は mixer の `finished` を待つ）。連続ブレンド（idle↔walk↔run）はブレンドスペース。状態質の切替（接地↔空中等）を FSM で。サーバーは FSM を持たず権威フラグ（isGrounded/移動速度）だけ送る。IK は three-stdlib/three-ik の CCDIKSolver。WebGPU compute は TSL。
 
 ## ツールチェーン
 
@@ -115,6 +117,6 @@
 - ネットワークは **WebTransport 主 / WebSocket フォールバック**で確定（[networking](../../docs/arch/networking.md)）。bun は WebTransport サーバー未実装（HTTP/3 は v1.3.14 で実験サポート、WT は issue #13656 で進行中）のため、初期は Caddy エッジで HTTP/3 終端 → bun（WS＋ロジック）。WT の bun ネイティブ対応状況は Phase 1 で再調査。
 - ブラウザは WebTransport が Safari26.4（2026-03）で Baseline 入り。古い Safari・iOS WebView・UDP/443 ブロック企業網では WS へフォールバックが必須。
 - geckos.io は不採用（node-datachannel ネイティブ依存で bun 非互換の恐れ、別 UDP ポートが FW に弱い）。
-- **権威サーバーは自前の軽量実装（bun `Bun.serve` + ネイティブ WS）**。Colyseus はライブラリ不使用で設計パターン（onCreate/onJoin/onLeave、seat reservation、固定ステップ）だけ拝借。サーバー物理は**自前キネマティック（shared の純粋関数）先行**で Rapier は後回し。**Phase 1 は WebSocket で位置同期**を通す（WT は Caddy 終端→bun 中継経路の検証後に有効化）。ルームは 20〜40 人で初期は AOI 不要・フルスナップショット。詳細は [arch/server-authority.md](../../docs/arch/server-authority.md)。
+- **権威サーバーは自前の軽量実装（bun `Bun.serve` + ネイティブ WS）**。Colyseus はライブラリ不使用で設計パターン（onCreate/onJoin/onLeave、seat reservation、固定ステップ）だけ拝借。サーバー/クライアントのプレイヤー物理は **three-mesh-bvh のキネマティックCC（浮遊カプセル・3D Mesh Map の BVH に shapecast）を shared の純粋関数で**。Rapier はプレイヤーには使わず、動的剛体が要る段階で再検討。**Phase 1 は WebSocket で位置同期**を通す（WT は Caddy 終端→bun 中継経路の検証後に有効化）。ルームは 20〜40 人で初期は AOI 不要・フルスナップショット。詳細は [arch/server-authority.md](../../docs/arch/server-authority.md)。
 - **「uWebSockets.js を使え」は bun では追加インストール不要**: bun の WebSocket は内部で uWebSockets を使用し、TCP_NODELAY・pub/sub・backpressure が組込み済み。Node 向け `uWebSockets.js`（git パッケージ）は bun で動作しない（bun メンテナ Jarred Sumner 談）。bun ネイティブ WS をそのまま使う。
 - **Krunker.io は socket.io（WebSocket/TCP）で動作**し、クライアント予測＋ラグ補償で高速感を実現。「ブラウザFPS＝UDP 必須」ではない。

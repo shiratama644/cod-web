@@ -18,9 +18,10 @@
 | :--- | :--- |
 | ビルド | **Vite** + React + TypeScript（strict）、bun |
 | 3D | Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**、WebGL2 が全端末 60FPS の基準）/ @react-three/fiber / @react-three/drei、TSL |
-| 物理・判定 | @react-three/rapier（クライアント）/ Rapier（サーバー）、**three-mesh-bvh**（射撃判定） |
+| 衝突・判定 | **three-mesh-bvh** 統一（キネマティックCC＝浮遊カプセルのマップ衝突 ＋ 射撃レイ、ヘッドレス可）。マップは 3D Mesh Map（GLTF BVH）。剛体エンジンは当初不使用 |
+| アニメーション | Three.js AnimationMixer ＋ **XState v5**（状態遷移 FSM）。連続ブレンドはブレンドスペース |
 | ECS | miniplex / @miniplex/react（R3F 向け）、bitecs（TypedArray・GCレス） |
-| ネットワーク | 権威サーバー + クライアント予測・サーバー調停 + ラグ補償。**WebTransport（HTTP/3・datagrams+streams）主 / WebSocket フォールバック**。サーバー tick・入力 30Hz。シリアライズは msgpackr。FX はアクションフラグ＋トリガーのみ送信しクライアント再生 |
+| ネットワーク | 権威サーバー + クライアント予測・サーバー調停 + ラグ補償。Phase 1 は **WebSocket（bun ネイティブ＝uWS コア）で位置同期を先行**、WT（HTTP/3・datagrams+streams）は Caddy 終端で後から有効化。サーバー tick/スナップショット 30Hz・入力 60Hz。高頻度パケットは手動バイナリ固定レイアウト、低頻度イベントは msgpackr。FX はフラグ＋トリガーのみ送信しクライアント再生 |
 | UI / 状態 | React、**Zustand**（ゲーム状態、Context 不使用）、Radix UI、framer-motion、lucide-react、troika-three-text（3Dテキスト） |
 | オーディオ | Web Audio API（HRTF）、howler.js、resonance-audio、drei PositionalAudio |
 | アセット | useGLTF/useTexture、gltfjsx、DRACO / meshoptimizer / KTX2、@gltf-transform |
