@@ -104,7 +104,7 @@ Krunker 風オンラインFPS の**マルチプレイヤーの最小価値**＝�
 
 **計測・記録**
 
-- [ ] 40 人フルスナップショットのパケットサイズをユニットテストで実測し **≤ ~1200B（MTU 内）** であることを記録（設計目標 ~650B）。
+- [ ] 40 人フルスナップショットのサイズをユニットテストで実測・記録。**アプリ payload（設計目標 ~650B）と、ヘッダ込みの wire サイズ（IPv4: payload+28、IPv6: payload+48）を別々に断言**し、wire が保守 MTU **1200B 以内**（=payload ≤ 1152B）であること。payload を「MTU サイズ」と混同しない。
 - [ ] 60Hz シム / 60Hz 入力 / 30Hz 送信が定数駆動であること（マジックナンバーで直接書かない）。
 - [ ] `docs/task-list.md` の P1-A〜H の状態・進捗・証拠（コミット SHA・テスト件数・パケット実測サイズ）を更新。
 - [ ] 範囲外のファイル（`.archive/` 等）に意図しない変更がない。
@@ -113,7 +113,7 @@ Krunker 風オンラインFPS の**マルチプレイヤーの最小価値**＝�
 
 | 層 | 実施 | 確認内容 |
 |---|---|---|
-| Unit（vitest・**node 環境**） | ✅ 実施 | `shared/protocol` の量子化（yaw/pos/vel）ラウンドトリップ誤差、packer のバイトレイアウトとサイズ（40人で ≤MTU）、`stepPlayer` の決定論（同一入力→同一状態）・重力/ジャンプ/床衝突・速度上限、CollisionWorld でカプセルが床に着地し貫通しない、補間 Lerp と外挿の計算、調停の replay 計算 |
+| Unit（vitest・**node 環境**） | ✅ 実施 | `shared/protocol` の量子化（yaw/pos/vel）ラウンドトリップ誤差、packer のバイトレイアウトとサイズ（**payload 長と wire 長［IPv4/IPv6 ヘッダ込み］を別々に断言・wire ≤1200B**）、`stepPlayer` の決定論（同一入力→同一状態）・重力/ジャンプ/床衝突・速度上限、CollisionWorld でカプセルが床に着地し貫通しない、補間 Lerp と外挿の計算、調停の replay 計算 |
 | サーバーロジック統合（vitest node / bun、ヘッドレス） | ✅ 実施 | ソケットを使わず Room/Sim を直接駆動: 入力を投入 → tick 進行で位置が進む、参加/離脱でプレイヤー集合が変化、スナップショット生成バイトの `serverTick`/`lastAckSeq`、バックプレッシャで詰まりクライアントへのスナップショットがスキップされるロジック |
 | Component（testing-library・jsdom） | △ 最小限 | 接続状態の最小 HUD 表示程度。R3F シーン自体は実描画不可のため深入りしない |
 | E2E（Playwright / 実ブラウザ WS） | ❌ 実施しない（Sandbox 不可） | 実ブラウザ・実 WS の 2 タブ同期は**ユーザー実機確認**（`実環境検証待ち`）。CI は別タスク（CI-1） |
@@ -148,7 +148,7 @@ Krunker 風オンラインFPS の**マルチプレイヤーの最小価値**＝�
 
 | ID | テーマ | 主要成果物 | 依存 |
 |---|---|---|---|
-| **P1-A** | shared/server 基盤・ビルド設定・プロトコル | `shared/`・`server/` ディレクトリ作成。`three-mesh-bvh`・`@types/bun` 追加。tsconfig/vite/vitest の shared・server 解決（エイリアス・node テスト環境）。`shared/protocol/constants.ts`（レート・量子化・パケット種別・移動定数）・`messages.ts` 型・**バイナリ `packer.ts`**。`src/game/net/transport.ts` の **NetTransport 抽象インターフェース**定義。packer/quantize のユニットテスト | - |
+| **P1-A** | shared/server 基盤・ビルド設定・プロトコル | `shared/`・`server/` ディレクトリ作成。`three-mesh-bvh`・`@types/bun` 追加。tsconfig/vite/vitest の shared・server 解決（エイリアス・node テスト環境）。`shared/protocol/constants.ts`（レート・量子化・パケット種別・移動定数・**payload/wire サイズ予算定数**）・`messages.ts` 型・**バイナリ `packer.ts`**。`src/game/net/transport.ts` の **NetTransport 抽象インターフェース**定義。packer/quantize のユニットテスト（**payload と wire を区別**） | - |
 | **P1-B** | shared キネマティック移動（純粋関数） | `shared/sim/movement.ts` の `stepPlayer(state,input,dt,world)`（重力・ジャンプ・yaw 進行・速度上限）、`collisionWorld.ts`（**three-mesh-bvh BVH をラップする境界**。Phase 1 は平面/簡易ジオメトリの BVH、カプセル shapecast で着地・壁・めり込み解決）、データ指向 `SimWorld`（プレーン typed 配列）。決定論・床衝突のユニットテスト | P1-A |
 | **P1-C** | bun サーバ骨架（WS 受付・ルーム） | `server/index.ts`（`Bun.serve` ネイティブ WS、0.0.0.0 バインド）、`server/room/`（単一デフォルトルーム・参加/離退・`playerId` 払い出し・最小 welcome/roster 通知）。接続/離脱のロジック統合テスト。`bun run server` で起動確認 | P1-A |
 | **P1-D** | 60Hz 権威シミュレーション＋入力受信 | `server/sim/`（アキュムレータで固定 1/60s ステップ、最大ステップ数クランプ）。Input Packet 受信→各 tick で最新入力を 1 つ消費→shared `stepPlayer` を権威実行。移動妥当性検証（速度上限・範囲外・めり込み補正）。入力駆動で位置が進む統合テスト | P1-B, P1-C |
@@ -179,7 +179,19 @@ export const SNAPSHOT_SEND_EVERY_TICKS = SIM_TICK_HZ / SNAPSHOT_SEND_HZ  // = 2
 export const INTERP_DELAY_MS = 100           // リモート補間バッファ（50〜100ms）
 export const LAGCOMP_HISTORY_MS = 100        // ラグ補償履歴（器だけ）
 export const MAX_PLAYERS = 40
-export const PACKET_MTU_TARGET = 1200
+
+// ── パケットサイズ予算（payload と wire を厳密に区別する）──
+// 制約が効くのは「ワイヤー上の IP パケット/データグラムサイズ」であって、
+// アプリが pack する payload ではない点に注意。
+export const WIRE_DATAGRAM_TARGET = 1200     // 保守的な path MTU（VPN/トンネル考慮）。wire 上限
+export const UDP_HEADER_BYTES = 8
+export const IPV4_HEADER_BYTES = 20
+export const IPV6_HEADER_BYTES = 40          // 最悪ケース（IPv6）
+export const IP_UDP_HEADER_MAX = UDP_HEADER_BYTES + IPV6_HEADER_BYTES // 48B
+// アプリ payload の上限 = wire 上限 − ヘッダ予備（IPv6 最悪）= 1152B
+export const PACKET_PAYLOAD_MAX = WIRE_DATAGRAM_TARGET - IP_UDP_HEADER_MAX
+// スナップショット payload の設計目標（40 人時）。packer テストはこれと wire を別々に断言
+export const SNAPSHOT_PAYLOAD_TARGET = 700
 
 // 量子化スケール
 export const POS_SCALE = 100                 // 0.01m 単位（int16: ±327.67m）
@@ -205,7 +217,11 @@ export const JUMP_FORCE = 7.0
   - `S2C_SNAPSHOT = 2`（30Hz・非信頼）: ヘッダ `serverTick:u32` + `lastAckSeq:u32`、可変長プレイヤー配列（1人 ~16B: `id:u16` / `x,y,z:i16` / `vx,vy,vz:i16` / `yaw:u16`）。必要なら `pitch:i8`+`flags:u8`（+2B/人）。
 - **制御メッセージ（welcome / 参加 / 離脱）は Phase 1 では信頼 WS テキスト JSON**（低頻度・微小）。`welcome` には払い出した `playerId` と現在の roster を含める。msgpackr は信頼イベント肥大化フェーズで導入。
 - **packer はバッファを呼び出し側から受け取る**設計: `encodeSnapshot(target: DataView, state) => number(書き込みバイト長)`。サーバーは送信バッファを**リング（2〜3 本の事前確保 ArrayBuffer）**で運用し、ブロードキャスト中の同一バッファ上書き競合を避けつつゼロアロケに寄せる。
-- 40 人で ~650B 目標・≤1200B（MTU 内）をユニットテストで検証。
+- **制約が効くのは「ワイヤー上の IP パケット/データグラムサイズ」であって、アプリが pack する payload ではない**。スナップショットの**アプリ payload は 40 人で ~650B 目標**だが、これにヘッダが乗る:
+  - IPv4: payload 650 + UDP 8 + IPv4 20 = **678B**
+  - IPv6: payload 650 + UDP 8 + IPv6 40 = **698B**
+  - 判定すべきは**ヘッダ込みの wire サイズ**が保守 MTU（1200B）に収まるか。packer のユニットテストでは **payload 長と wire 長（IPv4/IPv6 両方）を別々の定数・別々の断言**にし、payload を「MTU サイズ」と呼んで混同しないこと。設計上限は payload ≤ `PACKET_PAYLOAD_MAX`（=1200−48=1152B）として定義しておくと、人数が増えても wire が 1200B を割らない。
+  - Phase 1 は WebSocket/TCP（フラグメントで分割される）だが、パケットはバイナリ固定レイアウトで WS↔WT 共通なので、**将来の WebTransport datagram（1 データグラム 1200B）を見据えて同じサイズ予算で設計**する（[`../arch/server-authority.md`](../arch/server-authority.md) §6.2）。
 
 ### 10.4 データ指向シム（`shared/sim/`）
 
@@ -252,6 +268,7 @@ export const JUMP_FORCE = 7.0
 - **固定ステップの spiral of death**: 重いフレームでステップが無限に積まれないよう、1 フレームの最大ステップ数（例 5）をクランプ。
 - **決定論の落とし穴**: シムは量子化**デコード後**の yaw/入力を使う。クライアントの生マウス値とサーバーが受け取る値を一致させる。浮動小数点の演算順序も両者で揃える（同じ関数を呼ぶことで担保）。
 - **dev でのポート/オリジン**: クライアント 5173・サーバー（例 8080）。WS URL は定数/環境で設定。ライブプレビュー（e2b.app プロキシ）配下では WS のプロキシ経路が問題になりうるため、サーバーは 0.0.0.0 にバインドし、接続 URL は同一ホスト/設定で切り替えられるようにする。実環境確認はユーザー実機で行う（Sandbox では実 WS をブラウザ検証不可）。
+- **payload と wire サイズの混同（MTU テストの注意）**: 「650B」はアプリが pack する **payload**。実際のワイヤー上の IP パケットは payload にヘッダが加わる — IPv4 では payload 650 + UDP 8 + IPv4 20 = **678B**、IPv6 では 650 + 8 + 40 = **698B**。単体テストでは **payload 長と wire 長（IPv4/IPv6 両方）を別々の定数・別々の断言**にし、「payload が 1200B 以下」ではなく「**ヘッダ込み wire が保守 MTU 1200B 以下（payload ≤ 1152B）**」を検証する。将来の WebTransport datagram（1 データグラム）を見据えた予算。
 - **既存ドキュメントの古いレート記述**: `docs/task-list.md` のプロジェクト概要に「サーバー tick・入力 30Hz」という古い記述が 1 箇所残っている。P1-H で 60Hz シム/30Hz 送信/60Hz 入力に修正する（設計は 60/30 分離で確定済み）。
 
 ## 12. 実績と証拠（実装後に記入）
@@ -262,7 +279,7 @@ export const JUMP_FORCE = 7.0
 | P1-B | | | |
 | P1-C | | | |
 | P1-D | | | |
-| P1-E | | | 40 人スナップショット ____B（目標 ~650・≤1200） |
+| P1-E | | | 40 人スナップショット: payload ____B（目標 ~650）／ wire ____B（IPv4/IPv6、≤1200） |
 | P1-F | | | |
 | P1-G | | | 2 タブ同期・人工遅延操作感（ユーザー実機確認） |
 | P1-H | | | 4 検証 PASS・ドキュメント追従 |
