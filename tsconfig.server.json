@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // サーバーはヘッドレス bun ランタイム。DOM / React を参照せず、Bun.* グローバルを許可する。
+    "lib": ["ES2022"],
+    "jsx": "preserve",
+    "types": ["bun"],
+    "noUncheckedSideEffectImports": false
+  },
+  "include": ["server", "shared", "scripts", "_tests_/server", "_tests_/shared"]
+}

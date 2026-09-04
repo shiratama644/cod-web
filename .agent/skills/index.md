@@ -1,34 +1,45 @@
-# Skills Index — CodWeb コードベース知識
+# Skills Index — Agent のスキル集
 
-> このファイルは `.agent/skills/` の**入口**。タスク着手時に本ファイルだけ読み、必要なスキルだけをピンポイントで読み込む（コンテキストの無駄遣いを防ぐ）。
-> 各スキルは「このコードベースの *事実/仕様/暗黙了解*」をまとめたもの。
-> 作業規約（コミット手順・Lint 等）は `AGENT.md` を参照。
+> このファイルは `.agent/skills/` の**入口**。タスク着手時に本ファイルだけ読み、
+> 必要なスキルだけをピンポイントで読み込む（コンテキストの無駄遣いを防ぐ）。
+>
+> ここにあるのは **Agent 自身のスキル** — 「このプロジェクトで何をどうやるとうまくいくか」
+> という実践的なノウハウ・テクニック・手順・パターン・コードベース知識。
+> 仕様書（設計の正本）ではない。設計の事実（技術選定・プロトコル）は [`../../docs/arch/`](../../docs/arch/README.md) が正本で、
+> スキルはそれを踏まえつつ「実際に手を動かすやり方」を持つ。
+> 作業規約（コミット手順・Lint 等）は [`../../AGENTS.md`](../../AGENTS.md)。
 
-## 読み方ガイド（どの状況でどのスキルを読むか）
+## 読み方ガイド（どの状況でどのスキルを使うか）
 
-| 状況 | 読むスキル |
+| 状況 | 使うスキル |
 | :--- | :--- |
-| 初回 / 全体把握 | [`project-overview.md`](./project-overview.md) → [`architecture-and-data-flow.md`](./architecture-and-data-flow.md) |
-| ネットワーク / 権威サーバー / ネットコードを触る | `networking.md`（追加予定） |
-| 描画 / three.js / WebGPU を触る | `rendering.md`（追加予定） |
-| 共有シミュレーション / 決定論性を触る | `shared-simulation.md`（追加予定） |
-| 環境制約（ネットワーク到達不可 / GPU 無し / 権限） | [`sandbox-constraints.md`](./sandbox-constraints.md) |
-| テスト / カバレッジ / CI を触る | [`testing.md`](./testing.md) |
-
-> ※ CodWeb 化に伴い、現状スキルは共通基盤（project-overview / architecture-and-data-flow / sandbox-constraints / testing）のみ。サブシステム別スキル（networking / rendering / shared-simulation 等）は実装フェーズで追加する。
+| 初回 / 全体把握 | [`project-overview.md`](./project-overview.md) |
+| このプロジェクトの技術構成・ライブラリの使いどころを押さえる | [`tech-stack.md`](./tech-stack.md) |
+| 「動かない / テストできない / ネットワーク・WebGL が絡む」環境トラブル | [`sandbox-constraints.md`](./sandbox-constraints.md) |
+| 設計の正本（技術選定・プロトコル・設計ルール）を確認する | 仕様書 [`../../docs/arch/`](../../docs/arch/README.md)（tech-stack / networking / game-engineering-principles） |
 
 ## スキル一覧
 
-| ファイル | 概要 | 最終更新 |
+| スキル | できるようになること（Agent の能力） | 最終更新 |
 | :--- | :--- | :--- |
-| [project-overview.md](./project-overview.md) | 製品概要・目標・技術方針（WebGL2 / geckos.io WebRTC + Socket.IO / 完全オリジナルアセット）。最初に読む。 | 2026-09-01 |
-| [architecture-and-data-flow.md](./architecture-and-data-flow.md) | 権威サーバー + クライアント予測の全体レイヤとデータフロー。 | 2026-09-01 |
-| [sandbox-constraints.md](./sandbox-constraints.md) | 開発環境の制約と迂回策（ネットワーク到達不可 / GPU 無し / 権限）。 | 2026-09-01 |
-| [testing.md](./testing.md) | vitest / msw / Playwright・CI の進め方。 | 2026-09-01 |
+| [project-overview.md](./project-overview.md) | プロダクトの目標・全体像・フェーズ状況を素早く把握し、何を作っているかを理解する | 2026-09-03 |
+| [tech-stack.md](./tech-stack.md) | 各ライブラリをどこでどう使うか・選定の理由・ハマりどころを押さえて実装できる | 2026-09-03 |
+| [sandbox-constraints.md](./sandbox-constraints.md) | Sandbox/ネットワーク/GitHub App の制約を迂回して検証・実装を進められる（E2E 不可・実結合は実環境確認等） | 2026-09-03 |
+
+## 設計仕様の正本（スキルではなく docs/arch/）
+
+| 仕様書 | 内容 |
+| :--- | :--- |
+| [docs/arch/tech-stack.md](../../docs/arch/tech-stack.md) | 技術スタック完全ガイド＋設計・実装黄金ルール（WebGPU→WebGL2 フォールバック、可変 FPS 等） |
+| [docs/arch/networking.md](../../docs/arch/networking.md) | ネットワーク＆リアルタイム設計（WebTransport 主 / WebSocket フォールバック、シム60Hz・送信30Hz、msgpackr、FX クライアント再生） |
+| [docs/arch/game-engineering-principles.md](../../docs/arch/game-engineering-principles.md) | FPS 設計の黄金ルール・実装パターン集 |
+
+> 実装テクニック・ハマりどころ・コードベース知識は **skills** に貯め、設計の事実そのものは **docs/arch** を正本とする。
 
 ## 運用ルール
 
-- スキルを更新したら**必ず本 index.md の「最終更新」も更新**する。
+- 新しいノウハウ・テクニック・手順・パターンを得たらスキルとして追加/更新し、必ず本 index の「最終更新」も更新する。
 - 新スキル追加時は「読み方ガイド」と「一覧」の両方に追記する。
-- AGENT.md と重複する作業規約はスキルに書かず AGENT.md を正とする（スキルは*事実/仕様*中心）。
+- スキルは Agent の能力メモなので、実践で使える具体的なやり方・コードパターン・回避策を書く。設計の正本は docs/arch に任せ、重複したらそちらを参照する。
+- AGENTS.md と重複する作業規約はスキルに書かず AGENTS.md を正とする。
 - ファイル名は `kebab-case.md`。

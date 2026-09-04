@@ -1,0 +1,51 @@
+{
+  "name": "cod-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Browser-based cross-platform online FPS inspired by Krunker.io (WebGPU-first, WebGL2 fallback, 60+ FPS on every device).",
+  "packageManager": "bun@1.4.0",
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "bun run scripts/execute.ts",
+    "server": "bun run server/index.ts",
+    "server:dev": "bun --watch server/index.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.8",
+    "@react-three/fiber": "^9.7.0",
+    "nipplejs": "^1.0.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "screenfull": "^6.0.2",
+    "three": "^0.185.1",
+    "three-mesh-bvh": "^0.9.14",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/bun": "^1.4.0",
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@types/three": "^0.185.4",
+    "@vitejs/plugin-react": "^6.1.1",
+    "bun": "1.4.0",
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  }
+}

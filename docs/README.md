@@ -1,7 +1,6 @@
-# CodWeb ドキュメント索引
+# cod-web ドキュメント索引
 
-このフォルダは、CodWeb（ブラウザ向けオンライン FPS）の仕様・計画・設計ドキュメントの置き場です。
-ルート `README.md` からプロジェクト概要へアクセスできます。
+cod-web（[Krunker.io](https://krunker.io) インスパイアのブラウザ向けクロスプラットフォーム・オンラインFPS／全端末 60FPS 目標）のドキュメント一式を種類別に整理したものです。ルート [`../README.md`](../README.md) からアプリの概要へアクセスできます。
 
 ---
 
@@ -9,21 +8,26 @@
 
 ```
 docs/
-├── README.md              ← 本ファイル（全ドキュメントの目次）
-├── CONFIG.md              ★ 技術スタック完全ガイド（全ライブラリの参考リスト＝既定の正）
-├── ARCH.md              ★ アーキテクチャ・ネットワーク設計・データフロー・境界
-├── TECH_SELECTION.md      ★ 技術選定の絞り込みと判断理由
-├── ROADMAP.md             ★ マイルストーン・タスク管理の正本
-├── planning/              # 個別タスクの詳細計画書
-│   ├── README.md          #   規則・一覧・役割分担
-│   └── _TEMPLATE.md       #   計画書の書式テンプレート
-└── ops/                   # 運用ドキュメント（CI・デプロイ）
-    ├── DEPLOY.md
-    ├── CI_SETUP.md
-    └── CI_WORKFLOW.yml
+├── README.md            ← 本ファイル（全ドキュメントの目次）
+├── task-list.md         ★ タスク管理の唯一の正本（進捗・証拠）
+├── arch/                # ★ 仕様書（どう作るか：技術選定・プロトコル・設計ルール）
+│   ├── README.md        # 仕様書の目次・「仕様書 vs 計画書」の区別
+│   ├── tech-stack.md    # 技術スタック完全ガイド + 全端末60FPS・WebGPU/WebGL2 の設計・実装黄金ルール
+│   ├── modules.md       # モジュール＆アーキ構成（client/shared/server/web の層・責務分担・依存ルール）
+│   ├── networking.md    # ネットワーク＆リアルタイム設計（WebTransport/WS・tick・msgpackr・FX同期）＋プロトコル分類マトリクス
+│   ├── server-authority.md  # 権威サーバー設計（ルーム規模・自前実装・物理・60Hzシム・30Hz送信・Phase1位置同期）
+│   ├── protocol.md      # （統合済みポインター。正本は networking.md §4）
+│   └── game-engineering-principles.md  # FPS 設計の黄金ルール・実装パターン集
+├── planning/            # 計画書（何を・どの順で：Phase 単位・_TEMPLATE.md 形式）
+│   ├── _TEMPLATE.md     # 計画書テンプレート（新規計画書は必ず本形式）
+│   ├── PHASE00_PLAN.md  # Phase 0: プロジェクト基盤構築（完了）
+│   ├── PHASE01_PLAN.md  # Phase 1: ネットワーク初期（権威サーバー＋位置同期）
+│   └── complete/        # 完了レポート
+├── audit/               # 差分・バグ監査
+└── ops/                 # 運用ドキュメント（デプロイ・CI 実務）
 ```
 
-> `CONFIG.md` はライブラリの**全リスト（参考情報）**です。実装時の絞り込み・判断は `TECH_SELECTION.md` が担います。
+> **仕様書（`arch/`）と計画書（`planning/`）は区別する**: 仕様書 = 「どう作るか（技術選定・プロトコル・設計ルール）」の正本、計画書 = 「何を・どの順で・どんな完了条件でやるか」。詳細は [`arch/README.md`](arch/README.md)。
 
 ---
 
@@ -33,39 +37,30 @@ docs/
 
 | 見る順 | ドキュメント | 内容 |
 |---:|---|---|
-| 1 | [`../README.md`](../README.md) | プロジェクト概要・技術スタック・構成 |
-| 2 | [`CONFIG.md`](CONFIG.md) | 技術スタックの全リスト（既定の正） |
-| 3 | [`TECH_SELECTION.md`](TECH_SELECTION.md) | 実装候補の絞り込みと判断理由 |
+| 1 | [`../README.md`](../README.md) | アプリ概要、技術構成、セットアップ |
+| 2 | [`arch/`](arch/README.md)（tech-stack / networking / 設計ルール） | 技術スタックの全容・ライブラリ選定・設計ルール |
+| 3 | [`task-list.md`](task-list.md) | **タスク管理の正本**（全フェーズの状態・証拠） |
 
-### 「設計・アーキテクチャを固めたい」
+### 「これから開発を継続したい」
 
-| ドキュメント | 内容 |
-|---|---|
-| [`ARCH.md`](ARCH.md) | 権威サーバー方式・ネットワーク設計・データフロー・クライアント/サーバー境界 |
-
-### 「開発を継続したい / タスク管理したい」
-
-| ドキュメント | 内容 |
-|---|---|
-| [`ROADMAP.md`](ROADMAP.md) | マイルストーン・タスク管理の唯一の正本 |
-| [`planning/README.md`](planning/README.md) | 個別タスク計画書の置き場・規則・一覧 |
-| [`planning/_TEMPLATE.md`](planning/_TEMPLATE.md) | 計画書の書式テンプレート（§1〜§12） |
-| `../AGENTS.md` | 開発規約（コミット手順・検証・Git 運用） |
+| 見る順 | ドキュメント | 内容 |
+|---:|---|---|
+| 1 | [`task-list.md`](task-list.md) | 次に着手すべきタスクと依存・検証待ち項目の一覧 |
+| 2 | [`planning/PHASE00_PLAN.md`](planning/PHASE00_PLAN.md) | **直近フェーズ**: Phase 0（プロジェクト基盤構築） |
+| 3 | [`planning/_TEMPLATE.md`](planning/_TEMPLATE.md) | 計画書テンプレート（新規タスクはこの形式で計画） |
+| 4 | [`../AGENTS.md`](../AGENTS.md) | AI Agent 開発規約（コミット手順・検証・Git 運用・コミュニケーション） |
+| 5 | [`../.agent/skills/`](../.agent/skills) | コードベース知識（`index.md` が入口） |
 
 ### 「デプロイしたい / CI を動かしたい」
 
 | ドキュメント | 内容 |
 |---|---|
-| [`ops/DEPLOY.md`](ops/DEPLOY.md) | サーバー・クライアントのデプロイ手順 |
-| [`ops/CI_WORKFLOW.yml`](ops/CI_WORKFLOW.yml) | CI のワークフロー（正本。必要に応じ `.github/workflows/` へ配置） |
+| `ops/` | Phase 0 完了後に CI / デプロイ手順を整備予定（`.github/workflows/` は書き込み権限制約あり、AGENTS.md §6.3） |
 
 ---
 
-## 📝 命名規約
+## ドキュメント運用ルール（AGENTS.md §6.7）
 
-- **ドキュメント**: 大文字スネークケース（例: `ARCH.md`, `ROADMAP.md`）
-- **業務・実行手順**: 小文字ケバブケース（例: `ops/deploy-guide.md`）
-
----
-
-*この索引はリポジトリの CodWeb 化（2026-09-01）時点の構造です。ドキュメント追加時は本 README を更新してください。*
+- 計画書は `docs/planning/PHASE{N}_PLAN.md`（N は 2 桁）、完了レポートは `docs/planning/complete/PHASE{N}_COMPLETE.md`。
+- バグ監査・差分レポートは `docs/audit/`、デプロイ・CI 運用は `docs/ops/`。
+- ファイルを追加したら必ず本索引を更新する。

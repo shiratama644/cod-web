@@ -1,72 +1,49 @@
-# Project Overview — CodWeb
+# Project Overview — cod-web
 
-> 製品の全体像。新規セッションの最初に読む 1 ファイル。
+> 製品の全体像。新規セッションの最初に読む 1 ファイル。技術スタックの網羅は [`../../docs/arch/tech-stack.md`](../../docs/arch/tech-stack.md) が正。
 
 ## 製品
 
-**CodWeb** は、Web ブラウザ上で AAA 級オンライン FPS を、モバイルでも PC でもプレイできるようにするプロジェクト。
+**cod-web** は、[Krunker.io](https://krunker.io) にインスパイアされたブラウザ向け**クロスプラットフォーム・オンラインFPS**（Krunker の完全上位互換を目指す）。
 
-- 目標: 「Call of Duty を Web に移植して Web からでも CoD 相当の体験を」— ただし**商用 IP（CoD の名称・アセット・マップ・キャラクター）は一切使用せず、完全オリジナルで「CoD 相当の品質」**を目指す。
-- 対応プラットフォーム: PC（マウス/キーボード、ゲームパッド）＋ モバイル（タッチ、仮想スティック、ジェスチャー）
-- アーキテクチャ: 権威型サーバー（Authoritative Server）＋ クライアント予測 / サーバー調停 / エンティティ補間 / ラグ補正
-- デプロイ: 権威ゲームサーバーは **Node 専用サーバー（VPS / ゲームサーバー）**。クライアントは静的ホスティング。
+- **最重要目標: どの端末（PC ブラウザ / スマートフォン / タブレット）でも安定 60FPS 以上**。軽量さ・低遅延・高速読み込みを優先し、重厚な AAA グラフィックスは優先しない
+- PC（マウス＆キーボード / ゲームパッド）＋ モバイル（タッチ / 仮想スティック / ジェスチャー）両対応
+- アーキテクチャ: 権威型ゲームサーバー ＋ クライアント予測・サーバー調停 ＋ ラグ補償。トランスポートは **WebTransport（datagrams+streams）主 / WebSocket フォールバック**で確定（[networking](../../docs/arch/networking.md)）。サーバーシム tick 60Hz・入力 60Hz・スナップショット送信 30Hz、描画は可変フレームレート（レート分離・sub-tick射撃）
+- **レンダラー: WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準レンダラーとする）
+- **描画 FPS は可変**（rAF = 60〜120Hz+。60 は下限フロアであり上限ではない）、delta time ベースでネット tick と独立
 
-## 主な機能（目指すもの）
-
-- コアマルチプレイヤー（6v6 級 TDM 等）を軸にした標準対戦
-- 移動・射撃・リロード・スプレッド（権威サーバー + クライアント予測）
-- スコアボード・キルフィード・リスポーン
-- モバイル対応（仮想スティック + タッチ操作）
-
-## 技術方針（確定事項）
-
-| 項目 | 方針 | 理由 |
-| :--- | :--- | :--- |
-| 描画 | **WebGL2**（three.js）で安定優先。WebGPU（`three/webgpu` + TSL）は段階導入 | 全ブラウザ対応・モバイル実機で確実に動かすため |
-| ネットワーク | 権威サーバーは **Node.js 24 + geckos.io（WebRTC）**。**ゲーム同期層 = geckos.io WebRTC**（tick / 入力検証 / Snapshot / interpolation・prediction を低遅延 UDP で）、**制御系 = Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベントを確実に）。永続は HTTPS API | geckos.io は authoritative server 向け。WebRTC DataChannel over UDP で低遅延。公開 IP の専用サーバー直結なら TURN 不要 |
-| 物理 | **Rapier（決定論的）**を権威物理に + `three-mesh-bvh` を射撃判定に | クライアント予測/サーバー調停の前提 |
-| サーバー | **Node.js 24 専用サーバー（VPS）** | 永続稼働・ルーム状態保持が必要。Socket.IO（TCP）+ geckos.io WebRTC（UDP）。サーバーレスは不向き |
-| アセット | **完全オリジナル**（本家超えの品質を志向） | CoD は商用 IP のため Web 配信不可 |
-
-## リポジトリ構成（ドキュメントファースト）
-
-| パス | 内容 |
-| :--- | :--- |
-| `docs/CONFIG.md` | 技術スタック完全ガイド（全ライブラリの参考リスト＝既定の正） |
-| `docs/ARCH.md` | アーキテクチャ・ネットワーク設計・データフロー |
-| `docs/TECH_SELECTION.md` | 技術選定の絞り込みと判断理由 |
-| `docs/ROADMAP.md` | タスク管理の正本 |
-| `AGENTS.md` | 開発規約 |
-| `.agent/` | エージェント記憶システム（skills / hooks / logs） |
-
-## 技術スタック（初期構成想定）
+## 技術スタック（要点）
 
 | 層 | 技術 |
 | :--- | :--- |
-| 描画 | three.js + @react-three/fiber + @react-three/drei（WebGL2） |
-| 物理 | @dimforge/rapier3d（決定論的）+ three-mesh-bvh（射撃判定） |
-| ネットワーク | geckos.io WebRTC（ゲーム同期層: 低遅延 UDP）+ Socket.IO（制御系: 認証・ロビー・ルーム・チャット・マッチイベント）。永続は HTTPS API |
-| 共有シミュレーション | `packages/shared`（決定論的。bitecs 等） |
-| 状態/UI | zustand + @radix-ui/* + framer-motion |
-| 入力 | PointerLockControls / KeyboardControls（PC）+ nipplejs（モバイル） |
-| オーディオ | howler.js + PositionalAudio + resonance-audio |
-| ビルド | pnpm workspaces（client / server / shared）+ Vite + TypeScript strict |
-| テスト | Vitest + msw + Playwright |
+| ビルド | **Vite** + React + TypeScript（strict）、bun |
+| 3D | Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**、WebGL2 が全端末 60FPS の基準）/ @react-three/fiber / @react-three/drei、TSL |
+| 衝突・判定 | **three-mesh-bvh** 統一（キネマティックCC＝浮遊カプセルのマップ衝突 ＋ 射撃レイ、ヘッドレス可）。マップは 3D Mesh Map（GLTF BVH）。剛体エンジンは当初不使用 |
+| アニメーション | Three.js AnimationMixer ＋ **XState v5**（状態遷移 FSM）。連続ブレンドはブレンドスペース |
+| ECS | miniplex / @miniplex/react（R3F 向け）、bitecs（TypedArray・GCレス） |
+| ネットワーク | 権威サーバー + クライアント予測・サーバー調停 + ラグ補償。Phase 1 は **WebSocket（bun ネイティブ＝uWS コア）で位置同期を先行**、WT（HTTP/3・datagrams+streams）は Caddy 終端で後から有効化。サーバー tick/スナップショット 30Hz・入力 60Hz。高頻度パケットは手動バイナリ固定レイアウト、低頻度イベントは msgpackr。FX はフラグ＋トリガーのみ送信しクライアント再生 |
+| UI / 状態 | React、**Zustand**（ゲーム状態、Context 不使用）、Radix UI、framer-motion、lucide-react、troika-three-text（3Dテキスト） |
+| オーディオ | Web Audio API（HRTF）、howler.js、resonance-audio、drei PositionalAudio |
+| アセット | useGLTF/useTexture、gltfjsx、DRACO / meshoptimizer / KTX2、@gltf-transform |
+| Lint / Test | **Biome**（ESLint/Prettier 不使用）、Vitest + @testing-library/react、Playwright（E2E・CI のみ） |
 
-## 進捗（現在 = フェーズ 0 ドキュメント基盤）
+詳細・ライブラリの役割分担は [`tech-stack.md`](./tech-stack.md)、設計ルールは [`docs/arch/game-engineering-principles.md`](../../docs/arch/game-engineering-principles.md) を参照。
 
-> 進捗の正本は `docs/ROADMAP.md`。下表は要点のみ。
+## フェーズ進捗
+
+> 進捗の正本は [`docs/task-list.md`](../../docs/task-list.md)。下表は要点のみ。
 
 | Phase | 内容 | 状態 |
 | :--- | :--- | :--- |
-| 0 | ドキュメント基盤 & リポジトリ整備（CodWeb 化） | 進行中 |
-| 1 | 技術検証（モノレポ / three.js FPS / 権威サーバー / クライアント予測） | 未着手 |
-| 2 | ネットワーク基盤（geckos.io WebRTC のゲーム同期 + Socket.IO 制御系） | 未着手 |
-| 3 | コアゲームプレイ（6v6 / 武器 / スコア / HUD） | 未着手 |
-| 4 | 品質・最適化（モバイル / テスト / CI / セキュリティ） | 未着手 |
+| **0** | プロジェクト基盤（Vite/React/TS/Biome/Vitest、R3F シーン、ゲームループ骨架、Zustand） | ⏳ 計画済み・未着手（[`PHASE00_PLAN.md`](../../docs/planning/PHASE00_PLAN.md)） |
+| 1 以降 | プレイヤー操作 / 物理・判定 / ECS / 武器・射撃 / ネットワーク / ボイス / HUD / モバイル入力 / アセット / パフォーマンス | 未定（Phase 0 完了後に計画） |
+
+## 規模
+
+プロジェクト初期化前（ドキュメント/ガバナンスのみ）。`package.json`・`src/` は Phase 0 で作成。
 
 ## 関連
 
-- 作業規約・コミット手順・Lint 検証: `AGENTS.md`
-- ドキュメント: `docs/`（DESIGN / TECH_SELECTION / ROADMAP / CONFIG）
-- 詳細アーキテクチャ: [architecture-and-data-flow.md](./architecture-and-data-flow.md)
+- 開発規約・コミット手順・検証: [`../../AGENTS.md`](../../AGENTS.md)
+- 技術スタック完全ガイド: [`../../docs/arch/tech-stack.md`](../../docs/arch/tech-stack.md)
+- タスク正本: [`../../docs/task-list.md`](../../docs/task-list.md)
