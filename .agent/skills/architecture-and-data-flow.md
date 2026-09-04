@@ -1,56 +1,64 @@
-# Architecture & Data Flow — DropMod
+# Architecture & Data Flow — CodWeb
 
 > 全体レイヤ構造とデータフロー。コンポーネントを横断して触る時に読む。
 
-## レイヤ構造（描画ツリー）
+## レイヤ構造
 
 ```
-app/layout.tsx  (RootLayout = Server Component)
- ├ <head>: theme FOUC inline script (dropmod_theme cookie 読込) + preconnect(cdn.modrinth.com)
- └ <body class="min-h-screen flex flex-col pb-28 md:pb-0 ...">
-     └ <QueryProviders>  (PersistQueryClientProvider + Dexie persister)   … C7-2 でここに昇格
-         └ <AppShell>  (Client, 全 hook 集約, Root Layout 直下の 1 インスタンスのみ)
-             ├ <WebVitalsReporter/> <OfflineBanner/> <ToastContainer/>
-             ├ <DesktopSidebar/>   (PC md+, fixed left w-64 z-40)
-             ├ <Header/>           (mobile <md のみ, LP では非表示)
-             ├ <div class="md:pl-64">{children}</div>   … 各ページ
-             ├ <BottomNav/>        (mobile <md のみ, z-[60])
-             └ グローバルモーダル群 (NewProfile/EditProfile/DepCheck/Zip/Confirm)
+packages/client  (ブラウザ)
+  ├ React + three.js (@react-three/fiber)
+  ├ Input (mouse/keyboard/touch/gamepad)
+  ├ Client Simulation (予測) ← shared の決定論シミュレーションをローカル実行
+  └ Renderer (WebGL2) ← 他エンティティは Entity Interpolation
+        │
+        │  input / command (Client → Server, geckos.io WebRTC: 低遅延 UDP)
+        ▼
+packages/server  (Node.js 24, VPS)
+  ├ Socket.IO (制御系 / TCP): 認証・ロビー・ルーム・チャット・マッチイベント
+  └ geckos.io (ゲーム同期層 / UDP):
+       ├ 権威シミュレーション (shared をそのまま実行)
+       ├ バリデーション (入力・射撃・状態)
+       ├ Lag Compensation (射撃時、ターゲットを時点に巻き戻し)
+       └ State Broadcast (Snapshot) ── unreliable (位置・視点・入力) / { reliable: true } (射撃・被弾)
+        │
+        │  snapshot (Server → Client, geckos.io WebRTC)
+        ▼
+packages/shared  (決定論シミュレーション)
+  └ 移動・射撃・状態遷移 (クライアント/サーバーで import 共有)
 ```
 
-- `children` = 各ページ（`/`=LP, `/mods`=検索, `/profile`, `/settings`, `/mods/[slug]`=詳細 等）
-- 下流コンポーネントは **AppContext を使わず Zustand を直接参照**（Phase 9-A/10-B で AppContext は完全削除済）。
-- アクセシビリティ: 各ページ h1=1（SEO 要件 C6-1）。
+### 層 / 責務
 
-## 状態/ストレージ/API の 3 層モデル
-
-| 層 | 役割 | 主ファイル |
+| 層 | 責務 | 置き場 |
 | :--- | :--- | :--- |
-| Component | UI・イベント | `src/components/**` |
-| State (Zustand) | クライアント状態（純粋 setter のみ） | `src/features/{profiles,zip,dep-check}/store/*.ts` + `src/components/{feedback,layout}/*Store.ts` + `src/components/layout/appActions.ts` |
-| Hooks | 副作用・API 呼・業務ロジック | `src/features/*/hooks/*.ts`（ドメイン別）+ `src/hooks/*.ts`（共通） |
-| Storage (Dexie) | 永続化 | `src/lib/db/{dexie,migrate}.ts` |
-| Query (TSQ) | サーバ状態+キャッシュ | `src/lib/query/{client,keys,hooks}.ts` |
-| Network | HTTP | `src/lib/modrinth/{server,client}.ts`, `src/app/api/modrinth/[...path]/route.ts` |
+| Shared Simulation | 決定論的ゲームロジック（移動・射撃・状態）。クライアント/サーバーで同一 | `packages/shared` |
+| Client | 入力収集・クライアント予測・描画・ネットワーク送受信 | `packages/client` |
+| Server | 権威シミュレーション・バリデーション・ブロードキャスト | `packages/server` |
 
-> **設計原則**: Zustand store は「シンプルな state 容器 + 純粋 updater」に徹し、
-> Modrinth API 呼び出し・cookie・Toast 連携などの**副作用は hooks 側**に持たせる
-> （テスト容易性向上）。→ 詳細は [state-and-storage.md](./state-and-storage.md)。
+> **設計原則**: クライアントは入力と予測だけを持ち、確定状態は常にサーバーが握る（チート防止 = 権威）。
 
 ## データフロー例
 
-**「Home で Mod を検索」**: `HomeInteractive` の `useInfiniteQuery` → TSQ が Dexie `apiCache` 確認 → hit で即表示+background refetch / miss で `/api/modrinth/search` fetch → Dexie に persist。
+**「移動」（1 ティック）**:
+`Client 入力` → `コマンド送信` → `Server 検証` → `決定論シミュレーション step` → `Snapshot 配信` → `Client が予測を補正（Reconciliation）`。
 
-**「Mod をプロファイルに追加」**: `handleToggleMod`（src/hooks/useProfiles）→ `useProfilesStore.addModToProfile` → state 更新 → `save` useEffect が `dexieSyncProfiles` で永続化。`appActionsStore` 経由で下流が action を取得。
+**「射撃判定」**:
+`Client 入力` → `Server で Lag Compensation（ターゲット位置を巻き戻し）` → `three-mesh-bvh でレイキャスト判定` → `結果をブロードキャスト`。
 
-**「Mod 詳細を SSR」**: `src/app/[projectType]/[slug]/page.tsx`（RSC）が `fetchModrinthProject` + `fetchModrinthProjectVersions` + `fetchModrinthProjectAuthor` を並列 fetch（ISR 1h）→ `ModDetailPageView` に props 渡し。
+**「他プレイヤー描画」**:
+`Server Snapshot` → `Client は過去の 2 状態間で補間（Entity Interpolation）` → `滑らかに描画`。
 
 ## Server / Client 境界の要点
 
-- `src/app/layout.tsx`, `src/app/**/page.tsx`, `src/app/[projectType]/[slug]/page.tsx` = **Server Component**（SSR/ISR）
-- `'use client'`: AppShell, HomeInteractive, ModDetailPageView, ModsPageClient, SettingsPageClient, Header, BottomNav, DesktopSidebar, 各モーダル, MarkdownRenderer 等（ブラウザ API/src/hooks/event 使うもの）
-- **Server Component → Client Component へ関数 props 渡し不可**（Next.js 仕様）。これが `appActionsStore` 存在理由。
+- **Server (Node.js 24)**: 権威シミュレーション・バリデーション・ブロードキャスト。**ゲーム同期層 = geckos.io WebRTC**（tick / 入力検証 / Snapshot / interpolation・prediction）、**制御系 = Socket.IO**（認証・ロビー・ルーム・チャット・マッチイベント）。永続稼働。Vercel 等のサーバーレスは不可。
+- **Client (Browser)**: 入力・予測・描画。UI/HUD。ネットワーク送信（Socket.IO 制御系 + geckos.io ゲーム同期）。
+- **Shared**: 決定論的シミュレーション。クライアント/サーバーで import 共有。React の `state` に載せず `ref`/`getState()`/`subscribe` で直接更新。
+
+## 同期 / 非同期の境界
+
+- **同期（毎フレーム / 毎ティック）**: 入力収集・予測・シミュレーション・Snapshot 配信（タイトなループ）。
+- **非同期**: マッチメイキング・チャット・ロビー・設定保存（`async`）。
 
 ## 関連
 
-- [state-and-storage.md](./state-and-storage.md) / [modrinth-integration.md](./modrinth-integration.md) / [routing-and-pages.md](./routing-and-pages.md)
+- [project-overview.md](./project-overview.md) / [testing.md](./testing.md) / `docs/ARCH.md`
