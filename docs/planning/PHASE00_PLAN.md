@@ -211,7 +211,7 @@ server.md: input perSec 90, burst 20。超過は即切断。トークンバケ�
 |---|---|---|---|
 | PH0-A | 本コミット | packer 16B・±1・move 範囲・dtMs clamp・BinaryReader | ワイヤ破壊。Snapshot レイアウトは未変更 |
 | PH0-B | 本コミット | TokenBucket burst 20・60Hz 10s・200 同時 | 超過は ProtocolError → close 1002 |
-| PH0-C | | | |
+| PH0-C | 本コミット | send -1 スキップ + drain 再開、send 0 切断 | `bufferedAmount` 削除。slice は PH0-D |
 | PH0-D | | | |
 | PH0-E | | | |
 | PH0-F | | | |

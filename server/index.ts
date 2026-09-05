@@ -47,16 +47,22 @@ const server = Bun.serve<SocketData>({
     })
   },
   websocket: {
+    maxPayloadLength: 64 * 1024,
+    idleTimeout: 30,
+    backpressureLimit: 1024 * 1024,
+    closeOnBackpressureLimit: true,
+    sendPings: true,
+    perMessageDeflate: false,
     open(ws) {
       const peer: Peer = {
         playerId: -1,
-        sendText: (data) => ws.send(data),
-        sendBinary: (data) => {
-          // bun の ws.send は詰まっていると -1 を返すことがある。
-          const sent = ws.send(data)
-          return sent < 0
+        sendText: (data) => {
+          ws.send(data)
         },
-        getBufferedAmount: () => (ws as unknown as { bufferedAmount?: number }).bufferedAmount ?? 0,
+        sendBinary: (data) => ws.send(data),
+        disconnect: (code, reason) => {
+          ws.close(code, reason)
+        },
       }
       const id = room.join(peer)
       if (id === null) {
@@ -88,6 +94,10 @@ const server = Bun.serve<SocketData>({
         const code = err instanceof ProtocolError ? err.closeCode : 1002
         ws.close(code, 'protocol')
       }
+    },
+    drain(ws) {
+      const id = ws.data?.playerId
+      if (id != null && id > 0) snapshots.markWritable(id)
     },
     close(ws) {
       const id = ws.data?.playerId

@@ -17,12 +17,12 @@ export interface Peer {
   /** 制御メッセージ（welcome/join/leave）を送る関数（テキスト JSON）。 */
   sendText: (data: string) => void
   /**
-   * バイナリ（スナップショット）を送る関数。戻り値で送信バッファの詰まりを返す
-   * （true なら送信キューが閾値超 = バックプレッシャ）。
+   * バイナリ送信。bun `ws.send` と同じ戻り値。
+   * -1 バックプレッシャ（キュー済み）、0 破棄、1+ 送信バイト。
    */
-  sendBinary: (data: ArrayBuffer) => boolean
-  /** 現在の送信バッファ量（バイト）。バックプレッシャ判定に使う。 */
-  getBufferedAmount: () => number
+  sendBinary: (data: ArrayBuffer) => number
+  /** send が 0 のときソケットを切る。テストでは省略可。 */
+  disconnect?: (code: number, reason: string) => void
 }
 
 export class Room {

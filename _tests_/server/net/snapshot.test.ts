@@ -6,36 +6,40 @@ import {
 } from '@shared/protocol/constants'
 import { decodeSnapshot, readMessageType } from '@shared/protocol/packer'
 import { Room, type Peer } from '@server/room/Room'
-import { BACKPRESSURE_LIMIT_BYTES, SnapshotBroadcaster } from '@server/net/snapshot'
+import { SnapshotBroadcaster } from '@server/net/snapshot'
 
 interface TestPeer extends Peer {
   binary: ArrayBuffer[]
   text: string[]
-  bufferAmount: number
+  sendResult: number
+  disconnected: Array<{ code: number; reason: string }>
 }
 
-function makePeer(): TestPeer {
+function makePeer(sendResult = 16): TestPeer {
   return {
     playerId: -1,
     text: [],
     binary: [],
-    bufferAmount: 0,
+    sendResult,
+    disconnected: [],
     sendText(d) {
       this.text.push(d)
     },
     sendBinary(d) {
+      if (this.sendResult < 0) return this.sendResult
+      if (this.sendResult === 0) return 0
       this.binary.push(d)
-      return this.bufferAmount > BACKPRESSURE_LIMIT_BYTES
+      return this.sendResult
     },
-    getBufferedAmount() {
-      return this.bufferAmount
+    disconnect(code, reason) {
+      this.disconnected.push({ code, reason })
     },
   }
 }
 
-function roomWith(n: number): Room {
+function roomWith(n: number, sendResult = 16): Room {
   const room = new Room()
-  for (let i = 0; i < n; i++) room.join(makePeer())
+  for (let i = 0; i < n; i++) room.join(makePeer(sendResult))
   return room
 }
 
@@ -58,12 +62,11 @@ describe('SnapshotBroadcaster', () => {
     const room = roomWith(2)
     const bc = new SnapshotBroadcaster()
     expect(bc.maybeSend(room, 0)).toBe(snapshotPayloadBytes(2))
-    expect(bc.maybeSend(room, 1)).toBeNull() // スキップ
+    expect(bc.maybeSend(room, 1)).toBeNull()
     expect(bc.maybeSend(room, 2)).toBe(snapshotPayloadBytes(2))
-    // 各ピアが受け取ったのは 2 回分
     for (const player of room.getPlayers()) {
-      const peer = room.getPeer(player.id) as TestPeer
-      expect(peer.binary).toHaveLength(2)
+      const p = room.getPeer(player.id) as TestPeer
+      expect(p.binary).toHaveLength(2)
     }
   })
 
@@ -80,24 +83,47 @@ describe('SnapshotBroadcaster', () => {
     expect(snap.players).toHaveLength(3)
   })
 
-  it('バックプレッシャで詰まっているクライアントにはスキップする', () => {
+  it('send() が -1 なら以降のスナップショットをスキップし、drain で再開する', () => {
     const room = roomWith(2)
     const slow = peer(room, 0)
-    slow.bufferAmount = BACKPRESSURE_LIMIT_BYTES + 1 // 詰まり
+    const slowId = room.getPlayers()[0]?.id
+    if (slowId == null) throw new Error('no slow id')
+    slow.sendResult = -1
     const ok = peer(room, 1)
 
     const bc = new SnapshotBroadcaster()
-    // tick 0 で送信（slow は間引き）→ tick 2 でもう一度
     bc.maybeSend(room, 0)
     bc.maybeSend(room, 2)
 
-    expect(slow.binary).toHaveLength(0) // 詰まっている間ずっと間引かれる
-    expect(ok.binary).toHaveLength(2) // 健全なクライアントには毎回届く
+    expect(slow.binary).toHaveLength(0)
+    expect(ok.binary).toHaveLength(2)
+
+    slow.sendResult = 16
+    bc.markWritable(slowId)
+    bc.maybeSend(room, 4)
+    expect(slow.binary).toHaveLength(1)
+    expect(ok.binary).toHaveLength(3)
+  })
+
+  it('send() が 0 なら切断しルームから外す', () => {
+    const room = roomWith(2)
+    const dead = peer(room, 0)
+    const deadId = room.getPlayers()[0]?.id
+    if (deadId == null) throw new Error('no dead id')
+    dead.sendResult = 0
+    const ok = peer(room, 1)
+
+    const bc = new SnapshotBroadcaster()
+    bc.maybeSend(room, 0)
+
+    expect(dead.disconnected).toEqual([{ code: 1011, reason: 'send failed' }])
+    expect(room.getPlayer(deadId)).toBeUndefined()
+    expect(ok.binary).toHaveLength(1)
+    expect(room.playerCount).toBe(1)
   })
 
   it('lastAckSeq は受信クライアントごとの処理済み入力 seq を入れる', () => {
     const room = roomWith(2)
-    // プレイヤー1 の lastInputSeq を進める
     const p1 = room.getPlayers()[0]
     if (!p1) throw new Error('no player')
     p1.lastInputSeq = 77
