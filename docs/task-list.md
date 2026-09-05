@@ -42,7 +42,7 @@
 
 | Phase | テーマ | 状態 |
 |---|---|---|
-| **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 未着手 |
+| **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 計画済み（実装は PH0-*） |
 | **1** | モノレポ + Babylon 移行 | 未着手 |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
@@ -53,13 +53,19 @@
 | **8** | UGC | 未着手 |
 | **9** | WebTransport（条件付き） | 未着手 |
 
-### Phase 0 候補（計画書作成後に ID 採番）
+### Phase 0
+
+計画書: [`planning/PHASE00_PLAN.md`](./planning/PHASE00_PLAN.md)
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
-| PLAT-0 | フェーズ 0 計画書作成（`PHASE00_PLAN.md`） | 未着手 | 0% | — | `_TEMPLATE.md` 準拠の計画が arch と矛盾しない | |
-
-フェーズ 0 の実装サブタスクは計画書作成時に本表へ追加する。
+| PLAT-0 | フェーズ 0 計画書作成（`PHASE00_PLAN.md`） | 完了 | 100% | DOC-2 | `_TEMPLATE.md` 準拠の計画が arch と矛盾しない | 本コミット |
+| PH0-A | BinaryReader + Input 16B + 長さ/範囲で切断 | 未着手 | 0% | PLAT-0 | 16B 往復。15/17B は切断。短バッファでプロセス死なし | |
+| PH0-B | 入力レート制限 90/s | 未着手 | 0% | PH0-A | 超過で切断するテストがある | |
+| PH0-C | Bun WS オプション + `send()` -1/0 | 未着手 | 0% | PH0-A | `bufferedAmount` 不使用。-1 スキップ / 0 切断 | |
+| PH0-D | `slice` → `subarray` | 未着手 | 0% | PH0-C | ホットパス送信がコピーでない | |
+| PH0-E | lagcomp 毎ティック `record()`（または削除） | 未着手 | 0% | PH0-A | 記録されているかモジュール削除。混在しない | |
+| PH0-F | 100 万 fuzz + 固定長 ±1 | 未着手 | 0% | PH0-A〜E | 1e6 で落ちない。Input ±1 で切断 | |
 
 ### ドキュメント・規約
 

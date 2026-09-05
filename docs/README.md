@@ -29,7 +29,8 @@ docs/
 │   ├── milestones.md    # フェーズ 0–9 と完了条件
 │   └── legal.md         # 法務・OSS・参考資料
 └── planning/            # 計画書（着手前に _TEMPLATE.md で作成）
-    └── _TEMPLATE.md
+    ├── _TEMPLATE.md
+    └── PHASE00_PLAN.md  # フェーズ 0（現行コードの穴）
 ```
 
 仕様書（`arch/`）= どう作るかの正本。計画書（`planning/`）= 何をどの順で。進捗（`task-list.md`）= 状態と証拠。
