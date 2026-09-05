@@ -25,8 +25,8 @@ export const MAX_STEPS_PER_FRAME = 5
 
 /** リモートプレイヤー補間バッファの遅延（ms）。レンダー時刻を過去にずらす。 */
 export const INTERP_DELAY_MS = 100
-/** ラグ補償の位置履歴保持時間（ms）。Phase 1 は器だけ用意（判定は後続）。 */
-export const LAGCOMP_HISTORY_MS = 100
+/** ラグ補償の位置履歴保持時間（ms）。巻き戻し窓は 500ms。判定は後続。 */
+export const LAGCOMP_HISTORY_MS = 500
 
 /** 1 ルームの最大人数。 */
 export const MAX_PLAYERS = 20

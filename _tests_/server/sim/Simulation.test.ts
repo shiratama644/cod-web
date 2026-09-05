@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { SIM_DT } from '@shared/protocol/constants'
+import { LAGCOMP_HISTORY_MS, SIM_DT } from '@shared/protocol/constants'
 import type { PlayerInput } from '@shared/protocol/messages'
 import { createPlaneWorld } from '@shared/sim/collisionWorld'
 import { Room, type Peer } from '@server/room/Room'
@@ -116,5 +116,30 @@ describe('Simulation — 権威シミュレーション', () => {
     // さらに 85ms（85→170ms）→ 累積からさらに 5 ステップ
     expect(sim.update(170)).toBe(5)
     expect(sim.currentTick()).toBe(10)
+  })
+
+  it('step 後に lagcomp 履歴が 1 件以上ある', () => {
+    const room = new Room()
+    const id = room.join(noopPeer()) as number
+    const sim = new Simulation(room, createPlaneWorld())
+    expect(sim.lagComp.getHistory(id)).toHaveLength(0)
+    sim.step()
+    const hist = sim.lagComp.getHistory(id)
+    expect(hist.length).toBeGreaterThanOrEqual(1)
+    expect(hist[0]?.tick).toBe(1)
+  })
+
+  it('lagcomp 履歴窓は 500ms で古いサンプルを落とす', () => {
+    const room = new Room()
+    const id = room.join(noopPeer()) as number
+    const sim = new Simulation(room, createPlaneWorld())
+    for (let i = 0; i < 60; i++) sim.step()
+    const hist = sim.lagComp.getHistory(id)
+    const oldest = hist[0]
+    const newest = hist[hist.length - 1]
+    if (!oldest || !newest) throw new Error('empty history')
+    expect(newest.timeMs - oldest.timeMs).toBeLessThanOrEqual(LAGCOMP_HISTORY_MS)
+    expect(hist.length).toBeLessThan(60)
+    expect(hist.length).toBeGreaterThan(1)
   })
 })

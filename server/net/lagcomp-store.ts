@@ -1,7 +1,7 @@
 /**
  * ラグ補償の位置履歴バッファ（器だけ・判定は射撃フェーズ）。
  *
- * 各プレイヤーの直近 ~100ms の位置/姿勢を tick 付きで保持する。射撃イベントが
+ * 各プレイヤーの直近 500ms の位置/姿勢を tick 付きで保持する。射撃イベントが
  * 届いたら発射者の視点時刻まで当たり判定対象を巻き戻す（docs/arch/server-authority.md
  * §6.6）が、Phase 1（位置同期）ではこの器を用意し tick ごとに記録するだけにし、
  * 巻き戻しレイ判定は射撃フェーズで実装する。
@@ -56,5 +56,5 @@ export class LagCompStore {
 
 const EMPTY: readonly PositionSample[] = []
 
-/** 履歴に残るサンプル数の上限の目安（100ms × 60Hz ≈ 6 サンプル＋余裕）。 */
+/** 履歴に残るサンプル数の上限の目安（500ms × 60Hz ≈ 30 サンプル）。 */
 export const EXPECTED_SAMPLES = Math.ceil((LAGCOMP_HISTORY_MS / 1000) * SIM_TICK_HZ)

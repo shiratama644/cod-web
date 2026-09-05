@@ -213,5 +213,5 @@ server.md: input perSec 90, burst 20。超過は即切断。トークンバケ�
 | PH0-B | 本コミット | TokenBucket burst 20・60Hz 10s・200 同時 | 超過は ProtocolError → close 1002 |
 | PH0-C | 本コミット | send -1 スキップ + drain 再開、send 0 切断 | `bufferedAmount` 削除。slice は PH0-D |
 | PH0-D | 本コミット | ring `subarray` 非コピー、受信は offset+length の DataView | ホットパス `slice` なし。`scripts/execute.ts` は対象外 |
-| PH0-E | | | |
+| PH0-E | 本コミット | step 後に履歴 ≥1、窓 500ms で古いサンプル削除 | 削除せず毎ティック `record`。`LAGCOMP_HISTORY_MS=500` |
 | PH0-F | | | |
