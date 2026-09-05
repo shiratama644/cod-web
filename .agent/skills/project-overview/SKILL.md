@@ -41,8 +41,8 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 
 | Phase | 内容 | 状態 |
 | :--- | :--- | :--- |
-| **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 未着手（計画書 `PLAT-0` から） |
-| **1** | モノレポ + Babylon 移行 | 未着手 |
+| **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
+| **1** | モノレポ + Babylon 移行（fps 系のみ。Channel 1B） | 計画済み（`PLAT-1`） |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4–9** | ハブ / モード追加 / API 再設計 / チャンク / UGC / WT | 未着手 |
