@@ -64,6 +64,7 @@ export class GameClient {
   // 送信バッファ（プールして毎フレーム new しない）
   private readonly sendBuffer = new ArrayBuffer(INPUT_PACKET_BYTES)
   private readonly sendView = new DataView(this.sendBuffer)
+  private readonly sendBytes = new Uint8Array(this.sendBuffer)
 
   /** 現在の部屋にいるリモートプレイヤー補間結果（フレームごとに更新）。 */
   remotes: Map<number, InterpolatedPlayer> = new Map()
@@ -235,7 +236,7 @@ export class GameClient {
 
   private encodeAndSend(input: PlayerInput): void {
     const len = encodeInput(this.sendView, input)
-    this.transport.sendBinary(this.sendBuffer.slice(0, len))
+    this.transport.sendBinary(this.sendBytes.subarray(0, len))
   }
 
   private updateRemotes(): void {

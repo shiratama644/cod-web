@@ -59,7 +59,13 @@ const server = Bun.serve<SocketData>({
         sendText: (data) => {
           ws.send(data)
         },
-        sendBinary: (data) => ws.send(data),
+        sendBinary: (data) => {
+          const u8 =
+            data instanceof Uint8Array
+              ? data
+              : new Uint8Array(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength)
+          return ws.send(u8)
+        },
         disconnect: (code, reason) => {
           ws.close(code, reason)
         },
@@ -80,8 +86,7 @@ const server = Bun.serve<SocketData>({
           // 制御テキストメッセージは現状なし（welcome/join/leave はサーバー発）。
           return
         }
-        const bytes = message instanceof ArrayBuffer ? message : toArrayBuffer(message)
-        const view = new DataView(bytes)
+        const view = toDataView(message)
         const input = decodeInput(view)
         const playerId = ws.data?.playerId
         if (playerId != null && playerId > 0) {
@@ -125,11 +130,10 @@ setInterval(() => {
   }
 }, 1000 / TICK_HZ)
 
-/** Bun の Buffer（Uint8Array）を ArrayBuffer へ変換する。 */
-function toArrayBuffer(buf: ArrayBuffer | Uint8Array): ArrayBuffer {
-  if (buf instanceof ArrayBuffer) return buf
-  // Bun の WebSocket メッセージは Buffer/Uint8Array になることがある。
-  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
+/** Bun の Buffer（Uint8Array）をコピーせず DataView にする。 */
+function toDataView(buf: ArrayBuffer | Uint8Array): DataView {
+  if (buf instanceof ArrayBuffer) return new DataView(buf)
+  return new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
 }
 
 console.log(`[server] cod-web game server listening on ws://${HOST}:${server.port}`)

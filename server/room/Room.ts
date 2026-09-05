@@ -20,7 +20,7 @@ export interface Peer {
    * バイナリ送信。bun `ws.send` と同じ戻り値。
    * -1 バックプレッシャ（キュー済み）、0 破棄、1+ 送信バイト。
    */
-  sendBinary: (data: ArrayBuffer) => number
+  sendBinary: (data: ArrayBufferView) => number
   /** send が 0 のときソケットを切る。テストでは省略可。 */
   disconnect?: (code: number, reason: string) => void
 }

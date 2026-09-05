@@ -63,7 +63,7 @@
 | PH0-A | BinaryReader + Input 16B + 長さ/範囲で切断 | 完了 | 100% | PLAT-0 | 16B 往復。15/17B は切断。短バッファでプロセス死なし | 本コミット / 59 tests |
 | PH0-B | 入力レート制限 90/s | 完了 | 100% | PH0-A | 超過で切断するテストがある | 本コミット / 64 tests |
 | PH0-C | Bun WS オプション + `send()` -1/0 | 完了 | 100% | PH0-A | `bufferedAmount` 不使用。-1 スキップ / 0 切断 | 本コミット / 65 tests |
-| PH0-D | `slice` → `subarray` | 未着手 | 0% | PH0-C | ホットパス送信がコピーでない | |
+| PH0-D | `slice` → `subarray` | 完了 | 100% | PH0-C | ホットパス送信がコピーでない | 本コミット / 66 tests |
 | PH0-E | lagcomp 毎ティック `record()`（または削除） | 未着手 | 0% | PH0-A | 記録されているかモジュール削除。混在しない | |
 | PH0-F | 100 万 fuzz + 固定長 ±1 | 未着手 | 0% | PH0-A〜E | 1e6 で落ちない。Input ±1 で切断 | |
 

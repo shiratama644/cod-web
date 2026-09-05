@@ -53,10 +53,13 @@ export class WebSocketTransport implements NetTransport {
     this.textHandler = handler
   }
 
-  sendBinary(data: ArrayBuffer | DataView): void {
+  sendBinary(data: ArrayBuffer | ArrayBufferView): void {
     if (!this.ws || this._status !== 'open') return
-    const buf = data instanceof DataView ? data.buffer : data
-    this.ws.send(buf as ArrayBuffer)
+    const view =
+      data instanceof ArrayBuffer
+        ? new Uint8Array(data)
+        : new Uint8Array(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength)
+    this.ws.send(view)
   }
 
   onBinary(handler: BinaryMessageHandler): void {

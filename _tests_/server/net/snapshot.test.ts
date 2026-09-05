@@ -6,10 +6,12 @@ import {
 } from '@shared/protocol/constants'
 import { decodeSnapshot, readMessageType } from '@shared/protocol/packer'
 import { Room, type Peer } from '@server/room/Room'
+import { SNAPSHOT_MAX_BYTES } from '@shared/protocol/packer'
 import { SnapshotBroadcaster } from '@server/net/snapshot'
 
 interface TestPeer extends Peer {
-  binary: ArrayBuffer[]
+  binary: Uint8Array[]
+  lastView: ArrayBufferView | null
   text: string[]
   sendResult: number
   disconnected: Array<{ code: number; reason: string }>
@@ -20,6 +22,7 @@ function makePeer(sendResult = 16): TestPeer {
     playerId: -1,
     text: [],
     binary: [],
+    lastView: null,
     sendResult,
     disconnected: [],
     sendText(d) {
@@ -28,7 +31,10 @@ function makePeer(sendResult = 16): TestPeer {
     sendBinary(d) {
       if (this.sendResult < 0) return this.sendResult
       if (this.sendResult === 0) return 0
-      this.binary.push(d)
+      this.lastView = d
+      const src =
+        d instanceof Uint8Array ? d : new Uint8Array(d.buffer, d.byteOffset, d.byteLength)
+      this.binary.push(Uint8Array.from(src))
       return this.sendResult
     },
     disconnect(code, reason) {
@@ -51,10 +57,14 @@ function peer(room: Room, index: number): TestPeer {
   return p as TestPeer
 }
 
-function firstPacket(p: TestPeer): ArrayBuffer {
+function firstPacket(p: TestPeer): ArrayBufferView {
   const buf = p.binary[0]
   if (!buf) throw new Error('no binary packet sent')
   return buf
+}
+
+function viewOf(buf: ArrayBufferView): DataView {
+  return new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
 }
 
 describe('SnapshotBroadcaster', () => {
@@ -76,7 +86,7 @@ describe('SnapshotBroadcaster', () => {
     bc.maybeSend(room, 10)
     const p = peer(room, 0)
     const buf = firstPacket(p)
-    const view = new DataView(buf)
+    const view = viewOf(buf)
     expect(readMessageType(view)).toBe(MSG_S2C_SNAPSHOT)
     const snap = decodeSnapshot(view, buf.byteLength)
     expect(snap.serverTick).toBe(10)
@@ -132,7 +142,7 @@ describe('SnapshotBroadcaster', () => {
 
     const peer1 = peer(room, 0)
     const packet = firstPacket(peer1)
-    const view1 = new DataView(packet)
+    const view1 = viewOf(packet)
     const snap1 = decodeSnapshot(view1, packet.byteLength)
     expect(snap1.lastAckSeq).toBe(77)
   })
@@ -143,5 +153,16 @@ describe('SnapshotBroadcaster', () => {
     const bytes = bc.maybeSend(room, 0)
     expect(bytes).toBe(snapshotPayloadBytes(20))
     expect(bytes).toBe(329)
+  })
+
+  it('送信は ring の subarray でありバイトをコピーしない', () => {
+    const room = roomWith(1)
+    const bc = new SnapshotBroadcaster()
+    bc.maybeSend(room, 0)
+    const sent = peer(room, 0).lastView
+    if (!sent) throw new Error('no view')
+    expect(sent).toBeInstanceOf(Uint8Array)
+    expect(sent.byteLength).toBe(snapshotPayloadBytes(1))
+    expect(sent.buffer.byteLength).toBe(SNAPSHOT_MAX_BYTES)
   })
 })

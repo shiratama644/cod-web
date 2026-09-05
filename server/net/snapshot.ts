@@ -17,9 +17,9 @@ import type { Room } from '../room/Room'
 const RING_SIZE = 3
 
 export class SnapshotBroadcaster {
-  private readonly ring: ArrayBuffer[] = Array.from(
+  private readonly ring: Uint8Array[] = Array.from(
     { length: RING_SIZE },
-    () => new ArrayBuffer(SNAPSHOT_MAX_BYTES),
+    () => new Uint8Array(SNAPSHOT_MAX_BYTES),
   )
   private ringIndex = 0
   /** send() === -1 になったプレイヤー。drain までスナップショットを送らない。 */
@@ -42,9 +42,9 @@ export class SnapshotBroadcaster {
     const players = room.getPlayers()
     if (players.length === 0) return null
 
-    const buffer = this.ring[this.ringIndex]
+    const u8 = this.ring[this.ringIndex]
     this.ringIndex = (this.ringIndex + 1) % RING_SIZE
-    const view = new DataView(buffer)
+    const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength)
 
     const snapshot: Snapshot = {
       serverTick,
@@ -68,8 +68,7 @@ export class SnapshotBroadcaster {
       if (this.paused.has(p.id)) continue
       snapshot.lastAckSeq = p.lastInputSeq
       const bytes = encodeSnapshot(view, snapshot)
-      const packet = buffer.slice(0, bytes)
-      const sent = peer.sendBinary(packet)
+      const sent = peer.sendBinary(u8.subarray(0, bytes))
       if (sent === 0) {
         peer.disconnect?.(1011, 'send failed')
         dropped.push(p.id)
