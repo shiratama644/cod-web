@@ -20,8 +20,8 @@ git log -5 --oneline
 
 [`../skills/index.md`](../skills/index.md) の「読み方ガイド」で**該当スキルだけ**を読む。
 - 全スキルを常に読まない（コンテキスト浪費）。
-- 初回/全体把握が必要な時だけ `project-overview.md` + `tech-stack.md`。
-- 設計仕様（ゲームループ・状態・ネットワーク・判定の「どう作るか」）→ **仕様書 [`docs/arch/`](../../docs/arch/README.md)**（tech-stack / networking / game-engineering-principles）。環境制約 → `sandbox-constraints.md`。
+- 初回/全体把握が必要な時だけ `project-overview/SKILL.md` + `tech-stack/SKILL.md`。
+- 設計仕様（ゲームループ・状態・ネットワーク・判定の「どう作るか」）→ **仕様書 [`docs/arch/`](../../docs/arch/README.md)**（tech-stack / networking / game-engineering-principles）。環境制約 → `sandbox-constraints/SKILL.md`。
 - 技術スタック・設計仕様の正本は [`docs/arch/`](../../docs/arch/README.md)（tech-stack.md / networking.md / game-engineering-principles.md）。計画書は [`docs/planning/`](../../docs/planning/)。
 
 ### 3. docs/ と実コードの優先順位（AGENTS.md §6.8）
@@ -38,7 +38,7 @@ git log -5 --oneline
 ### 5. ゲームプロジェクト固有の心構え
 
 - **ゲームループと React レンダリングの分離**・**ゼロアロケーション**（仕様書 [`docs/arch/game-engineering-principles.md`](../../docs/arch/game-engineering-principles.md)）を実装前から意識。
-- ネットワーク実結合・WebGPU・E2E は Sandbox で検証不可（[`../skills/sandbox-constraints.md`](../skills/sandbox-constraints.md)）。該当機能では検証範囲を事前にユーザーへ伝える（AGENTS.md §7.7）。
+- ネットワーク実結合・WebGPU・E2E は Sandbox で検証不可（[`../skills/sandbox-constraints/SKILL.md`](../skills/sandbox-constraints/SKILL.md)）。該当機能では検証範囲を事前にユーザーへ伝える（AGENTS.md §7.7）。
 
 ## 完了後
 

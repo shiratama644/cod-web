@@ -3,6 +3,9 @@
 > このファイルは `.agent/hooks/` の**入口**。特定トリガー時に本ファイルで該当フックを特定し、
 > 手順（`.md`）やスクリプト（`.sh`）を実行する。作業規約の本体は `AGENT.md`（§2/§3/§4）。
 > ここは「いつ・どのフック」の索引と、再利用可能な具体手順。
+>
+> ディレクトリ構造は Claude Code 準拠: 実行スクリプトを `.sh` で置き、トリガー登録は
+> [`settings.json`](./settings.json)（Claude Code の `hooks.events` と同型）で行う。
 
 ## トリガー → フック 対応表
 
@@ -22,10 +25,11 @@
 | [log-task.md](./log-task.md) | タスク完了時 | `.agent/logs/YYYY-MM-DD_<summary>.md` 作成（4 セクション）→ 重要知見を `.agent/skills/` へ同期 → `skills/index.md` + 本 index の「最終更新」更新 |
 | [sandbox-rebuild-recovery.md](./sandbox-rebuild-recovery.md) | Sandbox 再構築検知時 | `git fetch` → `reset --hard FETCH_HEAD`（例外的許可）→ `restore-sandbox-env.sh` で依存再構築 → 健全性確認 |
 | [restore-sandbox-env.sh](./restore-sandbox-env.sh) | 上記から呼出 | npm 経由で bun を導入 + `bun install --frozen-lockfile` |
+| [settings.json](./settings.json) | — （Claude Code 準拠の登録マニフェスト） | `hooks.<event>` にトリガー → コマンドを登録。本表の手順/スクリプトと対応。 |
 
 ## 運用ルール
 
 - フックは**必須実行**ではなく「該当トリガー時に**必ず参照すべき**手順」。迷ったら該当フックを読む。
-- 新フック追加時は本 index の「対応表」「一覧」両方に追記する。
+- 新フック追加時は本 index の「対応表」「一覧」の両方、および [`settings.json`](./settings.json) へ登録する。
 - 実行スクリプト（`.sh`/`.py`）は `kebab-case` + 拡張子。手順は `kebab-case.md`。
 - フック内のコマンドは `package.json` script or 既知コマンドのみ（捏造禁止, AGENT.md §3.1）。

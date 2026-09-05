@@ -326,20 +326,22 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 | ディレクトリ | 役割 | 命名規則 |
 | :--- | :--- | :--- |
-| `.agent/skills/` | **Agent のスキル**: このコードベース・この開発をうまく進めるためのノウハウ・テクニック・手順・パターン・コードベース知識 | `kebab-case.md` |
-| `.agent/hooks/` | トリガー別の**定型手順/スクリプト**（pre-task, verify, log, recovery） | `kebab-case.md` / `.sh` |
+| `.agent/skills/` | **Agent のスキル**: このコードベース・この開発をうまく進めるためのノウハウ・テクニック・手順・パターン・コードベース知識 | `<kebab-case>/SKILL.md` |
+| `.agent/hooks/` | トリガー別の**定型手順/スクリプト**（pre-task, verify, log, recovery） | `kebab-case.md` / `.sh` / `settings.json` |
 | `.agent/logs/` | タスク完了毎の**実行記録** | `YYYY-MM-DD_kebab-case-summary.md` |
 
 各ディレクトリ直下に **`index.md`** を置き、一覧・参照条件を管理する（logs は除く）。
 
+> ディレクトリ構造は Claude Code 準拠。**skills** は各スキルを `<スキル名>/SKILL.md` フォルダで持ち（`SKILL.md` 冒頭に `name` / `description` の YAML frontmatter）、**hooks** は実行スクリプト（`.sh`）を `.agent/hooks/` に置き、トリガー登録を [`settings.json`](.agent/hooks/settings.json)（Claude Code の `hooks.<event>` と同型）で行う。
+
 ### 8.2 `index.md` 起点のピンポイント読込（核心ワークフロー）
 - **タスク開始時**（[`.agent/hooks/pre-task.md`](.agent/hooks/pre-task.md)）: 現状把握後、[`.agent/skills/index.md`](.agent/skills/index.md) の「読み方ガイド」で**該当スキルだけ**を読む。全スキルを常に読み込まない（コンテキスト浪費）。
 - **トリガー発生時**: [`.agent/hooks/index.md`](.agent/hooks/index.md) の「対応表」で該当フックを特定し実行。
-- 初回/全体把握が必要な時だけ `skills/project-overview.md` → `skills/tech-stack.md` の順。
+- 初回/全体把握が必要な時だけ `skills/project-overview/SKILL.md` → `skills/tech-stack/SKILL.md` の順。
 
 ### 8.3 記憶の同期（書き込みワークフロー）
 - **タスク完了時**（[`.agent/hooks/log-task.md`](.agent/hooks/log-task.md)）: 必ず `.agent/logs/YYYY-MM-DD_<summary>.md` を 4 セクション（指示内容/実行内容/気づき/次アクション）で作成。
-- **知見のスキル化**: ログの「気づき」が再利用性の高いコードベース知識なら該当 `skills/*.md` に反映し、`skills/index.md` の「最終更新」を更新する。新スキルは `skills/index.md` の「読み方ガイド」「一覧」両方に追記。
+- **知見のスキル化**: ログの「気づき」が再利用性の高いコードベース知識なら該当 `skills/*/SKILL.md` に反映し、`skills/index.md` の「最終更新」を更新する。新スキルは `skills/index.md` の「読み方ガイド」「一覧」両方に追記。
 - ログ・スキル・index の変更も commit/push 対象（セッションブランチへ）。
 
 ### 8.4 AGENT.md / skills / docs/arch の役割分担

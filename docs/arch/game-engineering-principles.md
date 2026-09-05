@@ -81,7 +81,7 @@ useFrame((state, delta) => {
 ## テストしやすさのための分離
 
 - ゲームロジック（移動計算・当たり判定・リコンサイル・ECS システム）は **Three.js / WebGL に依存しない純粋関数**として書き、jsdom + Vitest でユニットテスト可能にする。
-- レンダリング（Canvas・シェーダー）の目視確認はプレビュー/実機依存とし、ロジックと分離する（[`../../.agent/skills/sandbox-constraints.md`](../../.agent/skills/sandbox-constraints.md)）。
+- レンダリング（Canvas・シェーダー）の目視確認はプレビュー/実機依存とし、ロジックと分離する（[`../../.agent/skills/sandbox-constraints/SKILL.md`](../../.agent/skills/sandbox-constraints/SKILL.md)）。
 
 ## パフォーマンス計測
 
