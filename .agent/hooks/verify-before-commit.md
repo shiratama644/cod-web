@@ -6,7 +6,7 @@
 ## 4 検証（順に実行、1 つでも失敗したら原因特定→修正→再全検証）
 
 ```bash
-bun run typecheck                # tsc --noEmit
+bun run typecheck                # tsc --noEmit および tsc -p tsconfig.server.json
 bunx biome lint .        # Biome 直接呼出（bun run lint より起動が速い）
 bun run test:unit                # vitest run （※ watch モードではない）
 bun run build                    # vite build（production）
@@ -16,9 +16,9 @@ bun run build                    # vite build（production）
 
 - **typecheck**: `tsc --noEmit`。strict 構成。配列アクセス・nullable に注意。
 - **biome lint**: `0 error / 0 warning` まで。`biome-ignore` は対象コードの**直前の行**に置く（1 行以上離れると unused 判定で逆に警告になる, AGENTS.md §6.5）。テストファイルは `overrides` で `noNonNullAssertion` off。
-- **test:unit**: `vitest`（watch）**ではない**。必ず `test:unit`（vitest run）。R3F `<Canvas>` は jsdom で WebGL 未サポートのため、WebGL 非依存のロジック/UI をテスト対象にする（[`../skills/sandbox-constraints/SKILL.md`](../skills/sandbox-constraints/SKILL.md)）。
+- **test:unit**: `vitest`（watch）**ではない**。必ず `test:unit`（vitest run）。Canvas/WebGL は jsdom で描画テストしない。シム・パックは純粋関数（[`../skills/sandbox-constraints/SKILL.md`](../skills/sandbox-constraints/SKILL.md)）。
 - **build**: `vite build`。成果物は `dist/`。
-  - バンドルサイズは `ls -lh dist/assets` 等で直接確認（Three.js はバンドルが大きい。依存の重複・chunk 分割に注意）。
+  - バンドルサイズは `ls -lh dist/assets` 等で直接確認（3D エンジンは大きい。依存の重複・chunk 分割に注意）。
 - **ドキュメントのみ変更時**: 4 検証はスキップ可（AGENTS.md §3.1）。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。
 
 ## 追加確認（commit 前）

@@ -1,54 +1,60 @@
 ---
 name: project-overview
-description: プロダクトの全体像（目標・技術スタック要点・フェーズ進捗）を掴む。新規セッションの最初に読む 1 スキル。
+description: プロダクトの全体像（目標・現行コードと理想形・フェーズ進捗）を掴む。新規セッションの最初に読む 1 スキル。
 ---
 
 # Project Overview — cod-web
 
-> 製品の全体像。新規セッションの最初に読む 1 ファイル。技術スタックの網羅は [`../../../docs/arch/tech-stack.md`](../../../docs/arch/tech-stack.md) が正。
+> 製品の全体像。新規セッションの最初に読む 1 ファイル。
+> 仕様の正本は [`../../../docs/arch/product.md`](../../../docs/arch/product.md)。
+> 進捗の正本は [`../../../docs/task-list.md`](../../../docs/task-list.md)。
 
 ## 製品
 
-**cod-web** は、[Krunker.io](https://krunker.io) にインスパイアされたブラウザ向け**クロスプラットフォーム・オンラインFPS**（Krunker の完全上位互換を目指す）。
+**cod-web** はブラウザ向け **マルチタイプ・ゲームプラットフォーム**。
 
-- **最重要目標: どの端末（PC ブラウザ / スマートフォン / タブレット）でも安定 60FPS 以上**。軽量さ・低遅延・高速読み込みを優先し、重厚な AAA グラフィックスは優先しない
-- PC（マウス＆キーボード / ゲームパッド）＋ モバイル（タッチ / 仮想スティック / ジェスチャー）両対応
-- アーキテクチャ: 権威型ゲームサーバー ＋ クライアント予測・サーバー調停 ＋ ラグ補償。トランスポートは **WebTransport（datagrams+streams）主 / WebSocket フォールバック**で確定（[networking](../../../docs/arch/networking.md)）。サーバーシム tick 60Hz・入力 60Hz・スナップショット送信 30Hz、描画は可変フレームレート（レート分離・sub-tick射撃）
-- **レンダラー: WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準レンダラーとする）
-- **描画 FPS は可変**（rAF = 60〜120Hz+。60 は下限フロアであり上限ではない）、delta time ベースでネット tick と独立
+- タイプ: `voxel`（ブロック世界）と `fps`（静的アリーナの射撃戦）
+- プラットフォーム層（L0/L1）を共有し、Sim Profile（L2）だけ差し替える
+- 描画は **Babylon.js**。voxel クライアントは **noa-engine**
+- トランスポートは **今 WebSocket のみ**（将来 WT のため `NetTransport` は維持。今は実装しない）
+- ライセンス **MIT**。初期は匿名（表示名＋一時 uid）。認証・ランキングは後続
+- モバイルは両タイプ対象（タッチ実装は後続）。ボイスは理想に含むがゲーム同期には WebRTC を使わない
+
+現行コードは単一ルーム FPS の原型（**移行元**）。理想フェーズ番号（0–9）とは別物。破棄/移植は product.md の表。
 
 ## 技術スタック（要点）
 
-| 層 | 技術 |
-| :--- | :--- |
-| ビルド | **Vite** + React + TypeScript（strict）、bun |
-| 3D | Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**、WebGL2 が全端末 60FPS の基準）/ @react-three/fiber / @react-three/drei、TSL |
-| 衝突・判定 | **three-mesh-bvh** 統一（キネマティックCC＝浮遊カプセルのマップ衝突 ＋ 射撃レイ、ヘッドレス可）。マップは 3D Mesh Map（GLTF BVH）。剛体エンジンは当初不使用 |
-| アニメーション | Three.js AnimationMixer ＋ **XState v5**（状態遷移 FSM）。連続ブレンドはブレンドスペース |
-| ECS | miniplex / @miniplex/react（R3F 向け）、bitecs（TypedArray・GCレス） |
-| ネットワーク | 権威サーバー + クライアント予測・サーバー調停 + ラグ補償。Phase 1 は **WebSocket（bun ネイティブ＝uWS コア）で位置同期を先行**、WT（HTTP/3・datagrams+streams）は Caddy 終端で後から有効化。サーバー tick/スナップショット 30Hz・入力 60Hz。高頻度パケットは手動バイナリ固定レイアウト、低頻度イベントは msgpackr。FX はフラグ＋トリガーのみ送信しクライアント再生 |
-| UI / 状態 | React、**Zustand**（ゲーム状態、Context 不使用）、Radix UI、framer-motion、lucide-react、troika-three-text（3Dテキスト） |
-| オーディオ | Web Audio API（HRTF）、howler.js、resonance-audio、drei PositionalAudio |
-| アセット | useGLTF/useTexture、gltfjsx、DRACO / meshoptimizer / KTX2、@gltf-transform |
-| Lint / Test | **Biome**（ESLint/Prettier 不使用）、Vitest + @testing-library/react、Playwright（E2E・CI のみ） |
+| 層 | 理想 | 現行コード（移行元） |
+| :--- | :--- | :--- |
+| ビルド | Vite + React + TypeScript（strict）、bun | 同じ（単一パッケージ） |
+| 3D | Babylon.js。voxel は noa | Three.js / R3F / WebGPU→WebGL2。**破棄予定** |
+| シム | `SimProfile.step`。L1 にタイプ分岐を書かない | shared の FPS 物理（three-mesh-bvh CC） |
+| ネットワーク | bun `Bun.serve` WS。手書きバイナリ。Input 16B | bun WS + 手書きバイナリ。レイアウトは理想へ更新 |
+| UI | React はハブ・HUD・設定のみ（ADR-003） | R3F Canvas + HUD |
+| Lint / Test | Biome、Vitest、テストは `_tests_/` | 同じ |
 
-詳細・ライブラリの役割分担は [`tech-stack/SKILL.md`](../tech-stack/SKILL.md)、設計ルールは [`docs/arch/game-engineering-principles.md`](../../../docs/arch/game-engineering-principles.md) を参照。
+詳細なハマりどころは [`tech-stack/SKILL.md`](../tech-stack/SKILL.md)。設計ルールは [`docs/arch/engineering.md`](../../../docs/arch/engineering.md) と [`docs/arch/adr.md`](../../../docs/arch/adr.md)。
 
 ## フェーズ進捗
 
-> 進捗の正本は [`docs/task-list.md`](../../../docs/task-list.md)。下表は要点のみ。
+> 正本は [`docs/task-list.md`](../../../docs/task-list.md)。下表は要点のみ。
 
 | Phase | 内容 | 状態 |
 | :--- | :--- | :--- |
-| **0** | プロジェクト基盤（Vite/React/TS/Biome/Vitest、R3F シーン、ゲームループ骨架、Zustand） | ⏳ 計画済み・未着手（[`PHASE00_PLAN.md`](../../../docs/planning/PHASE00_PLAN.md)） |
-| 1 以降 | プレイヤー操作 / 物理・判定 / ECS / 武器・射撃 / ネットワーク / ボイス / HUD / モバイル入力 / アセット / パフォーマンス | 未定（Phase 0 完了後に計画） |
+| **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 未着手（計画書 `PLAT-0` から） |
+| **1** | モノレポ + Babylon 移行 | 未着手 |
+| **2** | Sim Profile 分離 | 未着手 |
+| **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
+| **4–9** | ハブ / モード追加 / API 再設計 / チャンク / UGC / WT | 未着手 |
+
+旧 P0/P1 タスク ID は `.archive/docs/task-list.md`。再利用しない。
 
 ## 規模
 
-プロジェクト初期化前（ドキュメント/ガバナンスのみ）。`package.json`・`src/` は Phase 0 で作成。
+bun 単一パッケージ。`src/`（クライアント）・`shared/`・`server/`・`_tests_/`。モノレポ化はフェーズ 1。
 
 ## 関連
 
-- 開発規約・コミット手順・検証: [`../../../AGENTS.md`](../../../AGENTS.md)
-- 技術スタック完全ガイド: [`../../../docs/arch/tech-stack.md`](../../../docs/arch/tech-stack.md)
+- 開発規約: [`../../../AGENTS.md`](../../../AGENTS.md)
+- 仕様入口: [`../../../docs/arch/README.md`](../../../docs/arch/README.md)
 - タスク正本: [`../../../docs/task-list.md`](../../../docs/task-list.md)

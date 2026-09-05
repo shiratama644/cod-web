@@ -65,10 +65,10 @@
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
-| DOC-1 | 旧 docs を `.archive/docs/` へ退避し、理想形で `docs/arch` を再構成 | 完了 | 100% | — | 索引が実ファイルと一致。旧 docs が archive にある。相対リンク切れ 0 | 本コミット |
-| DOC-2 | AGENTS.md §6 を理想形（Babylon・WS のみ・16B Input 等）へ追従 | 未着手 | 0% | DOC-1 | AGENTS と docs/arch が矛盾しない | |
-| DOC-3 | `.agent/skills` を理想形の実践ノウハウへ更新 | 未着手 | 0% | DOC-1 | skills/index が arch を参照し旧 WT 主・R3F 前提が残らない | |
-| LIC-1 | MIT の LICENSE ファイルをルートに配置 | 未着手 | 0% | — | LICENSE が MIT 全文 | |
+| DOC-1 | 旧 docs を `.archive/docs/` へ退避し、理想形で `docs/arch` を再構成 | 完了 | 100% | — | 索引が実ファイルと一致。旧 docs が archive にある。相対リンク切れ 0 | `cbd026e` |
+| DOC-2 | AGENTS.md §6 を理想形（Babylon・WS のみ・16B Input 等）へ追従 | 完了 | 100% | DOC-1 | AGENTS と docs/arch が矛盾しない | 本コミット |
+| DOC-3 | `.agent/skills` を理想形の実践ノウハウへ更新 | 完了 | 100% | DOC-1 | skills/index が arch を参照し旧 WT 主・R3F 前提が残らない | 本コミット |
+| LIC-1 | MIT の LICENSE ファイルをルートに配置 | 完了 | 100% | — | LICENSE が MIT 全文 | 本コミット |
 
 ### 検証待ち・将来
 

@@ -6,7 +6,7 @@
 **進捗正本:** [`docs/task-list.md`](./docs/task-list.md)  
 **作業規約:** [`AGENTS.md`](./AGENTS.md)
 
-現行コードは単一ルーム FPS の原型（移行元）。描画の目標は Babylon.js。トランスポートの目標は当面 **WebSocket のみ**（WebTransport は条件付きの後続）。ライセンスは **MIT**（LICENSE ファイルは未配置）。
+現行コードは単一ルーム FPS の原型（移行元）。描画の目標は Babylon.js。トランスポートの目標は当面 **WebSocket のみ**（WebTransport は条件付きの後続）。ライセンスは **MIT**（[`LICENSE`](./LICENSE)）。
 
 旧 FPS 専用ドキュメントは [`.archive/docs/`](./.archive/docs/) にあります。
 

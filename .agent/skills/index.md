@@ -5,41 +5,44 @@
 >
 > ここにあるのは **Agent 自身のスキル** — 「このプロジェクトで何をどうやるとうまくいくか」
 > という実践的なノウハウ・テクニック・手順・パターン・コードベース知識。
-> 仕様書（設計の正本）ではない。設計の事実（技術選定・プロトコル）は [`../../docs/arch/`](../../docs/arch/README.md) が正本で、
-> スキルはそれを踏まえつつ「実際に手を動かすやり方」を持つ。
-> 作業規約（コミット手順・Lint 等）は [`../../AGENTS.md`](../../AGENTS.md)。
+> 仕様書（設計の正本）ではない。設計の事実は [`../../docs/arch/`](../../docs/arch/README.md) が正本。
+> 作業規約は [`../../AGENTS.md`](../../AGENTS.md)。
 
 ## 読み方ガイド（どの状況でどのスキルを使うか）
 
 | 状況 | 使うスキル |
 | :--- | :--- |
 | 初回 / 全体把握 | [`project-overview/SKILL.md`](./project-overview/SKILL.md) |
-| このプロジェクトの技術構成・ライブラリの使いどころを押さえる | [`tech-stack/SKILL.md`](./tech-stack/SKILL.md) |
-| 「動かない / テストできない / ネットワーク・WebGL が絡む」環境トラブル | [`sandbox-constraints/SKILL.md`](./sandbox-constraints/SKILL.md) |
-| 設計の正本（技術選定・プロトコル・設計ルール）を確認する | 仕様書 [`../../docs/arch/`](../../docs/arch/README.md)（tech-stack / networking / game-engineering-principles） |
+| ライブラリの使いどころ・サンドボックスでの bun/Vite/WS ハマり | [`tech-stack/SKILL.md`](./tech-stack/SKILL.md) |
+| 「動かない / テストできない / ネットワーク・GPU が絡む」環境トラブル | [`sandbox-constraints/SKILL.md`](./sandbox-constraints/SKILL.md) |
+| 設計の正本（プロダクト・プロトコル・ADR・マイルストーン） | [`../../docs/arch/`](../../docs/arch/README.md)（product / protocol / engineering / adr / milestones） |
 
 ## スキル一覧
 
 | スキル | できるようになること（Agent の能力） | 最終更新 |
 | :--- | :--- | :--- |
-| [project-overview/SKILL.md](./project-overview/SKILL.md) | プロダクトの目標・全体像・フェーズ状況を素早く把握し、何を作っているかを理解する | 2026-09-03 |
-| [tech-stack/SKILL.md](./tech-stack/SKILL.md) | 各ライブラリをどこでどう使うか・選定の理由・ハマりどころを押さえて実装できる | 2026-09-03 |
-| [sandbox-constraints/SKILL.md](./sandbox-constraints/SKILL.md) | Sandbox/ネットワーク/GitHub App の制約を迂回して検証・実装を進められる（E2E 不可・実結合は実環境確認等） | 2026-09-03 |
+| [project-overview/SKILL.md](./project-overview/SKILL.md) | プロダクト目標・現行コード（移行元）と理想フェーズを素早く把握する | 2026-09-05 |
+| [tech-stack/SKILL.md](./tech-stack/SKILL.md) | 理想スタックと移行元コードのハマりどころを区別して実装できる | 2026-09-05 |
+| [sandbox-constraints/SKILL.md](./sandbox-constraints/SKILL.md) | Sandbox / ネットワーク / GitHub App の制約を迂回して検証できる | 2026-09-05 |
 
 ## 設計仕様の正本（スキルではなく docs/arch/）
 
 | 仕様書 | 内容 |
 | :--- | :--- |
-| [docs/arch/tech-stack.md](../../docs/arch/tech-stack.md) | 技術スタック完全ガイド＋設計・実装黄金ルール（WebGPU→WebGL2 フォールバック、可変 FPS 等） |
-| [docs/arch/networking.md](../../docs/arch/networking.md) | ネットワーク＆リアルタイム設計（WebTransport 主 / WebSocket フォールバック、シム60Hz・送信30Hz、msgpackr、FX クライアント再生） |
-| [docs/arch/game-engineering-principles.md](../../docs/arch/game-engineering-principles.md) | FPS 設計の黄金ルール・実装パターン集 |
+| [docs/arch/product.md](../../docs/arch/product.md) | プロダクト・用語・現行資産の移植判定 |
+| [docs/arch/architecture.md](../../docs/arch/architecture.md) | L0–L3、モノレポ、依存規則 |
+| [docs/arch/protocol.md](../../docs/arch/protocol.md) | パケット・AOI・WS 固定と WT 備え |
+| [docs/arch/engineering.md](../../docs/arch/engineering.md) | 決定論・テスト・予算 |
+| [docs/arch/adr.md](../../docs/arch/adr.md) | 意思決定ログ |
+| [docs/arch/milestones.md](../../docs/arch/milestones.md) | フェーズ 0–9 |
 
-> 実装テクニック・ハマりどころ・コードベース知識は **skills** に貯め、設計の事実そのものは **docs/arch** を正本とする。
+> 実装テクニック・ハマりどころは **skills** に貯め、設計の事実は **docs/arch** を正本とする。
+> 欠ファイル（`tech-stack.md` / `networking.md` / `game-engineering-principles.md`）は正本ではない。旧内容は `.archive/docs/`。
 
 ## 運用ルール
 
-- 新しいノウハウ・テクニック・手順・パターンを得たらスキルとして追加/更新し、必ず本 index の「最終更新」も更新する。
+- 新しいノウハウを得たらスキルとして追加/更新し、本 index の「最終更新」も更新する。
 - 新スキル追加時は「読み方ガイド」と「一覧」の両方に追記する。
-- スキルは Agent の能力メモなので、実践で使える具体的なやり方・コードパターン・回避策を書く。設計の正本は docs/arch に任せ、重複したらそちらを参照する。
+- スキルは実践的なやり方・コードパターン・回避策を書く。設計の正本は docs/arch。
 - AGENTS.md と重複する作業規約はスキルに書かず AGENTS.md を正とする。
-- スキルのディレクトリ構造は Claude Code 準拠: 各スキルは `<kebab-case>/SKILL.md`（`SKILL.md` 冒頭に `name` / `description` の YAML frontmatter）。新規スキルはフォルダを作り `SKILL.md` を置く。
+- 各スキルは `<kebab-case>/SKILL.md`（YAML frontmatter に `name` / `description`）。
