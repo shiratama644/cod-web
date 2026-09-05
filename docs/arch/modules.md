@@ -97,7 +97,7 @@ shared/
 └── types.ts                # 共通型（プレイヤー・武器・状態フラグ等）
 ```
 
-- ここに置くコードは **jsdom / WebGL 不要で Vitest のユニットテストが可能**（Sandbox 制約を回避、[`../../.agent/skills/sandbox-constraints.md`](../../.agent/skills/sandbox-constraints.md)）。
+- ここに置くコードは **jsdom / WebGL 不要で Vitest のユニットテストが可能**（Sandbox 制約を回避、[`../../.agent/skills/sandbox-constraints/SKILL.md`](../../.agent/skills/sandbox-constraints/SKILL.md)）。
 - 純粋関数（入力＝出力）にし、副作用（ネット送信・描画）は呼び出し側に分離する。
 - **データ指向（ECS スタイル）で書く**: エンティティは整数 ID、状態はフラットなコンポーネント配列（`shared/ecs/`）、ロジックはそれらに作用する純粋システム関数（`stepMovement(state, input, dt, world) → state` など）。深い OOP 継承は持ち込まない。Phase 1 は ECS 形のプレーンな typed 配列で始め、弾丸/bot が数千体規模になったら `shared/ecs` の内部を bitecs（TypedArray・GC レス）に載せ替える（システムは配列に作用する形で書き、載せ替え容易にする）。エンティティ↔メッシュ結合などの**表現層だけ**がクライアントで miniplex/@miniplex/react を使う。
 

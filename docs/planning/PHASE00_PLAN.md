@@ -26,7 +26,7 @@
 - `__tests__/`（サンプルユニットテスト）
 - `README.md`（セットアップ手順が実態と一致するか検証・必要なら更新）
 - `.agent/hooks/verify-before-commit.md`（検証コマンドの実態整合）
-- `.agent/skills/tech-stack.md` 等（実装後の実態へ追従）
+- `.agent/skills/tech-stack/SKILL.md` 等（実装後の実態へ追従）
 - `docs/task-list.md`（状態・証拠の更新）
 
 変更しない（境界外）:
@@ -127,4 +127,4 @@
 | P0-E | （Phase0 commit） | — | useSpin（useFrame・ref 直接更新・delta クランプ 0.05s・new なし） |
 | P0-F | （Phase0 commit） | +4（store） | zustand 5.0.15。gameStore + gameStoreApi（getState/subscribe）。store テスト 4 |
 | P0-G | （Phase0 commit） | 11 passed | 4 検証一括 PASS: typecheck 0 / lint 0（22 files）/ test 11 / build OK（JS gzip 453KB）。verify フックと整合 |
-| P0-H | （Phase0 commit） | — | README・skills/tech-stack.md を実態追従 |
+| P0-H | （Phase0 commit） | — | README・skills/tech-stack/SKILL.md を実態追従 |

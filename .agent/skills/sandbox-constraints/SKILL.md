@@ -1,3 +1,8 @@
+---
+name: sandbox-constraints
+description: Sandbox / ブラウザ・ネットワーク / GitHub App の恒常的制約と、その迂回策（E2E・実結合・WebGPU のローカル検証不可など）。環境トラブル時に参照。
+---
+
 # Sandbox Constraints — 環境制約と迂回策
 
 > AGENTS.md §6.2 の実態版。Sandbox / ブラウザ・ネットワーク / GitHub App の制約と、その迂回方法。
@@ -21,5 +26,5 @@
 
 ## 復旧手順
 
-- Sandbox 再構築時（`git log` が起点 1 件のみ / 大量削除+未追跡 / node_modules 無）は [`.agent/hooks/sandbox-rebuild-recovery.md`](../hooks/sandbox-rebuild-recovery.md) ＋ [`restore-sandbox-env.sh`](../hooks/restore-sandbox-env.sh) に従う。
+- Sandbox 再構築時（`git log` が起点 1 件のみ / 大量削除+未追跡 / node_modules 無）は [`.agent/hooks/sandbox-rebuild-recovery.md`](../../hooks/sandbox-rebuild-recovery.md) ＋ [`restore-sandbox-env.sh`](../../hooks/restore-sandbox-env.sh) に従う。
 - `bun run build` 後のバンドルサイズは `ls -lh dist/assets` 等で直接確認（Three.js はバンドルが大きいため、重複依存・chunk 分割に注意）。

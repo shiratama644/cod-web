@@ -53,7 +53,7 @@
 | P0-E | ゲームループ骨架（`useFrame` ベース、ref 直接更新・ゼロアロケーション方針の確立） | ローカル検証済み | 100% | P0-D | 毎フレーム回転するオブジェクト等でループ動作を確認、React State 非依存の更新であること | `src/game/loop/useSpin.ts`（useFrame で mesh ref の rotation を直接加算、delta クランプ 0.05s、new なし・プリミティブ演算のみ）。Box に適用 |
 | P0-F | Zustand 導入（ゲーム状態ストアの骨架） | ローカル検証済み | 100% | P0-A | サンプルストアを置き、`getState()`/`subscribe` 利用の方針をコードで提示 | zustand 5.0.15。`src/store/gameStore.ts`（renderer/hp/ammo、setter はクランプ）＋React 外用 `gameStoreApi`（getState/subscribe）。Canvas が backend を書き、HUD が購読。store テスト 4 件 |
 | P0-G | 4 検証コマンド整備（typecheck / lint / test:unit / build）+ `.agent/hooks/verify-before-commit.md` の実コマンド整合確認 | ローカル検証済み | 100% | P0-B/C | AGENTS.md §3.1 の 4 コマンドが全て実在し PASS | 4 コマンド全て package.json に実在し一括 PASS: typecheck 0 / biome lint 0（22 files）/ test 11 passed / build OK（JS gzip 453KB）。verify フックと整合 |
-| P0-H | ドキュメント/skills の実態追従（README のセットアップ手順検証、`.agent/skills/tech-stack.md` 等を実装後の実態に更新） | ローカル検証済み | 100% | P0-G | docs・skills と実コードの間に不整合がない | README を Phase 0 実態に更新（test:e2e 削除・進捗注記）、skills/tech-stack.md に Phase 0 の実バージョン・WebGPU/R3F/TS7/Biome2/Vitest/Zustand のハマりどころを追記 |
+| P0-H | ドキュメント/skills の実態追従（README のセットアップ手順検証、`.agent/skills/tech-stack/SKILL.md` 等を実装後の実態に更新） | ローカル検証済み | 100% | P0-G | docs・skills と実コードの間に不整合がない | README を Phase 0 実態に更新（test:e2e 削除・進捗注記）、skills/tech-stack/SKILL.md に Phase 0 の実バージョン・WebGPU/R3F/TS7/Biome2/Vitest/Zustand のハマりどころを追記 |
 
 ※ Playwright（E2E）は CI 基盤タスクとして Phase 1 以降で計画（Sandbox では実行不可、AGENTS.md §6.2）。
 ※ ゲームサーバー基盤は Phase 1 で実装。トランスポートは **WebTransport 主 / WebSocket フォールバック**で確定（[networking](arch/networking.md)）。Phase 0 では NetTransport 抽象境界のインターフェースのみを見込んでおり、実装（WS 先行・WT 後続）は Phase 1（[server-authority](arch/server-authority.md)）。
