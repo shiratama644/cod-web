@@ -16,6 +16,7 @@ import { decodeInput } from '../shared/protocol/packer'
 import { Room, type Peer } from './room/Room'
 import { Simulation } from './sim/Simulation'
 import { SnapshotBroadcaster } from './net/snapshot'
+import { InputRateLimiter } from './net/rate-limit'
 import { buildServerWorld } from './physics/world'
 
 const PORT = Number(process.env.PORT ?? 8080)
@@ -30,6 +31,7 @@ const room = new Room()
 const world = buildServerWorld()
 const sim = new Simulation(room, world)
 const snapshots = new SnapshotBroadcaster()
+const inputRate = new InputRateLimiter()
 
 const server = Bun.serve<SocketData>({
   port: PORT,
@@ -76,7 +78,12 @@ const server = Bun.serve<SocketData>({
         const view = new DataView(bytes)
         const input = decodeInput(view)
         const playerId = ws.data?.playerId
-        if (playerId != null && playerId > 0) sim.receiveInput(playerId, input)
+        if (playerId != null && playerId > 0) {
+          if (!inputRate.allow(playerId, performance.now())) {
+            throw new ProtocolError('input rate exceeded')
+          }
+          sim.receiveInput(playerId, input)
+        }
       } catch (err) {
         const code = err instanceof ProtocolError ? err.closeCode : 1002
         ws.close(code, 'protocol')
@@ -85,6 +92,7 @@ const server = Bun.serve<SocketData>({
     close(ws) {
       const id = ws.data?.playerId
       if (id != null && id > 0) {
+        inputRate.remove(id)
         room.leave(id)
         console.log(`[server] player left: id=${id} (room=${room.playerCount})`)
       }

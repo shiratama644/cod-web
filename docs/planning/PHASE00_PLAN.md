@@ -210,7 +210,7 @@ server.md: input perSec 90, burst 20。超過は即切断。トークンバケ�
 | ID | コミット | テスト | 実測値・備考 |
 |---|---|---|---|
 | PH0-A | 本コミット | packer 16B・±1・move 範囲・dtMs clamp・BinaryReader | ワイヤ破壊。Snapshot レイアウトは未変更 |
-| PH0-B | | | |
+| PH0-B | 本コミット | TokenBucket burst 20・60Hz 10s・200 同時 | 超過は ProtocolError → close 1002 |
 | PH0-C | | | |
 | PH0-D | | | |
 | PH0-E | | | |
