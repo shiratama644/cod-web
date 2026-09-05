@@ -11,8 +11,8 @@
  * shared の純粋ロジック（three core/math + three-mesh-bvh、CPU のみ）を使う。
  */
 
-import { decodeInput, readMessageType } from '../shared/protocol/packer'
-import { MSG_C2S_INPUT } from '../shared/protocol/constants'
+import { ProtocolError } from '../shared/protocol/binary'
+import { decodeInput } from '../shared/protocol/packer'
 import { Room, type Peer } from './room/Room'
 import { Simulation } from './sim/Simulation'
 import { SnapshotBroadcaster } from './net/snapshot'
@@ -67,17 +67,20 @@ const server = Bun.serve<SocketData>({
       console.log(`[server] player joined: id=${id} (room=${room.playerCount})`)
     },
     message(ws, message) {
-      if (typeof message === 'string') {
-        // 制御テキストメッセージは現状なし（welcome/join/leave はサーバー発）。
-        return
+      try {
+        if (typeof message === 'string') {
+          // 制御テキストメッセージは現状なし（welcome/join/leave はサーバー発）。
+          return
+        }
+        const bytes = message instanceof ArrayBuffer ? message : toArrayBuffer(message)
+        const view = new DataView(bytes)
+        const input = decodeInput(view)
+        const playerId = ws.data?.playerId
+        if (playerId != null && playerId > 0) sim.receiveInput(playerId, input)
+      } catch (err) {
+        const code = err instanceof ProtocolError ? err.closeCode : 1002
+        ws.close(code, 'protocol')
       }
-      // バイナリ: 入力パケット（Input Packet）。
-      const bytes = message instanceof ArrayBuffer ? message : toArrayBuffer(message)
-      const view = new DataView(bytes)
-      if (readMessageType(view) !== MSG_C2S_INPUT) return
-      const input = decodeInput(view, 1)
-      const playerId = ws.data?.playerId
-      if (playerId != null && playerId > 0) sim.receiveInput(playerId, input)
     },
     close(ws) {
       const id = ws.data?.playerId

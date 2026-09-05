@@ -19,11 +19,9 @@ import {
   INPUT_PACKET_BYTES,
   INPUT_SEND_HZ,
   MAX_STEPS_PER_FRAME,
-  PACKET_TYPE_BYTES,
   SIM_DT,
 } from '@shared/protocol/constants'
-import { encodeInput, decodeInput, decodeSnapshot, readMessageType } from '@shared/protocol/packer'
-import { MSG_S2C_SNAPSHOT } from '@shared/protocol/constants'
+import { encodeInput, decodeInput, decodeSnapshot } from '@shared/protocol/packer'
 import type { PlayerInput } from '@shared/protocol/messages'
 import { createDefaultWorld, type CollisionWorld } from '@shared/sim/collisionWorld'
 import type { InputController } from '../input/InputController'
@@ -108,7 +106,7 @@ export class GameClient {
   private quantizeInput(input: Omit<PlayerInput, 'seq'>): Omit<PlayerInput, 'seq'> {
     const tmp: PlayerInput = { ...input, seq: 0 }
     encodeInput(this.sendView, tmp)
-    const decoded = decodeInput(this.sendView, PACKET_TYPE_BYTES)
+    const decoded = decodeInput(this.sendView)
     return {
       moveX: decoded.moveX,
       moveZ: decoded.moveZ,
@@ -138,9 +136,12 @@ export class GameClient {
 
   private onBinary(data: ArrayBuffer): void {
     const view = new DataView(data)
-    const type = readMessageType(view)
-    if (type !== MSG_S2C_SNAPSHOT) return
-    const snap = decodeSnapshot(view, data.byteLength, 1)
+    let snap: ReturnType<typeof decodeSnapshot>
+    try {
+      snap = decodeSnapshot(view, data.byteLength)
+    } catch {
+      return
+    }
     const now = performance.now()
     this.interpolator.push(snap, now)
 

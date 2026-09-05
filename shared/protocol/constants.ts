@@ -3,7 +3,7 @@
  * 関わる定数。クライアント（src/）と権威サーバー（server/）の両方から import
  * される。DOM / React / レンダラーに依存しない純粋な値のみを置く。
  *
- * 設計正本: docs/arch/server-authority.md §5/§6、docs/arch/networking.md。
+ * 設計正本: docs/arch/protocol.md。
  */
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -35,9 +35,9 @@ export const MAX_PLAYERS = 20
 // パケット種別（全バイナリパケットの先頭 1B）
 // ─────────────────────────────────────────────────────────────────────────
 
-/** クライアント→サーバー: 入力パケット（60Hz・非信頼・バイナリ）。 */
-export const MSG_C2S_INPUT = 1
-/** サーバー→クライアント: スナップショット（30Hz・非信頼・バイナリ）。 */
+/** クライアント→サーバー: 入力パケット（60Hz・非信頼・バイナリ）。 protocol PacketType.Input */
+export const MSG_C2S_INPUT = 0x10
+/** サーバー→クライアント: スナップショット（30Hz・非信頼・バイナリ）。現行ワイヤ（フェーズ 0 では変えない）。 */
 export const MSG_S2C_SNAPSHOT = 2
 // 制御メッセージ（welcome / join / leave）は Phase 1 では信頼 WS テキスト JSON。
 
@@ -48,14 +48,15 @@ export const MSG_S2C_SNAPSHOT = 2
 /** 種別バイト。 */
 export const PACKET_TYPE_BYTES = 1
 
-/** 入力パケットの本体サイズ（type 1B を除く）。 */
+/** 入力パケットの本体サイズ（type 1B を除く）。16B 固定のうち 15B。 */
 export const INPUT_BODY_BYTES =
+  1 + // reserved:u8
   4 + // seq:u32
-  1 + // moveX:i8
+  1 + // moveX:i8  -100..100
   1 + // moveZ:i8
   2 + // yaw:u16
-  1 + // pitch:i8
-  1 + // flags:u8
+  2 + // pitch:i16
+  2 + // buttons:u16
   2 //  dtMs:u16
 /** 入力パケットの総サイズ（type 込み）。 */
 export const INPUT_PACKET_BYTES = PACKET_TYPE_BYTES + INPUT_BODY_BYTES
@@ -79,10 +80,17 @@ export const POS_SCALE = 100
 export const VEL_SCALE = 100
 /** yaw: 0〜2π を 0〜65535（u16）へ。 */
 export const YAW_SCALE = 65535 / (Math.PI * 2)
-/** pitch: -π/2〜+π/2 を -128〜127（i8）へ。 */
-export const PITCH_SCALE = 127 / (Math.PI / 2)
-/** 移動軸入力 moveX/moveZ（-1..1）を int8 に詰めるスケール（全幅 254）。 */
-export const MOVE_AXIS_SCALE = 127
+/** pitch: -π/2〜+π/2 を -16384〜16384（i16）へ。 */
+export const PITCH_QUANT_MAX = 16384
+export const PITCH_SCALE = PITCH_QUANT_MAX / (Math.PI / 2)
+/** 移動軸入力 moveX/moveZ（-1..1）を int8 に詰めるスケール（-100..100）。 */
+export const MOVE_AXIS_SCALE = 100
+export const MOVE_AXIS_MIN = -100
+export const MOVE_AXIS_MAX = 100
+/** 受信 dtMs がこれを超えたら clamp（切断しない）。単位は OPEN-A。 */
+export const DT_MS_CLAMP = 500
+/** buttons の bit9–15。非 0 なら不正記録（切断しない）。 */
+export const INPUT_BUTTONS_RESERVED_MASK = 0xfe00
 
 // ─────────────────────────────────────────────────────────────────────────
 // パケットサイズ予算（payload と wire を厳密に区別する）
@@ -123,7 +131,7 @@ export function wireBytes(payloadBytes: number, ipHeaderBytes: number): number {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// 移動チューニング定数（参考値・要調整。docs/arch/server-authority.md §6.5）
+// 移動チューニング定数（参考値・要調整。docs/arch/sim-profiles.md）
 // ─────────────────────────────────────────────────────────────────────────
 
 /** 歩行速度（m/s）。 */

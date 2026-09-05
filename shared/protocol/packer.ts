@@ -1,26 +1,26 @@
 /**
  * 高頻度パケット（入力・スナップショット）の手動バイナリ固定レイアウト。
- * DataView / ArrayBuffer・リトルエンディアン。
+ * DataView / ArrayBuffer・リトルエンディアン。境界は BinaryReader。
  *
- * ゼロアロケーション方針: エンコードは呼び出し側が用意した DataView に書き
- * 込み、書き込んだバイト長を返す。呼び出し側はバッファをプール/リングで
- * 再利用する（毎フレーム new ArrayBuffer しない）。
+ * レイアウト正本: docs/arch/protocol.md
  *
- * レイアウト正本: docs/arch/server-authority.md §6。
- *
- * Input   (C→S, 60Hz): type:u8 | seq:u32 | moveX:i8 | moveZ:i8
- *                          | yaw:u16 | pitch:i8 | flags:u8 | dtMs:u16
- * Snapshot(S→C, 30Hz): type:u8 | serverTick:u32 | lastAckSeq:u32
- *                          | [ id:u16 | x:i16 y:i16 z:i16
- *                                 | vx:i16 vy:i16 vz:i16 | yaw:u16 ] × n
+ * Input 16B (C→S): type:u8=0x10 | reserved:u8 | seq:u32 | moveX:i8 | moveZ:i8
+ *                  | yaw:u16 | pitch:i16 | buttons:u16 | dtMs:u16
+ * Snapshot (S→C, 現行ワイヤ): type:u8 | serverTick:u32 | lastAckSeq:u32
+ *                  | [ id:u16 | x,y,z:i16 | vx,vy,vz:i16 | yaw:u16 ] × n
  */
 
+import { BinaryReader, ProtocolError } from './binary'
 import {
+  DT_MS_CLAMP,
+  INPUT_BUTTONS_RESERVED_MASK,
+  INPUT_PACKET_BYTES,
   MAX_PLAYERS,
+  MOVE_AXIS_MAX,
+  MOVE_AXIS_MIN,
   MSG_C2S_INPUT,
   MSG_S2C_SNAPSHOT,
   PACKET_TYPE_BYTES,
-  SNAPSHOT_HEADER_BYTES,
   SNAPSHOT_PLAYER_BYTES,
   snapshotPayloadBytes,
 } from './constants'
@@ -38,10 +38,17 @@ import {
   quantizeYaw,
 } from './quantize'
 
-const LE = true // リトルエンディアン
+const LE = true
 
 /** スナップショットの最大バイト長（type + ヘッダ + 最大人数）。バッファ確保用。 */
 export const SNAPSHOT_MAX_BYTES = snapshotPayloadBytes(MAX_PLAYERS)
+
+/** buttons bit9–15 が非 0 だった回数（切断しない。テスト用カウンタ）。 */
+export let reservedButtonAnomalies = 0
+
+export function resetReservedButtonAnomalies(): void {
+  reservedButtonAnomalies = 0
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // Input
@@ -49,12 +56,14 @@ export const SNAPSHOT_MAX_BYTES = snapshotPayloadBytes(MAX_PLAYERS)
 
 /**
  * 入力を `view` の先頭からエンコードする。
- * @returns 書き込んだバイト長（常に INPUT_PACKET_BYTES）。
+ * @returns 書き込んだバイト長（常に INPUT_PACKET_BYTES = 16）。
  */
 export function encodeInput(view: DataView, input: PlayerInput): number {
   let o = 0
   view.setUint8(o, MSG_C2S_INPUT)
   o += PACKET_TYPE_BYTES
+  view.setUint8(o, 0) // reserved
+  o += 1
   view.setUint32(o, input.seq >>> 0, LE)
   o += 4
   view.setInt8(o, quantizeMoveAxis(input.moveX))
@@ -63,34 +72,55 @@ export function encodeInput(view: DataView, input: PlayerInput): number {
   o += 1
   view.setUint16(o, quantizeYaw(input.yaw), LE)
   o += 2
-  view.setInt8(o, quantizePitch(input.pitch))
-  o += 1
-  view.setUint8(o, input.flags & 0xff)
-  o += 1
+  view.setInt16(o, quantizePitch(input.pitch), LE)
+  o += 2
+  view.setUint16(o, input.flags & 0xffff, LE)
+  o += 2
   view.setUint16(o, clampU16(input.dtMs), LE)
   o += 2
   return o
 }
 
-/** バッファ（type バイト以降）から入力をデコードする。 */
-export function decodeInput(view: DataView, byteOffset = 0): PlayerInput {
-  let o = byteOffset
-  // type バイトは呼び出し側で確認済みの前提。ここでは本体を読む。
-  const seq = view.getUint32(o, LE)
-  o += 4
-  const moveX = dequantizeMoveAxis(view.getInt8(o))
-  o += 1
-  const moveZ = dequantizeMoveAxis(view.getInt8(o))
-  o += 1
-  const yaw = dequantizeYaw(view.getUint16(o, LE))
-  o += 2
-  const pitch = dequantizePitch(view.getInt8(o))
-  o += 1
-  const flags = view.getUint8(o)
-  o += 1
-  const dtMs = view.getUint16(o, LE)
-  o += 2
-  return { seq, moveX, moveZ, yaw, pitch, flags, dtMs }
+/**
+ * パケット先頭（type 込み）から入力をデコードする。
+ * 長さ ≠ 16、type 不一致、move 範囲外は ProtocolError（切断 1002）。
+ */
+export function decodeInput(view: DataView, byteLength = view.byteLength): PlayerInput {
+  if (byteLength === 0) {
+    throw new ProtocolError('empty packet')
+  }
+  const r = new BinaryReader(view, 0, byteLength)
+  const type = r.u8()
+  if (type !== MSG_C2S_INPUT) {
+    throw new ProtocolError(`unknown packet type ${type}`)
+  }
+  if (byteLength !== INPUT_PACKET_BYTES) {
+    throw new ProtocolError(`input length ${byteLength} != ${INPUT_PACKET_BYTES}`)
+  }
+  r.u8() // reserved
+  const seq = r.u32()
+  const qx = r.i8()
+  const qz = r.i8()
+  if (qx < MOVE_AXIS_MIN || qx > MOVE_AXIS_MAX || qz < MOVE_AXIS_MIN || qz > MOVE_AXIS_MAX) {
+    throw new ProtocolError('move axis out of range')
+  }
+  const yaw = dequantizeYaw(r.u16())
+  const pitch = dequantizePitch(r.i16())
+  const flags = r.u16()
+  if ((flags & INPUT_BUTTONS_RESERVED_MASK) !== 0) {
+    reservedButtonAnomalies += 1
+  }
+  let dtMs = r.u16()
+  if (dtMs > DT_MS_CLAMP) dtMs = DT_MS_CLAMP
+  return {
+    seq,
+    moveX: dequantizeMoveAxis(qx),
+    moveZ: dequantizeMoveAxis(qz),
+    yaw,
+    pitch,
+    flags,
+    dtMs,
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -132,47 +162,40 @@ export function encodeSnapshot(view: DataView, snapshot: Snapshot): number {
 }
 
 /**
- * バッファ（type バイト以降）からスナップショットをデコードする。
- * @param byteLength パケットの総バイト長（type 込み）。プレイヤー数の導出に使う。
+ * バッファ先頭（type 込み）からスナップショットをデコードする。
+ * 長さ不正は ProtocolError（切断しない。呼び出し側が捨てる）。
+ * @param byteLength パケットの総バイト長（type 込み）。
  */
-export function decodeSnapshot(view: DataView, byteLength: number, byteOffset = 0): Snapshot {
-  let o = byteOffset
-  const serverTick = view.getUint32(o, LE)
-  o += 4
-  const lastAckSeq = view.getUint32(o, LE)
-  o += 4
-
-  const bodyBytes = byteLength - PACKET_TYPE_BYTES - SNAPSHOT_HEADER_BYTES
-  const count = Math.floor(bodyBytes / SNAPSHOT_PLAYER_BYTES)
+export function decodeSnapshot(view: DataView, byteLength = view.byteLength): Snapshot {
+  const r = new BinaryReader(view, 0, byteLength)
+  const type = r.u8()
+  if (type !== MSG_S2C_SNAPSHOT) {
+    throw new ProtocolError(`not a snapshot: type ${type}`)
+  }
+  const serverTick = r.u32()
+  const lastAckSeq = r.u32()
   const players = []
-  for (let i = 0; i < count; i++) {
-    const id = view.getUint16(o, LE)
-    o += 2
-    const x = dequantizePosition(view.getInt16(o, LE))
-    o += 2
-    const y = dequantizePosition(view.getInt16(o, LE))
-    o += 2
-    const z = dequantizePosition(view.getInt16(o, LE))
-    o += 2
-    const vx = dequantizeVelocity(view.getInt16(o, LE))
-    o += 2
-    const vy = dequantizeVelocity(view.getInt16(o, LE))
-    o += 2
-    const vz = dequantizeVelocity(view.getInt16(o, LE))
-    o += 2
-    const yaw = dequantizeYaw(view.getUint16(o, LE))
-    o += 2
+  while (r.remaining() >= SNAPSHOT_PLAYER_BYTES) {
+    const id = r.u16()
+    const x = dequantizePosition(r.i16())
+    const y = dequantizePosition(r.i16())
+    const z = dequantizePosition(r.i16())
+    const vx = dequantizeVelocity(r.i16())
+    const vy = dequantizeVelocity(r.i16())
+    const vz = dequantizeVelocity(r.i16())
+    const yaw = dequantizeYaw(r.u16())
     players.push({ id, x, y, z, vx, vy, vz, yaw })
+  }
+  if (r.remaining() !== 0) {
+    throw new ProtocolError('truncated snapshot player')
   }
   return { serverTick, lastAckSeq, players }
 }
 
-/** 受信バッファの先頭バイトからメッセージ種別を読む。 */
+/** 受信バッファの先頭バイトからメッセージ種別を読む。空なら ProtocolError。 */
 export function readMessageType(view: DataView): number {
-  return view.getUint8(0)
+  return new BinaryReader(view).u8()
 }
-
-// ── 入力の moveX/moveZ は -1/0/1 に正規化されている前提だが、安全のためクランプ ──
 
 function clampU16(v: number): number {
   const n = Math.round(v)

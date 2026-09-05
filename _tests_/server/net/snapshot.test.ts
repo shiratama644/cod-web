@@ -75,7 +75,7 @@ describe('SnapshotBroadcaster', () => {
     const buf = firstPacket(p)
     const view = new DataView(buf)
     expect(readMessageType(view)).toBe(MSG_S2C_SNAPSHOT)
-    const snap = decodeSnapshot(view, buf.byteLength, 1)
+    const snap = decodeSnapshot(view, buf.byteLength)
     expect(snap.serverTick).toBe(10)
     expect(snap.players).toHaveLength(3)
   })
@@ -107,7 +107,7 @@ describe('SnapshotBroadcaster', () => {
     const peer1 = peer(room, 0)
     const packet = firstPacket(peer1)
     const view1 = new DataView(packet)
-    const snap1 = decodeSnapshot(view1, packet.byteLength, 1)
+    const snap1 = decodeSnapshot(view1, packet.byteLength)
     expect(snap1.lastAckSeq).toBe(77)
   })
 

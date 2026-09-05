@@ -13,6 +13,7 @@ import {
   snapshotPayloadBytes,
   wireBytes,
 } from '@shared/protocol/constants'
+import { ProtocolError } from '@shared/protocol/binary'
 import {
   SNAPSHOT_MAX_BYTES,
   decodeInput,
@@ -20,6 +21,8 @@ import {
   encodeInput,
   encodeSnapshot,
   readMessageType,
+  reservedButtonAnomalies,
+  resetReservedButtonAnomalies,
 } from '@shared/protocol/packer'
 import type { PlayerInput, Snapshot } from '@shared/protocol/messages'
 import {
@@ -55,8 +58,8 @@ describe('quantize round-trip', () => {
       0.02,
     )
     // 範囲外は ±π/2 にクランプ（スケール 127 基準なので -127〜127）
-    expect(quantizePitch(999)).toBe(127)
-    expect(quantizePitch(-999)).toBe(-127)
+    expect(quantizePitch(999)).toBe(16384)
+    expect(quantizePitch(-999)).toBe(-16384)
   })
 })
 
@@ -78,8 +81,7 @@ describe('input packet', () => {
     expect(written).toBe(INPUT_PACKET_BYTES)
     expect(readMessageType(view)).toBe(MSG_C2S_INPUT)
 
-    // type バイト以降をデコード
-    const out = decodeInput(view, 1)
+    const out = decodeInput(view)
     expect(out.seq).toBe(input.seq)
     expect(out.moveX).toBe(input.moveX)
     expect(out.moveZ).toBe(input.moveZ)
@@ -89,8 +91,8 @@ describe('input packet', () => {
     expect(Math.abs(out.pitch - input.pitch)).toBeLessThan(0.02)
   })
 
-  it('入力パケットは約 13B（type 1 + body 12）', () => {
-    expect(INPUT_PACKET_BYTES).toBe(13)
+  it('入力パケットは 16B 固定', () => {
+    expect(INPUT_PACKET_BYTES).toBe(16)
   })
 
   it('moveX/moveZ はアナログ値(-1..1)のまま往復する（スケール忘れで巨大値にならない）', () => {
@@ -102,12 +104,12 @@ describe('input packet', () => {
       for (const az of [0, 0.6, -0.9, 1]) {
         const input: PlayerInput = { seq: 1, moveX: ax, moveZ: az, yaw: 0, pitch: 0, flags: 0, dtMs: 16 }
         encodeInput(view, input)
-        const out = decodeInput(view, 1)
+        const out = decodeInput(view)
         expect(out.moveX).toBeGreaterThanOrEqual(-1)
         expect(out.moveX).toBeLessThanOrEqual(1)
         expect(out.moveZ).toBeGreaterThanOrEqual(-1)
         expect(out.moveZ).toBeLessThanOrEqual(1)
-        // int8 量子化誤差は 1/127 ≈ 0.008 以内。
+        // int8 量子化誤差は 1/100 = 0.01 以内。
         expect(Math.abs(out.moveX - ax)).toBeLessThan(0.02)
         expect(Math.abs(out.moveZ - az)).toBeLessThan(0.02)
       }
@@ -139,7 +141,7 @@ describe('snapshot packet', () => {
     expect(written).toBe(snapshotPayloadBytes(MAX_PLAYERS))
     expect(readMessageType(view)).toBe(MSG_S2C_SNAPSHOT)
 
-    const out = decodeSnapshot(view, written, 1)
+    const out = decodeSnapshot(view, written)
     expect(out.serverTick).toBe(999)
     expect(out.lastAckSeq).toBe(42)
     expect(out.players).toHaveLength(MAX_PLAYERS)
@@ -190,8 +192,96 @@ describe('snapshot packet', () => {
     const view = new DataView(buf)
     const written = encodeSnapshot(view, snap)
     expect(written).toBe(snapshotPayloadBytes(0))
-    const out = decodeSnapshot(view, written, 1)
+    const out = decodeSnapshot(view, written)
     expect(out.players).toHaveLength(0)
     expect(out.serverTick).toBe(7)
+  })
+})
+
+function expectProtocolError(fn: () => unknown): ProtocolError {
+  try {
+    fn()
+  } catch (err) {
+    expect(err).toBeInstanceOf(ProtocolError)
+    return err as ProtocolError
+  }
+  throw new Error('expected ProtocolError')
+}
+
+describe('input length and range (PH0-A)', () => {
+  it('空バッファは ProtocolError 1002（プロセスは落ちない）', () => {
+    const err = expectProtocolError(() => decodeInput(new DataView(new ArrayBuffer(0))))
+    expect(err.closeCode).toBe(1002)
+  })
+
+  it('15B / 17B は ProtocolError 1002', () => {
+    for (const n of [15, 17]) {
+      const buf = new ArrayBuffer(n)
+      new DataView(buf).setUint8(0, MSG_C2S_INPUT)
+      const err = expectProtocolError(() => decodeInput(new DataView(buf)))
+      expect(err.closeCode).toBe(1002)
+    }
+  })
+
+  it('短いバッファで RangeError にならず ProtocolError になる', () => {
+    const buf = new ArrayBuffer(3)
+    new DataView(buf).setUint8(0, MSG_C2S_INPUT)
+    expectProtocolError(() => decodeInput(new DataView(buf)))
+  })
+
+  it('moveX が -100..100 の外なら ProtocolError 1002', () => {
+    const input: PlayerInput = {
+      seq: 1,
+      moveX: 0,
+      moveZ: 0,
+      yaw: 0,
+      pitch: 0,
+      flags: 0,
+      dtMs: 16,
+    }
+    const buf = new ArrayBuffer(INPUT_PACKET_BYTES)
+    const view = new DataView(buf)
+    encodeInput(view, input)
+    view.setInt8(6, 101)
+    const err = expectProtocolError(() => decodeInput(view))
+    expect(err.closeCode).toBe(1002)
+  })
+
+  it('dtMs > 500 は clamp して切断しない', () => {
+    const input: PlayerInput = {
+      seq: 1,
+      moveX: 0,
+      moveZ: 0,
+      yaw: 0,
+      pitch: 0,
+      flags: 0,
+      dtMs: 16,
+    }
+    const buf = new ArrayBuffer(INPUT_PACKET_BYTES)
+    const view = new DataView(buf)
+    encodeInput(view, input)
+    view.setUint16(14, 600, true)
+    const out = decodeInput(view)
+    expect(out.dtMs).toBe(500)
+  })
+
+  it('buttons bit9–15 が非 0 なら記録し切断しない', () => {
+    resetReservedButtonAnomalies()
+    const input: PlayerInput = {
+      seq: 1,
+      moveX: 0,
+      moveZ: 0,
+      yaw: 0,
+      pitch: 0,
+      flags: 0,
+      dtMs: 16,
+    }
+    const buf = new ArrayBuffer(INPUT_PACKET_BYTES)
+    const view = new DataView(buf)
+    encodeInput(view, input)
+    view.setUint16(12, 0x0200, true)
+    const out = decodeInput(view)
+    expect(out.flags).toBe(0x0200)
+    expect(reservedButtonAnomalies).toBe(1)
   })
 })
