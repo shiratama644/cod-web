@@ -71,17 +71,17 @@ Babylon 移行（フェーズ 1）より前に、現行 bun WS 権威サーバ�
 
 フェーズ全体（PH0-F 完了時）:
 
-- [ ] Input は 16 バイト。長さ 15 および 17 でサーバが切断（1002）
-- [ ] moveX/Z の量子化値が -100..100 の外なら切断
-- [ ] 短バッファ・ランダム 100 万パケットで **プロセスが落ちない**（ProtocolError または切断）
-- [ ] 入力 90/s 超で切断（テストで再現）
-- [ ] `send()` が -1 のときそのクライアントのスナップショットをスキップ。0 のとき切断。`getBufferedAmount` / `bufferedAmount` がコードに残らない
-- [ ] `perMessageDeflate: false` ほか §2 の WS オプションが `Bun.serve` に明示
-- [ ] ホットパスのパケット送信が `slice` コピーでない（`subarray`）
-- [ ] lagcomp は毎ティック記録されている、またはモジュールごと削除されている（どちらか一方。混在禁止）
-- [ ] `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` 全 pass
-- [ ] `docs/task-list.md` の状態・進捗・証拠を更新
-- [ ] タスク範囲外のファイル（`.archive/` を含む）に意図しない変更がない
+- [x] Input は 16 バイト。長さ 15 および 17 でサーバが切断（1002）
+- [x] moveX/Z の量子化値が -100..100 の外なら切断
+- [x] 短バッファ・ランダム 100 万パケットで **プロセスが落ちない**（ProtocolError または切断）
+- [x] 入力 90/s 超で切断（テストで再現）
+- [x] `send()` が -1 のときそのクライアントのスナップショットをスキップ。0 のとき切断。`getBufferedAmount` / `bufferedAmount` がコードに残らない
+- [x] `perMessageDeflate: false` ほか §2 の WS オプションが `Bun.serve` に明示
+- [x] ホットパスのパケット送信が `slice` コピーでない（`subarray`）
+- [x] lagcomp は毎ティック記録されている、またはモジュールごと削除されている（どちらか一方。混在禁止）
+- [x] `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` 全 pass
+- [x] `docs/task-list.md` の状態・進捗・証拠を更新
+- [x] タスク範囲外のファイル（`.archive/` を含む）に意図しない変更がない
 
 各サブタスクのコミット単位でも 4 検証（または docs のみならリンク整合）。
 
@@ -214,4 +214,4 @@ server.md: input perSec 90, burst 20。超過は即切断。トークンバケ�
 | PH0-C | 本コミット | send -1 スキップ + drain 再開、send 0 切断 | `bufferedAmount` 削除。slice は PH0-D |
 | PH0-D | 本コミット | ring `subarray` 非コピー、受信は offset+length の DataView | ホットパス `slice` なし。`scripts/execute.ts` は対象外 |
 | PH0-E | 本コミット | step 後に履歴 ≥1、窓 500ms で古いサンプル削除 | 削除せず毎ティック `record`。`LAGCOMP_HISTORY_MS=500` |
-| PH0-F | | | |
+| PH0-F | 本コミット | ingest 1e6 fuzz（4.9s）+ Input 15/17B | 例外は ProtocolError のみ。Ping 未実装のため ±1 は Input のみ |

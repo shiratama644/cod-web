@@ -12,11 +12,11 @@
  */
 
 import { ProtocolError } from '../shared/protocol/binary'
-import { decodeInput } from '../shared/protocol/packer'
 import { Room, type Peer } from './room/Room'
 import { Simulation } from './sim/Simulation'
 import { SnapshotBroadcaster } from './net/snapshot'
 import { InputRateLimiter } from './net/rate-limit'
+import { ingestInput } from './net/ingest'
 import { buildServerWorld } from './physics/world'
 
 const PORT = Number(process.env.PORT ?? 8080)
@@ -86,8 +86,7 @@ const server = Bun.serve<SocketData>({
           // 制御テキストメッセージは現状なし（welcome/join/leave はサーバー発）。
           return
         }
-        const view = toDataView(message)
-        const input = decodeInput(view)
+        const input = ingestInput(message)
         const playerId = ws.data?.playerId
         if (playerId != null && playerId > 0) {
           if (!inputRate.allow(playerId, performance.now())) {
@@ -129,12 +128,6 @@ setInterval(() => {
     snapshots.maybeSend(room, t)
   }
 }, 1000 / TICK_HZ)
-
-/** Bun の Buffer（Uint8Array）をコピーせず DataView にする。 */
-function toDataView(buf: ArrayBuffer | Uint8Array): DataView {
-  if (buf instanceof ArrayBuffer) return new DataView(buf)
-  return new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
-}
 
 console.log(`[server] cod-web game server listening on ws://${HOST}:${server.port}`)
 
