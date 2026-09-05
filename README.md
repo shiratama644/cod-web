@@ -8,7 +8,7 @@
 
 ## 技術構成（要点）
 
-| 層 | 使用技術 |
+| パス | 内容 |
 | --- | --- |
 | 3D レンダリング | Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**、WebGL2 が全端末の基準）/ @react-three/fiber / @react-three/drei、TSL |
 | 衝突・当たり判定 | **three-mesh-bvh**（キネマティック・キャラクターコントローラー＝浮遊カプセルのマップ衝突 ＋ 射撃レイ、ヘッドレス対応）。マップは 3D Mesh Map（GLTF）。剛体エンジンは当初不使用 |

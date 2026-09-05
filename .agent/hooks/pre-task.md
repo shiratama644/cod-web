@@ -14,7 +14,7 @@ git log -5 --oneline
 ```
 - ※ ブランチ名は**セッションごとに変わる**。AGENTS.md §4.4 の記載値を鵜呑みにせず、必ず `git branch --show-current` で確認する。過去セッションのブランチ名は文書に残さない方針（AGENTS.md §4.4）。
 - 未コミット変更があれば勝手に破棄・混入しない。
-- ログが起点 1 件のみ / `git status` が大量の削除+未追跡 / `node_modules` 無 → **Sandbox 再構築**。→ [`sandbox-rebuild-recovery.md`](./sandbox-rebuild-recovery.md)。
+- ログが起点 1 件のみ / `git status` が大量の削除+未追跡 / `node_modules` 無 → **環境再構築**。→ [`sandbox-rebuild-recovery.md`](./sandbox-rebuild-recovery.md)。
 
 ### 2. 知識のピンポイント読込（本 hook の核心）
 

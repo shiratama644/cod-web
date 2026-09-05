@@ -1,8 +1,6 @@
 # Hooks Index — 定型ワークフロー & トリガー
 
-> このファイルは `.agent/hooks/` の**入口**。特定トリガー時に本ファイルで該当フックを特定し、
-> 手順（`.md`）やスクリプト（`.sh`）を実行する。作業規約の本体は `AGENT.md`（§2/§3/§4）。
-> ここは「いつ・どのフック」の索引と、再利用可能な具体手順。
+> このファイルは `.agent/hooks/` の**入口**。特定トリガー時に本ファイルで該当フックを特定し、手順（`.md`）やスクリプト（`.sh`）を実行する。作業規約の本体は `AGENT.md`（§2/§3/§4）。
 
 ## トリガー → フック 対応表
 
@@ -11,7 +9,7 @@
 | **タスク開始時**（ユーザー指示を受けた直後） | [`pre-task.md`](./pre-task.md) | 手順 |
 | **commit 直前**（§3.1 検証） | [`verify-before-commit.md`](./verify-before-commit.md) | 手順 |
 | **タスク完了時**（ユーザー指示を完了した直後） | [`log-task.md`](./log-task.md) | 手順 |
-| **Sandbox 再構築を検知**（`git status` が大量削除/未追跡, node_modules 無, ログが起点1件） | [`sandbox-rebuild-recovery.md`](./sandbox-rebuild-recovery.md) + [`restore-sandbox-env.sh`](./restore-sandbox-env.sh) | 手順 + スクリプト |
+| **環境再構築を検知**（`git status` が大量削除/未追跡, node_modules 無, ログが起点1件） | [`sandbox-rebuild-recovery.md`](./sandbox-rebuild-recovery.md) + [`restore-sandbox-env.sh`](./restore-sandbox-env.sh) | 手順 + スクリプト |
 
 ## フック一覧
 
@@ -28,4 +26,4 @@
 - フックは**必須実行**ではなく「該当トリガー時に**必ず参照すべき**手順」。迷ったら該当フックを読む。
 - 新フック追加時は本 index の「対応表」「一覧」両方に追記する。
 - 実行スクリプト（`.sh`/`.py`）は `kebab-case` + 拡張子。手順は `kebab-case.md`。
-- フック内のコマンドは `package.json` script or 既知コマンドのみ（捏造禁止, AGENT.md §3.1）。
+- フック内のコマンドは 設定ファイル（package.json 等）の script or 既知コマンドのみ（捏造禁止, AGENT.md §3.1）。

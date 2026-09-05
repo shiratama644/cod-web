@@ -3,7 +3,9 @@
 > **トリガー**: 実装が終わり、Git Commit する直前。
 > **目的**: AGENTS.md §3.1 の 4 検証を必ず全 pass させてから commit する。途中の検証失敗で次へ進んではならない。
 
-## 4 検証（順に実行、1 つでも失敗したら原因特定→修正→再全検証）
+## 検証（順に実行、1 つでも失敗したら原因特定→修正→再全検証）
+
+実装層に応じて対象が変わるため、**各パッケージの検証手順に従う**。標準は:
 
 ```bash
 bun run typecheck                # tsc --noEmit
@@ -11,6 +13,8 @@ bunx biome lint .        # Biome 直接呼出（bun run lint より起動が速�
 bun run test:unit                # vitest run （※ watch モードではない）
 bun run build                    # vite build（production）
 ```
+
+> 検証コマンドが未確定の段階では、**検証手順の整備を先に進める**（ドキュメントファースト方針）。捏造したコマンドは実行しない。
 
 ### 各コマンドの注意
 
