@@ -187,4 +187,4 @@ git log -1 --oneline
 | ID | コミット | テスト | 実測値・備考 |
 |---|---|---|---|
 | DOC-6 | 本コミット | markdown link check | Deep Research 計画。GitHub clone + SHA 記録を必須化 |
-| DR-1 | | | |
+| DR-1 | 本コミット | markdown link check | `docs/research/DR-1_COMPETITOR_DEEP_RESEARCH.md`。Krunker / bloxd / Noa 系 clone SHA・読んだファイル一覧を記録。live service 解析なし |

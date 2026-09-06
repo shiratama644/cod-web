@@ -102,5 +102,5 @@
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
 | CI-1 | GitHub Actions を `docs/ops/` に提案（`.github/workflows/` は書き込み不可） | 未着手 | 0% | — | YAML を docs/ops に用意 | |
-| DR-1 | Krunker.io / bloxd.io Deep Research 実施 | 未着手 | 0% | DOC-6 | network / frontend / editor / UGC / voxel 実装を source URL・clone SHA 付きで整理 | |
+| DR-1 | Krunker.io / bloxd.io Deep Research 実施 | 完了 | 100% | DOC-6 | network / frontend / editor / UGC / voxel 実装を source URL・clone SHA 付きで整理 | 本コミット / [`research/DR-1_COMPETITOR_DEEP_RESEARCH.md`](./research/DR-1_COMPETITOR_DEEP_RESEARCH.md) / clone SHA・読んだファイル一覧記録 / link check broken 0 |
 | OPEN-A | Input `dtMs` の単位（ms か ×10 か）を決定 | 保留 | 0% | PLAT-0 | 人間の回答が protocol.md に反映 | |
