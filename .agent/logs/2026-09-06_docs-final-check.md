@@ -37,7 +37,11 @@
 - 導線チェック: `docs/README.md`, `docs/planning/README.md`, `docs/task-list.md` は complete 配置へ更新済み。
 - 旧 plan path 残存チェック（現用 docs、logs/archive 除外）: 旧 `docs/planning/PHASE00_PLAN.md` / `docs/planning/DEEP_RESEARCH_PLAN.md` 参照なし。
 - `git diff --check`: pass。
-- docs-only のため 4 code validation はスキップ。
+- `bun` が未導入だったため `.agent/hooks/restore-sandbox-env.sh` で bun 1.4.0 と依存を復旧。
+- `bun run typecheck`: pass。
+- `bunx biome lint .`: pass（既存の Biome schema 2.5.11 vs CLI 2.5.12 info のみ）。
+- `bun run test:unit`: pass（11 files / 72 tests）。
+- `bun run build`: pass（既存の Vite chunk-size warning のみ）。
 
 ## 次アクション
 
