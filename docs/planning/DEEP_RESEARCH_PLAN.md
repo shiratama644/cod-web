@@ -1,6 +1,6 @@
 # Deep Research 計画: Krunker.io / bloxd.io の技術調査
 
-> 対応 task-list ID: `DOC-6`（本計画） / 実調査 `DR-1` / 追加調査 `DR-2` / 追加深掘り `DR-3` / engine・UGC・asset pipeline 深掘り `DR-4`  
+> 対応 task-list ID: `DOC-6`（本計画） / 実調査 `DR-1` / 追加調査 `DR-2` / 追加深掘り `DR-3` / engine・UGC・asset pipeline 深掘り `DR-4` / Perplexity 差分検証 `DR-5`  
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠  
 > 関連仕様: [`docs/arch/legal.md`](../arch/legal.md)、[`docs/arch/editor.md`](../arch/editor.md)、[`docs/arch/api-sources.md`](../arch/api-sources.md)  
 > 重要: bloxd.io（ユーザー表記 Bloxed.io を含む）のライブサービスへ接続しての解析・リバースエンジニアリングは行わない。
@@ -110,6 +110,7 @@ cod-web の `fps` / `voxel` / `official` / `ugc` / エディタ方針を固め�
 | DR-1E | cod-web への示唆整理 | 採用候補 / 不採用 / 要確認、仕様変更提案 | DR-1B〜D |
 | DR-3A | ユーザー指示による追加 deep search | DR-3 文書、source inventory、採用候補/不採用/要確認 | DR-2 |
 | DR-4A | ユーザー指示による engine / UGC / asset pipeline 追加 deep search | DR-4 文書、clone source inventory、Noa/QuickJS/glTF toolchain の採用候補/不採用/要確認 | DR-3 |
+| DR-5A | ユーザー追加 Perplexity DeepResearch と既存 DR の差分検証 | DR-5 文書、差分分類、追加一次情報、現行コード指摘の再監査、採用/不採用/要確認 | DR-4 |
 
 ## 10. 調査プロトコル
 
@@ -193,3 +194,4 @@ git log -1 --oneline
 | DR-2 | 本コミット | markdown link check | `docs/research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md`。bloxd 公式 Terms、Krunker direct API URL、Noa/Babylon peer mismatch、Noa examples clone SHA を追加確認。live service 解析なし |
 | DR-3 | 本コミット | markdown link check | `docs/research/DR-3_DEEPER_COMPETITOR_RESEARCH.md`。`web_search` depth 3 で Krunker direct API、bloxd code-api 追加 docs、texture-packs、authoritative netcode を追加確認。live service 解析なし |
 | DR-4 | 本コミット | markdown link check | `docs/research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md`。`web_search` depth 3 と public GitHub clone で Noa 系 engine、voxel physics、input/mobile、QuickJS sandbox、glTF validation/optimization pipeline を追加確認。live service 解析なし |
+| DR-5 | 本コミット | markdown link check | `docs/research/DR-5_PERPLEXITY_DIFF_RESEARCH.md`。`docs/Perplexity-AI.md` 全体と DR-1〜DR-4 を照合し、Bun/Colyseus/Krunker settings/Babylon/MDN/Agones 等を `web_search` depth 3 と fetch で追加確認。競合 live endpoint / production bundle 解析なし |
