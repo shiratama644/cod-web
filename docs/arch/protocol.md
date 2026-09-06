@@ -72,7 +72,7 @@ Reject reason: 1 バージョン、2 チケット、3 ルームなし、4 満員
 
 検証: 長さ≠16 で切断。moveX/Z 範囲外で切断。`dtMs > 500` は clamp（切断しない）。
 
-**未決:** `dtMs` の単位が「ミリ秒」か「ミリ秒×10」か、ソース仕様書 v2 に両方の記述がある。実装着手時に人間へ確認する。現行 packer は type 込み 13 バイト（本体 12B）。理想は 16B 固定。
+**未決（OPEN-A）:** `dtMs` の単位は「ミリ秒」か「ミリ秒×10」かをまだ決めない。フェーズ 0 で現行 packer は type 込み **16 バイト**に更新済み。実装は `dtMs` を u16 の整数として運び、単位を確定したくなったら人間に確認する。
 
 ## Snapshot (0x11)
 
@@ -149,11 +149,11 @@ bodyPart、shotId、victimId、damage、killed。
 
 `Bun.serve` + ネイティブ WebSocket のみ。議論や再実装で UDP 系に逃げない。TCP の HOL はアプリ層で緩和する（断片化、送信優先度、`perMessageDeflate: false`、`send()` 戻り値、`cork()`、補間遅延）。
 
-公式: [`send()` は -1 バックプレッシャ（キュー済み）、0 破棄、1+ 送信バイト](https://bun.com/docs/runtime/http/websockets)。`drain` で再開。`bufferedAmount` に頼らない。
+公式: [`send()` は -1 バックプレッシャ（キュー済み）、0 破棄、1+ 送信バイト](https://bun.com/docs/runtime/http/websockets#backpressure)。`drain` で再開。Bun server 側に portable な `bufferedAmount` 前提を置かない。
 
 ### 将来 WT のための備え（今から守る）
 
-`NetTransport` 抽象。ゲームコードは `WebSocket` に直接触れない。
+`NetTransport` 抽象。ゲームコードは `WebSocket` に直接触れない。ブラウザ `WebSocket.bufferedAmount` は存在するが、Bun server 側の背圧は `send()` 戻り値で扱うため、共通 `NetTransport` API には `bufferedAmount` を必須にしない。
 
 ```ts
 export const enum Channel {
@@ -168,7 +168,6 @@ export interface NetTransport {
   onMessage(cb: (channel: Channel, data: DataView) => void): void;
   onClose(cb: (code: number, reason: string) => void): void;
   close(code?: number, reason?: string): void;
-  readonly bufferedAmount: number;
   readonly kind: 'websocket' | 'webtransport';
 }
 ```

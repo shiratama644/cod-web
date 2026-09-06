@@ -19,9 +19,9 @@ Babylon 移行より前。
 
 ## フェーズ 1 — モノレポと Babylon（1–2 週）
 
-workspaces、`noRestrictedImports`、R3F シーン削除、`createEngine`、unadjustedMovement、入力累積、React を HUD/メニューのみ、単一マップで FFA が Babylon 上で動く。チャンク同期はまだ。地形は静的埋め込み可。
+workspaces、Biome `linter.rules.style.noRestrictedImports`、R3F シーン削除、`createEngine`、unadjustedMovement、入力累積、React を HUD/メニューのみ、単一マップで FFA が Babylon 上で動く。チャンク同期はまだ。地形は静的埋め込み可。
 
-**DoD:** ドローコール &lt; 100。中位機フレーム &lt; 8ms。移植したユニットテストが通る。
+**DoD:** 移植したユニットテストが通る。ドローコール &lt; 100 / 中位機フレーム &lt; 8ms は engineering 予算として残すが、PLAT-1 合意により Sandbox 完了判定からは外す。
 
 未決の確認: モバイル入力はこのフェーズでは入れない（後続）。FPS マップは CDN 前提でパスだけ決める。
 

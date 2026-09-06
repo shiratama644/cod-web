@@ -61,7 +61,7 @@ L0  プラットフォーム  ★タイプ非依存
 
 `packages/protocol` の中は `common/` / `voxel/` / `fps/` にパケットを分ける。`engine-core` の `profile/SimProfile.ts` が L2 の実装契約。
 
-## 依存規則（Biome `noRestrictedImports` で強制）
+## 依存規則（Biome `linter.rules.style.noRestrictedImports` で強制）
 
 ```
 gamemodes/*         → gamemode-sdk のみ（他は禁止）
@@ -75,4 +75,4 @@ apps/web/client-*   → protocol, net, 対応する profile-*
 
 `gamemodes/*` の制限は、UGC 移行時のサンドボックス境界になる。
 
-ゲームコードから `WebSocket` を直接参照しない。`apps/web/src/net/websocket-transport.ts` 以外は Biome で禁止する（[protocol.md](./protocol.md)）。
+ゲームコードから `WebSocket` を直接参照しない。`apps/web/src/net/websocket-transport.ts` 以外は Biome の `linter.rules.style.noRestrictedImports` で禁止する（[protocol.md](./protocol.md)、[api-sources.md](./api-sources.md)）。

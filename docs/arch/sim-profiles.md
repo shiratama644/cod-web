@@ -4,11 +4,11 @@
 
 | ライブラリ | ライセンス | 用途 |
 |---|---|---|
-| `noa-engine` | MIT | クライアント描画・チャンク。Babylon が peer |
+| `noa-engine` | MIT | クライアント描画・チャンク。npm latest 0.33.0 は `@babylonjs/core` を peer（`^6.1.0`）として要求 |
 | `voxel-physics-engine` | MIT | 衝突・移動。**Babylon 非依存。サーバでも動かす** |
 | `@babylonjs/core` | Apache-2.0 | 描画 |
 
-Noa の `tickRate` は **ticks per second**（ms/tick ではない）。[noa changelog](https://github.com/fenomas/noa)
+Noa の `tickRate` は v0.30.0 以降 **ticks per second**（ms/tick ではない）。`manuallyControlChunkLoading` は v0.29.0 で追加。導入時は latest history と `.d.ts` を再確認する（[api-sources.md](./api-sources.md)、[noa history](https://raw.githubusercontent.com/fenomas/noa/master/docs/history.md)）。
 
 ```ts
 const noa = new NoaEngine({
@@ -30,9 +30,9 @@ Noa にネットワーク機能はない。ネットコードは自前。
 [voxel-physics-engine](https://github.com/fenomas/voxel-physics-engine):
 
 ```ts
-import { Physics } from 'voxel-physics-engine';
+import Physics from 'voxel-physics-engine';
 const phys = new Physics({ gravity: [0, -22, 0] }, voxelIsSolid, voxelIsLiquid);
-phys.tick(dtMs); // 引数はミリ秒
+phys.tick(dtMs); // 引数の単位は導入時に `dist/src/index.d.ts` / 公式 README で再確認
 body.autoStep = true;
 ```
 

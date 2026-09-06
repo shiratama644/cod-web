@@ -27,7 +27,7 @@
 | D4 | lagcomp は **残して毎ティック record**。窓 500ms | 削除しない（PH0-E 済み） |
 | D5 | OPEN-A（`dtMs` が ms か ×10 か）は **触らない** | 決めたと書かない |
 | D6 | トランスポートは **WebSocket のみ** | WT / geckos / 生 UDP / WebRTC DataChannel を実装しない |
-| D7 | `bufferedAmount` は **使わない** | bun `ws.send` の -1 / 0 / 1+。protocol.md の型例に `bufferedAmount` があっても載せない |
+| D7 | `bufferedAmount` は **使わない** | bun `ws.send` の -1 / 0 / 1+。共通 `NetTransport` API に `bufferedAmount` を必須にしない |
 | D8 | ホットパス送信は **`subarray`** | `slice` でバイトコピーしない |
 | D9 | ライセンス MIT。初期は匿名。モバイル両タイプだが **タッチは後続**。ボイスは理想、ゲーム同期に WebRTC は使わない |
 | D10 | プレーヤー同士はすり抜け。FPS マップは CDN 前提で **パスだけ**。チャンクは当面メモリ。初期リージョン 1 拠点 |
@@ -45,7 +45,8 @@
 | PH0-A | `e57d747`。Input 16B、type `0x10` |
 | PLAT-1 初版 | `663f815`。`PHASE01_PLAN.md` |
 | PLAT-1 API 表 | `87e0294`。§10.5 は arch 二次情報のみ（検索なし） |
-| PLAT-1R | 本コミット。§10.5 を公式一次情報に差し替え。Babylon EngineOptions の不一致を明示 |
+| PLAT-1R | `20fa678`。§10.5 を公式一次情報に差し替え。Babylon EngineOptions の不一致を明示 |
+| DOC-4 | 本コミット。docs 全体の外部 API 記述を公式確認メモへ集約し、古い重複仕様書を案内文に変更 |
 | 現行ツリー | 単一 `package.json`。`src/` `shared/` `server/` `_tests_/`。R3F シーンはまだある |
 | テスト | `bun run test:unit` 72 passed（PH0-F 時点） |
 
@@ -95,14 +96,12 @@
 
 **bufferedAmount**
 
-- protocol.md: `readonly bufferedAmount: number;`（NetTransport 型例）
-- AGENTS.md / server.md / フェーズ 0: 存在しない `bufferedAmount` に頼らない。`send()` の -1 / 0 / 1+
-
-合意 D7 は「載せない」。protocol.md は本タスクで書き換えない（範囲外）。計画に「型例と bun が食い違う。実装は send 戻り値」と残す。
+- DOC-4 で protocol.md の `NetTransport` 型例から `bufferedAmount` を削除済み。
+- AGENTS.md / server.md / フェーズ 0: Bun server 側は `send()` の -1 / 0 / 1+ を見る。
 
 **Input 長さ**
 
-- protocol.md: 「現行 packer は type 込み 13 バイト」
+- DOC-4 で protocol.md の古い Input 長さ記述を削除済み。
 - コード / PH0-A: `INPUT_PACKET_BYTES === 16`、type `0x10`
 
 **lagcomp**

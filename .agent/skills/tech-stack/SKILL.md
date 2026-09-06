@@ -44,7 +44,7 @@ description: 理想スタックと移行元コードの使いどころ・ハマ�
 
 - bun はプリインストールされない。`bun.sh` は SSL で到達不可。**npm registry 経由**（`restore-sandbox-env.sh`）。バージョンは devDependency で exact 固定。
 - **TypeScript 7**: `baseUrl` 廃止。`paths` は相対（`"@/*": ["./src/*"]`）。
-- **Biome 2**: `rules: { preset: "recommended" }`。`vcs.useIgnoreFile: true` で `files.includes` を書かない。
+- **Biome 2**: `rules: { preset: "recommended" }`。`vcs.useIgnoreFile: true` で `files.includes` を書かない。import 制限は `linter.rules.style.noRestrictedImports`。
 - ESM の `vite.config.ts` では `__dirname` 未定義。`path.dirname(fileURLToPath(import.meta.url))`。
 - ライブプレビュー（e2b.app）では `server.allowedHosts: true`（preview も）+ `host: true`。未設定は 403。
 - **tsconfig は 2 構成**: `tsconfig.json`（client+shared、DOM）と `tsconfig.server.json`（server+shared、`types: ["bun"]`、DOM なし）。エイリアス `@/` `@shared/` `@server/` は tsconfig・vite・vitest の 3 箇所。
@@ -54,7 +54,7 @@ description: 理想スタックと移行元コードの使いどころ・ハマ�
 
 ### bun WebSocket（移植する）
 
-- `Bun.serve<SocketData>({ websocket })` のジェネリクスは data 型 1 つ。`server.upgrade(req, { data })` の data は必須。
+- Bun WebSocket の `ws.data` 型付けは最新 docs では serve call の generic 型引数 ではなく、`websocket: { data: {} as SocketData, ... }` に置く。`server.upgrade(req, { data })` の data は本プロジェクトでは必須。
 - **uWebSockets.js を追加しない**（bun 内部で uWS。別パッケージは動かない）。
 - 入力は「最新 1 つ上書き」ではなく **playerId ごとの FIFO**。空 tick は重力のみ、yaw/pitch は維持。
 - クライアント予測・送信は **wall-clock の setInterval**。rAF は描画サンプリングのみ（タブ非表示で rAF が止まる）。
@@ -72,11 +72,11 @@ description: 理想スタックと移行元コードの使いどころ・ハマ�
 
 ### PLAT-1R 公式 API 確認（2026-09-06）
 
-- Bun workspaces は root `package.json` の `workspaces` 配列と workspace 側 `package.json`、内部依存の `workspace:*` で組む。PH1-A では未確認の catalog / catalogs を使わない。
+- Bun workspaces は root `package.json` の `workspaces` 配列と workspace 側 `package.json`、内部依存の `workspace:*` で組む。最新 docs には catalog / self-contained workspaces もあるが、PH1-A では単純な workspaces だけ使う。
 - Biome の import 制限は `linter.rules.style.noRestrictedImports`（diagnostic `lint/style/noRestrictedImports`）。recommended ではないため PH1-B で明示有効化する。
 - Babylon `Engine` は `new Engine(canvasOrContext, antialias?, options?, adaptToDeviceRatio?)`。`setHardwareScalingLevel` は typedoc で確認済み。
 - 2026-09-06 時点の Babylon typedoc `EngineOptions` 取得結果では `desynchronized` / `preserveDrawingBuffer` が property 一覧に出ていない。一方 Chrome は Canvas context attributes として両 key を公式に示す。PH1-D では installed `.d.ts` を見て、型に無い key を invent しない。
-- `@babylonjs/core` npm latest は `type: module`, `types: index.d.ts`, license Apache-2.0。導入バージョンは実装時に人間確認してよい。
+- `@babylonjs/core` npm latest は `type: module`, `types: index.d.ts`, license Apache-2.0。`noa-engine@0.33.0` は `@babylonjs/core ^6.1.0` peer のため、voxel 導入時に Babylon major を再確認する。
 
 ## API を記憶で書かない
 

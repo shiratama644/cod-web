@@ -81,7 +81,7 @@ milestones フェーズ 1 の文言は「workspaces、`noRestrictedImports`、R3
 - [ ] voxel / gamemodes パッケージがリポジトリに無い（意図的。フェーズ 2–3）
 - [ ] 依存規則が Biome で破ると lint が落ちる（少なくとも「web から `WebSocket` 直接」「engine-core から profile-fps を跨いだ実装詳細」の一方以上）
 - [ ] R3F / `@react-three/fiber` / `GameCanvas` の Three シーンがコードから無い
-- [ ] Babylon `Engine` を公式 `EngineOptions`（`desynchronized` / `preserveDrawingBuffer` は client.md どおり。効いたかは `getContextAttributes()` で読むコードがある）で作る
+- [ ] Babylon `Engine` を公式 constructor / installed `.d.ts` に沿って作る。`desynchronized` / `preserveDrawingBuffer` は Canvas/WebGL context attributes として扱い、型に無い key を invent しない。効いたかは `getContextAttributes()` で確認する
 - [ ] Pointer Lock が `unadjustedMovement: true`。視線はフレーム先頭で累積消費
 - [ ] React は HUD / メニュー / オーバーレイのみ。3D を JSX で組まない
 - [ ] 単一静的マップで既存の位置同期（Input 16B + Snapshot 現行）が Babylon 上で動く経路がある（ユニットまたはコンポーネント。実 2 タブは実環境検証待ち）
@@ -215,11 +215,12 @@ Input の payload はフェーズ 0 の 16B のまま（type=0x10 … dtMs）。
 
 ### 10.4 Babylon（PH1-D / E / F）
 
-client.md どおり（公式で再確認してから書く）:
+client.md / api-sources.md どおり（導入時の `.d.ts` で再確認してから書く）:
 
-- `Engine` 第 3 引数のコンテキスト属性: `desynchronized: true`, `preserveDrawingBuffer: true`, `alpha: false`, `stencil: false`, `powerPreference: 'high-performance'`
-- `desynchronized` / `preserveDrawingBuffer` は Chrome の Canvas context attributes として公式確認済み。ただし 2026-09-06 の Babylon typedoc `EngineOptions` ページでは同名プロパティが一覧に出ていない。実装時にインストールした `@babylonjs/core` の型で再確認し、型に無い名前を invent しない（必要なら停止して人間に確認）
-- 効いたかは `getContextAttributes()` で読む
+- `Engine` は公式 constructor `new Engine(canvasOrContext, antialias?, options?: EngineOptions, adaptToDeviceRatio?)` を使う
+- `desynchronized` / `preserveDrawingBuffer` は Chrome の Canvas/WebGL context attributes として公式確認済み。ただし 2026-09-06 の Babylon typedoc `EngineOptions` ページでは同名プロパティが一覧に出ていない。実装時にインストールした `@babylonjs/core` の型で再確認し、型に無い名前を invent しない（必要なら停止して人間に確認）
+- `alpha: false`, `stencil: false`, `powerPreference: 'high-performance'`, `failIfMajorPerformanceCaveat` 等は導入時の型で許されるものだけ渡す
+- 効いたかは WebGL context の `getContextAttributes()` で読む。Babylon private field（例: `_gl`）に依存しない
 - 解像度 `setHardwareScalingLevel`。動的解像度は本フェーズ任意
 - AA オフ、影 static またはオフ、ポストプロセスオフ
 
@@ -241,9 +242,9 @@ PLAT-1R では `HANDOFF.md` の指示どおり、下表を公式ドキュメン�
 
 | 領域 | 公式確認した内容 | PH1 実装での扱い | 出典 |
 |---|---|---|---|
-| Bun workspaces | ルート `package.json` の `workspaces` キーに workspace ディレクトリを列挙する。例は `"workspaces": ["packages/*"]`。各 workspace は自分の `package.json` を持ち、workspace 内依存は `"workspace:*"` 等で参照できる。glob と negative pattern も対応。 | PH1-A は `workspaces` に `packages/*` と `apps/*` を置く。未確認の `catalog` / `catalogs` はこのフェーズで使わない。 | [1](https://bun.com/docs/pm/workspaces) |
+| Bun workspaces | ルート `package.json` の `workspaces` キーに workspace ディレクトリを列挙する。例は `"workspaces": ["packages/*"]`。各 workspace は自分の `package.json` を持ち、workspace 内依存は `"workspace:*"` 等で参照できる。glob と negative pattern も対応。最新 docs には catalog / self-contained workspaces もある。 | PH1-A は単純な `workspaces` に `packages/*` と `apps/*` を置く。catalog / self-contained は必要になった時だけ再確認して導入する。 | [1](https://bun.com/docs/pm/workspaces) |
 | Bun install / workspace 実行 | `bun install` は workspace をサポートする。`--filter` で一部 package の依存インストールや script 実行対象を絞れる。 | まず root で `bun install --frozen-lockfile`。必要なら `bun --filter` を使うが、root の 4 検証を正とする。 | [2](https://bun.com/docs/pm/cli/install) |
-| Bun WebSocket | `Bun.serve({ websocket })` は `open` / `message` / `close` / `error` / `drain` を持つ。`maxPayloadLength` 既定 16MB、`idleTimeout` 既定 120 秒、`backpressureLimit` 既定 16MB、`closeOnBackpressureLimit` 既定 false、`sendPings` 既定 true、`perMessageDeflate` を設定できる。 | PH1 でも現行の明示値（`idleTimeout: 30`, `backpressureLimit: 1MB`, `closeOnBackpressureLimit: true`, `sendPings: true`, `perMessageDeflate: false`）を維持する。 | [1](https://bun.com/docs/runtime/http/websockets) |
+| Bun WebSocket | `Bun.serve({ websocket })` は `open` / `message` / `close` / `error` / `drain` を持つ。`maxPayloadLength` 既定 16MB、`idleTimeout` 既定 120 秒、`backpressureLimit` 既定 16MB、`closeOnBackpressureLimit` 既定 false、`sendPings` 既定 true、`publishToSelf` 既定 false、`perMessageDeflate` を設定できる。最新 docs は `ws.data` typing を `websocket.data` property で示す。 | PH1 でも現行の明示値（`idleTimeout: 30`, `backpressureLimit: 1MB`, `closeOnBackpressureLimit: true`, `sendPings: true`, `perMessageDeflate: false`）を維持する。serve call の generic 型引数 前提は使わない。 | [1](https://bun.com/docs/runtime/http/websockets) |
 | Bun `ServerWebSocket.send` | `send(message, compress?)` は number を返す。`-1` は enqueue されたが backpressure、`0` は connection issue により dropped、`1+` は送信バイト数。`drain` で再開する。 | サーバ側は `send()` 戻り値を見る。`bufferedAmount` は Bun server WS の公式型に載っていないため使わない。 | [1](https://bun.com/docs/runtime/http/websockets) |
 | Bun HTTP/3 / WT | Bun v1.3.14 の HTTP/3 は highly experimental。制限として WebSocket over HTTP/3 は未対応（`server.upgrade()` が false）、WebTransport は separate project。 | D6 維持。PH1 では WebSocket のみ。`webtransport.ts` を作らない。 | [1](https://bun.com/blog/bun-v1.3.14) |
 | Biome import 制限 | Biome の rule ID は `lint/style/noRestrictedImports`。設定は `linter.rules.style.noRestrictedImports`。`level` / `options.paths` / `options.patterns` / `importNames` / `allowImportNames` が公式例にある。この rule は recommended ではないため明示有効化が必要。 | PH1-B はこの rule ID と schema を使う。architecture.md の `noRestrictedImports` は意図ではなく、実設定では `style.noRestrictedImports` 配下に書く。 | [1](https://biomejs.dev/linter/rules/no-restricted-imports/) |
@@ -262,15 +263,14 @@ PLAT-1R では `HANDOFF.md` の指示どおり、下表を公式ドキュメン�
 | 論点 | 片方の記述 | もう片方の記述 / 確認結果 | PH1 計画での扱い |
 |---|---|---|---|
 | `EngineOptions.desynchronized` / `preserveDrawingBuffer` | `docs/arch/client.md`: `Babylon の EngineOptions に desynchronized / preserveDrawingBuffer がある。` | Babylon typedoc `EngineOptions` の 2026-09-06 取得結果では property 一覧に `desynchronized` / `preserveDrawingBuffer` が出ていない。一方 Chrome は canvas context attributes として両 key を示す。 | PH1-D 実装時に installed `.d.ts` を確認。型に無い key は invent しない。必要なら停止して人間に確認。 |
-| `NetTransport.bufferedAmount` | `docs/arch/protocol.md` の型例: `readonly bufferedAmount: number;` | Bun server WS 公式型と本計画 D7: `send()` 戻り値 -1 / 0 / 1+ を見る。`bufferedAmount` に頼らない。 | PH1-C の `NetTransport` には載せない。protocol.md は本タスクで書き換えない。 |
 | `noRestrictedImports` の置き場所 | `docs/arch/architecture.md`: 「Biome `noRestrictedImports` で強制」 | Biome 公式 rule ID は `lint/style/noRestrictedImports`、設定は `linter.rules.style.noRestrictedImports`。 | PH1-B では `style.noRestrictedImports` と schema を使う。 |
 
 
 ## 11. リスク・Gotchas
 
 - **ADR-005 vs 本計画:** ADR は Channel / Hello を「最初から」と言う。Hello はマッチメイカー（フェーズ 4）。**Channel だけ本フェーズ。** Hello を今入れないのは範囲の切り方であり、HMAC を実装して ADR を覆すものではない
-- **protocol.md の `NetTransport.bufferedAmount`:** 型例にある。bun にそのプロパティは無い。フェーズ 0 の決定を維持し、載せない。矛盾は残置（本計画で protocol.md を書き換えない）
-- **protocol.md「現行 packer は 13B」:** フェーズ 0 で 16B 済み。arch の古い一文。本計画は 16B を正とする
+- **`NetTransport.bufferedAmount`:** DOC-4 で protocol.md の型例から削除済み。Bun server 側は `send()` 戻り値で背圧を見る。
+- **Input 長さ:** フェーズ 0 で 16B 済み。protocol.md も 16B 現行に更新済み。本計画は 16B を正とする
 - **product.md の lagcomp「record 未呼び出し」:** フェーズ 0 で毎ティック記録済み。arch の古い一文
 - workspaces 移動はテストパス・tsconfig・Vite alias が同時に壊れる。PH1-A は「動く移動」だけ。Babylon は D
 - Channel はワイヤ破壊。PH1-C は client+server 同時

@@ -22,7 +22,7 @@
 | スキル | できるようになること（Agent の能力） | 最終更新 |
 | :--- | :--- | :--- |
 | [project-overview/SKILL.md](./project-overview/SKILL.md) | プロダクト目標・現行コード（移行元）と理想フェーズを素早く把握する | 2026-09-05（Phase 0 完了・Phase 1 計画） |
-| [tech-stack/SKILL.md](./tech-stack/SKILL.md) | 理想スタックと移行元コードのハマりどころを区別して実装できる | 2026-09-06（PLAT-1R 公式 API 確認） |
+| [tech-stack/SKILL.md](./tech-stack/SKILL.md) | 理想スタックと移行元コードのハマりどころを区別して実装できる | 2026-09-06（DOC-4 公式 API 全体監査） |
 | [sandbox-constraints/SKILL.md](./sandbox-constraints/SKILL.md) | Sandbox / ネットワーク / GitHub App の制約を迂回して検証できる | 2026-09-05 |
 
 ## 設計仕様の正本（スキルではなく docs/arch/）

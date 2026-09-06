@@ -30,5 +30,6 @@
 | [adr.md](./adr.md) | 意思決定ログ |
 | [milestones.md](./milestones.md) | フェーズ 0–9 |
 | [legal.md](./legal.md) | ライセンス・OSS・一次情報 |
+| [api-sources.md](./api-sources.md) | 公式 API 確認メモ（Bun / Biome / Babylon / Noa 等） |
 
 新しい設計領域が固まったら `kebab-case.md` を追加し、本一覧と [`../README.md`](../README.md) を更新する。

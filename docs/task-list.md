@@ -77,7 +77,7 @@
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
 | PLAT-1 | フェーズ 1 計画書作成（`PHASE01_PLAN.md`） | 完了 | 100% | PH0-F | `_TEMPLATE.md` 準拠。arch と合意が矛盾しない | `663f815` / `87e0294` |
-| PLAT-1R | 公式 API を Web 検索して `PHASE01_PLAN` を書き直す | 完了 | 100% | PLAT-1 | 公式 URL 付き。D1–D10 維持。invent なし | 本コミット / 公式一次情報 URL を PHASE01_PLAN §10.5 に記載 / link check broken 0 / typecheck・lint・unit・build pass |
+| PLAT-1R | 公式 API を Web 検索して `PHASE01_PLAN` を書き直す | 完了 | 100% | PLAT-1 | 公式 URL 付き。D1–D10 維持。invent なし | `20fa678` / 公式一次情報 URL を PHASE01_PLAN §10.5 に記載 / link check broken 0 / typecheck・lint・unit・build pass |
 | PH1-A | bun workspaces + fps 系へ移動 | 未着手 | 0% | PLAT-1R | protocol / engine-core / profile-fps / gameserver / web がビルドできる | 次に着手可能 |
 | PH1-B | 依存規則を Biome で強制 | 未着手 | 0% | PH1-A | 破ると lint が落ちる。ルール名は公式確認 | |
 | PH1-C | Channel 頭 1B | 未着手 | 0% | PH1-A | Unreliable の payload は Input 16B。欠落は 1002 | |
@@ -93,6 +93,7 @@
 | DOC-2 | AGENTS.md §6 を理想形（Babylon・WS のみ・16B Input 等）へ追従 | 完了 | 100% | DOC-1 | AGENTS と docs/arch が矛盾しない | 本コミット |
 | DOC-3 | `.agent/skills` を理想形の実践ノウハウへ更新 | 完了 | 100% | DOC-1 | skills/index が arch を参照し旧 WT 主・R3F 前提が残らない | 本コミット |
 | LIC-1 | MIT の LICENSE ファイルをルートに配置 | 完了 | 100% | — | LICENSE が MIT 全文 | 本コミット |
+| DOC-4 | 現用ドキュメント全体の外部 API 記述を公式一次情報に追従 | 完了 | 100% | PLAT-1R | `docs/arch/api-sources.md` を追加し、現用 docs の古い API 記述を解消。リンク切れなし | 本コミット / Bun・Biome・Babylon・Noa・QuickJS・Colyseus 公式確認 / link check broken 0 / typecheck・lint・unit・build pass |
 
 ### 検証待ち・将来
 
