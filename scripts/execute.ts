@@ -23,22 +23,26 @@ const colors = {
   // インストール: 黄
   install: { tag: 'INSTALL', fg: '\x1b[33m' },
   // ビルド: シアン
-  build: { tag: 'BUILD  ', fg: '\x1b[36m' },
+  build: { tag: 'BUILD', fg: '\x1b[36m' },
   // ゲームサーバ: 緑
-  server: { tag: 'SERVER ', fg: '\x1b[32m' },
+  server: { tag: 'SERVER', fg: '\x1b[32m' },
   // Web クライアント（vite preview）: マゼンタ
-  client: { tag: 'CLIENT ', fg: '\x1b[35m' },
+  client: { tag: 'CLIENT', fg: '\x1b[35m' },
 } as const
 
 type Kind = keyof typeof colors
+
+// 各タグの右側に入れる空白を計算するための最長タグ文字数（7）
+const MAX_TAG_LEN = Math.max(...Object.values(colors).map((c) => c.tag.length))
 
 /** 1 行に色付きタグを付けて出力する。 */
 function logLine(kind: Kind, line: string): void {
   const { tag, fg } = colors[kind]
   const text = line.replace(/\s+$/, '')
   if (text.length === 0) return
-  // [TAG] を色付け、残りは通常色（サーバ/クライアント側が出す生ログはそのまま）。
-  process.stdout.write(`${fg}${DIM}[${tag}]${RESET} ${fg}${text}${RESET}\n`)
+  // タグ内の空白はなくし、[TAG] の右側に空白を補填してメッセージ開始位置を揃える
+  const pad = ' '.repeat(MAX_TAG_LEN - tag.length)
+  process.stdout.write(`${fg}${DIM}[${tag}]${RESET}${pad} ${fg}${text}${RESET}\n`)
 }
 
 /** 子プロセスの stdout/stderr を行単位で色付けして転送する。 */
