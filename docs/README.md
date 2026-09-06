@@ -52,5 +52,6 @@ docs/
 | 5 | [`task-list.md`](task-list.md) | 次に着手するタスク |
 | 6 | [`arch/milestones.md`](arch/milestones.md) | フェーズと DoD |
 | 7 | [`arch/editor.md`](arch/editor.md) | `/fps|voxel/{official|ugc}/...` とエディタ方針 |
+| 8 | [`planning/DEEP_RESEARCH_PLAN.md`](planning/DEEP_RESEARCH_PLAN.md) | Krunker.io / bloxd.io Deep Research の手順 |
 
 実装担当は [`arch/README.md`](arch/README.md) の「実装時に守ること」も読むこと。
