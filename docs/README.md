@@ -30,6 +30,7 @@ docs/
 │   └── legal.md         # 法務・OSS・参考資料
 └── planning/            # 計画書（着手前に _TEMPLATE.md で作成）
     ├── _TEMPLATE.md
+    ├── HANDOFF.md       # 次セッションへの橋渡し（先に読む）
     ├── PHASE00_PLAN.md  # フェーズ 0（現行コードの穴）
     └── PHASE01_PLAN.md  # フェーズ 1（fps モノレポ + Babylon）
 ```
@@ -42,6 +43,7 @@ docs/
 
 | 順 | 文書 | 内容 |
 |---:|---|---|
+| 0 | [`planning/HANDOFF.md`](planning/HANDOFF.md) | 次セッション: 決まっていることと PLAT-1R |
 | 1 | [`../README.md`](../README.md) | プロダクト概要・セットアップ（現行コード） |
 | 2 | [`arch/product.md`](arch/product.md) | 何を作るか・現行コードの扱い |
 | 3 | [`arch/architecture.md`](arch/architecture.md) | 層とモノレポ |

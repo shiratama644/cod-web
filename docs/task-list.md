@@ -43,7 +43,7 @@
 | Phase | テーマ | 状態 |
 |---|---|---|
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
-| **1** | モノレポ + Babylon 移行 | 計画済み（実装は PH1-*） |
+| **1** | モノレポ + Babylon 移行 | 計画見直し待ち（PLAT-1R → 実装 PH1-*） |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4** | ハブ + マッチメイカー + voxel 永続化方針 | 未着手 |
@@ -69,14 +69,16 @@
 
 ### Phase 1
 
-計画書: [`planning/PHASE01_PLAN.md`](./planning/PHASE01_PLAN.md)
+計画書: [`planning/PHASE01_PLAN.md`](./planning/PHASE01_PLAN.md)  
+橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（次セッションは **PLAT-1R が先**。PH1-A に飛ばない）
 
 合意: fps 系パッケージのみ。Channel 頭 1B。GPU 予算は本フェーズ DoD 外。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
-| PLAT-1 | フェーズ 1 計画書作成（`PHASE01_PLAN.md`） | 完了 | 100% | PH0-F | `_TEMPLATE.md` 準拠。arch と合意が矛盾しない | 本コミット |
-| PH1-A | bun workspaces + fps 系へ移動 | 未着手 | 0% | PLAT-1 | protocol / engine-core / profile-fps / gameserver / web がビルドできる | |
+| PLAT-1 | フェーズ 1 計画書作成（`PHASE01_PLAN.md`） | 完了 | 100% | PH0-F | `_TEMPLATE.md` 準拠。arch と合意が矛盾しない | `663f815` / `87e0294` |
+| PLAT-1R | 公式 API を Web 検索して `PHASE01_PLAN` を書き直す | 未着手 | 0% | PLAT-1 | 公式 URL 付き。D1–D10 維持。invent なし | |
+| PH1-A | bun workspaces + fps 系へ移動 | 未着手 | 0% | PLAT-1R | protocol / engine-core / profile-fps / gameserver / web がビルドできる | |
 | PH1-B | 依存規則を Biome で強制 | 未着手 | 0% | PH1-A | 破ると lint が落ちる。ルール名は公式確認 | |
 | PH1-C | Channel 頭 1B | 未着手 | 0% | PH1-A | Unreliable の payload は Input 16B。欠落は 1002 | |
 | PH1-D | Babylon Engine + R3F シーン削除 | 未着手 | 0% | PH1-A | R3F シーンが無い。EngineOptions は公式どおり | |

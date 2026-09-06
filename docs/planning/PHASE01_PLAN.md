@@ -4,6 +4,7 @@
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
 > 仕様正本: [`docs/arch/milestones.md`](../arch/milestones.md) フェーズ 1、[`architecture.md`](../arch/architecture.md)、[`client.md`](../arch/client.md)、[`protocol.md`](../arch/protocol.md)、[`adr.md`](../arch/adr.md)
 > 着手合意（2026-09-05）: モノレポは fps 系のみ / Channel 頭 1B のみ / GPU 予算は本フェーズ DoD から外す
+> 次セッション: [`HANDOFF.md`](./HANDOFF.md)。§10.5 は arch 二次情報。**PLAT-1R で公式検索して書き直す。PH1-A はその後。**
 
 ## 1. 開始前確認
 
