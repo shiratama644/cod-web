@@ -43,7 +43,7 @@
 | Phase | テーマ | 状態 |
 |---|---|---|
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
-| **1** | モノレポ + Babylon 移行 | 計画見直し待ち（PLAT-1R → 実装 PH1-*） |
+| **1** | モノレポ + Babylon 移行 | 計画見直し完了（次: PH1-A） |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4** | ハブ + マッチメイカー + voxel 永続化方針 | 未着手 |
@@ -70,15 +70,15 @@
 ### Phase 1
 
 計画書: [`planning/PHASE01_PLAN.md`](./planning/PHASE01_PLAN.md)  
-橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（次セッションは **PLAT-1R が先**。PH1-A に飛ばない）
+橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（PLAT-1R 完了後。次は **PH1-A**）
 
 合意: fps 系パッケージのみ。Channel 頭 1B。GPU 予算は本フェーズ DoD 外。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
 | PLAT-1 | フェーズ 1 計画書作成（`PHASE01_PLAN.md`） | 完了 | 100% | PH0-F | `_TEMPLATE.md` 準拠。arch と合意が矛盾しない | `663f815` / `87e0294` |
-| PLAT-1R | 公式 API を Web 検索して `PHASE01_PLAN` を書き直す | 未着手 | 0% | PLAT-1 | 公式 URL 付き。D1–D10 維持。invent なし | |
-| PH1-A | bun workspaces + fps 系へ移動 | 未着手 | 0% | PLAT-1R | protocol / engine-core / profile-fps / gameserver / web がビルドできる | |
+| PLAT-1R | 公式 API を Web 検索して `PHASE01_PLAN` を書き直す | 完了 | 100% | PLAT-1 | 公式 URL 付き。D1–D10 維持。invent なし | `20fa678` / 公式一次情報 URL を PHASE01_PLAN §10.5 に記載 / link check broken 0 / typecheck・lint・unit・build pass |
+| PH1-A | bun workspaces + fps 系へ移動 | 未着手 | 0% | PLAT-1R | protocol / engine-core / profile-fps / gameserver / web がビルドできる | 次に着手可能 |
 | PH1-B | 依存規則を Biome で強制 | 未着手 | 0% | PH1-A | 破ると lint が落ちる。ルール名は公式確認 | |
 | PH1-C | Channel 頭 1B | 未着手 | 0% | PH1-A | Unreliable の payload は Input 16B。欠落は 1002 | |
 | PH1-D | Babylon Engine + R3F シーン削除 | 未着手 | 0% | PH1-A | R3F シーンが無い。EngineOptions は公式どおり | |
@@ -93,10 +93,20 @@
 | DOC-2 | AGENTS.md §6 を理想形（Babylon・WS のみ・16B Input 等）へ追従 | 完了 | 100% | DOC-1 | AGENTS と docs/arch が矛盾しない | 本コミット |
 | DOC-3 | `.agent/skills` を理想形の実践ノウハウへ更新 | 完了 | 100% | DOC-1 | skills/index が arch を参照し旧 WT 主・R3F 前提が残らない | 本コミット |
 | LIC-1 | MIT の LICENSE ファイルをルートに配置 | 完了 | 100% | — | LICENSE が MIT 全文 | 本コミット |
+| DOC-4 | 現用ドキュメント全体の外部 API 記述を公式一次情報に追従 | 完了 | 100% | PLAT-1R | `docs/arch/api-sources.md` を追加し、現用 docs の古い API 記述を解消。リンク切れなし | 本コミット / Bun・Biome・Babylon・Noa・QuickJS・Colyseus 公式確認 / link check broken 0 / typecheck・lint・unit・build pass |
+| DOC-5 | 公式/UGC 階層とエディタ方針を仕様へ反映 | 完了 | 100% | DOC-4 | `/fps|voxel/{official|ugc}/<slug>`、Babylon GLB エディタ、voxel 公式地形生成、Noa 系依存候補が docs に反映 | 本コミット / `docs/arch/editor.md` / Babylon loaders・Noa 系 npm metadata 確認 / link check broken 0 / typecheck・lint・unit・build pass |
+| DOC-6 | Krunker.io / bloxd.io Deep Research 計画書作成 | 完了 | 100% | DOC-5 | 調査範囲・禁止事項・GitHub clone + SHA 記録ルールを明文化 | 本コミット / `docs/planning/DEEP_RESEARCH_PLAN.md` / link check broken 0 |
+| DOC-7 | ドキュメント整理（Deep Research 統合入口と読む順の整理） | 完了 | 100% | DR-5 | `docs/README.md` / `docs/research/README.md` / `docs/planning/HANDOFF.md` が DR-5 後の読む順と調査入口を示す | `9bd5371` / [`research/DEEP_RESEARCH_SYNTHESIS.md`](./research/DEEP_RESEARCH_SYNTHESIS.md) / link check broken 0 |
+| DOC-8 | ドキュメント整理（planning/arch/research 導線と安全な索引追加） | 完了 | 100% | DOC-7 | ファイル移動なしで、読む順・計画書入口・仕様/調査の境界が docs に明示される | 本コミット / [`planning/README.md`](./planning/README.md) / link check broken 0 |
 
 ### 検証待ち・将来
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
 | CI-1 | GitHub Actions を `docs/ops/` に提案（`.github/workflows/` は書き込み不可） | 未着手 | 0% | — | YAML を docs/ops に用意 | |
+| DR-1 | Krunker.io / bloxd.io Deep Research 実施 | 完了 | 100% | DOC-6 | network / frontend / editor / UGC / voxel 実装を source URL・clone SHA 付きで整理 | 本コミット / [`research/DR-1_COMPETITOR_DEEP_RESEARCH.md`](./research/DR-1_COMPETITOR_DEEP_RESEARCH.md) / clone SHA・読んだファイル一覧記録 / link check broken 0 |
+| DR-2 | DR-1 要確認の追加 Deep Research | 完了 | 100% | DR-1 | bloxd 公式 Terms、Krunker direct API URL、Noa/Babylon peer mismatch を source URL・clone SHA 付きで整理 | 本コミット / [`research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md`](./research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md) / Noa examples clone SHA 記録 / link check broken 0 |
+| DR-3 | 追加 Deep Research（search depth 3） | 完了 | 100% | DR-2 | Krunker direct API、bloxd code-api 追加 docs、texture-packs、authoritative netcode を deep search / fetch / clone SHA 付きで整理 | 本コミット / [`research/DR-3_DEEPER_COMPETITOR_RESEARCH.md`](./research/DR-3_DEEPER_COMPETITOR_RESEARCH.md) / web_search depth 3 / clone SHA 再確認 / link check broken 0 |
+| DR-4 | 追加 Deep Research（engine / UGC / asset pipeline） | 完了 | 100% | DR-3 | Noa 系 engine、voxel physics、input/mobile、QuickJS sandbox、glTF validation/optimization pipeline を deep search / fetch / clone SHA 付きで整理 | 本コミット / [`research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md`](./research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md) / web_search depth 3 / clone SHA 記録 / link check broken 0 |
+| DR-5 | Perplexity DeepResearch 差分検証 | 完了 | 100% | DR-4 | `docs/Perplexity-AI.md` と DR-1〜DR-4 の差分を分類し、一次情報/現行コードで修正済み・未解決・低信頼を整理 | 本コミット / [`research/DR-5_PERPLEXITY_DIFF_RESEARCH.md`](./research/DR-5_PERPLEXITY_DIFF_RESEARCH.md) / web_search depth 3 / 現行コード再監査 / link check broken 0 |
 | OPEN-A | Input `dtMs` の単位（ms か ×10 か）を決定 | 保留 | 0% | PLAT-0 | 人間の回答が protocol.md に反映 | |

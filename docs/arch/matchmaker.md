@@ -2,12 +2,12 @@
 
 ゲームサーバとは **別プロセス・別デプロイ**。ステートレスで水平スケール。
 
-責務: ルーム一覧、入室チケット（座席予約）、ゲームモード一覧、ノード生死。
+責務: ルーム一覧、入室チケット（座席予約）、ゲームモード一覧、ノード生死。ゲームモード一覧は `type`（`fps` / `voxel`）と `source`（`official` / `ugc`）で絞れる。
 
 ## HTTP
 
 - `GET /v1/gamemodes` — 長期キャッシュ可
-- `GET /v1/game-list` — query: region, type, mode, hasSpace, limit（既定 100、最大 500）。`games` はタプル配列。`v` はビルドハッシュ。不一致ならクライアントはリロード、ノードは Hello で拒否
+- `GET /v1/game-list` — query: region, type, source, mode, hasSpace, limit（既定 100、最大 500）。`games` はタプル配列。`v` はビルドハッシュ。不一致ならクライアントはリロード、ノードは Hello で拒否
 - `POST /v1/seek-game` — roomId 省略時は自動選択。`createIfNone`。200 で `wss` URL + ticket（expires 15s）。409 room_full
 - `POST /v1/create-room`
 - `POST /v1/node/heartbeat` — ノードが 3 秒ごと。rooms スナップショット
@@ -33,6 +33,7 @@ payload: roomId, nodeId, seatId, uid, name, iat, exp。鍵は `TICKET_SECRET`。
 | `room:{roomId}` | Hash | 15s |
 | `rooms:{region}:{type}` | ZSet 空き人数 | — |
 | `rooms:{region}:{modeId}` | ZSet | — |
+| `rooms:{region}:{type}:{source}` | ZSet | — |
 | `seat:{roomId}:{seatId}` | String uid, SET NX | 15s |
 | `roomseq:{region}` | 採番 | — |
 

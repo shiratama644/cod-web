@@ -6,7 +6,8 @@
 |---|---|
 | **タイプ（Game Type）** | `voxel` または `fps`。シミュレーションの根本的なパラダイム |
 | **Sim Profile** | タイプごとのシミュレーション実装 |
-| **ゲームモード** | ルールの単位。1つのタイプに属する。例: `voxel-bedwars`, `fps-ffa` |
+| **コンテンツソース（Content Source）** | `official` または `ugc`。タイプではなく、運営/ユーザー作成の区分 |
+| **ゲームモード** | ルールの単位。1つのタイプと1つの source に属する。例: `/fps/official/pvp`, `/voxel/ugc/athletic` |
 | **ルーム** | 1つのゲームモードのインスタンス |
 | **ゲームノード** | ルームをホストする Bun プロセス。1プロセス = 1 CPU コア |
 | **マッチメイカー** | ルーム一覧と入室チケットを扱うステートレス HTTP サービス |
@@ -20,10 +21,10 @@
 
 - **ハブ**から稼働中ルームを一覧・検索して参加できる
 - ルームは **2 タイプ**のいずれかに属する
-  - `voxel` — bloxd.io 的。編集可能なボクセル世界。建築・サバイバル・ミニゲーム
-  - `fps` — Krunker.io 的。静的アリーナ。高速な射撃戦
-- 各タイプに **複数のゲームモード**がある（タイプが 2 つであって、ゲームが 2 つではない）
-- 将来、ユーザーが独自ゲームモードを作れる（UGC）
+  - `voxel` — Minecraft / bloxd.io 的。編集可能なボクセル世界。公式 survival / bedwars と UGC world
+  - `fps` — Krunker.io 的。静的/編集可能アリーナ。公式 pvp / zombie と UGC map
+- 各タイプ内に `official` と `ugc` の **コンテンツソース**がある。`official` / `ugc` を 3 種類目の type にしない
+- Krunker.io のようなエディタで、誰でも FPS マップや voxel ワールドを作れるようにする。エディタは Babylon.js で書き、FPS エディタは `.glb` 読み込みに対応する
 - **モバイルは両タイプ対象**（タッチ入力は後続フェーズ）
 - **ボイスチャットは理想に含める**（ゲーム同期には使わない。WebRTC メディアは別チャネル。着手時期は未定）
 - **ライセンスは MIT**
@@ -31,20 +32,18 @@
 ## ゲームモードの想定例
 
 ```
-voxel タイプ
-  ├ voxel-creative     自由建築、PvP無効
-  ├ voxel-bedwars      チーム戦、ベッド破壊、資源収集
-  ├ voxel-survival     PvE、体力・空腹・Mob
-  ├ voxel-parkour      アスレチック、タイムアタック
-  └ voxel-skywars      島スタート、中央資源
-
 fps タイプ
-  ├ fps-ffa            全員が敵
-  ├ fps-tdm            チームデスマッチ
-  ├ fps-parkour        射撃なし、移動タイムアタック
-  ├ fps-gungame        キルごとに武器変化
-  └ fps-search         ラウンド制、リスポーンなし
+  ├ /fps/official/pvp        公式 PvP
+  ├ /fps/official/zombie     公式 PvE / Zombie
+  └ /fps/ugc/athletic        ユーザー作成アスレチック等
+
+voxel タイプ
+  ├ /voxel/official/survival 公式 Survival。Minecraft 風地形生成を独自実装
+  ├ /voxel/official/bedwars  公式 Bedwars
+  └ /voxel/ugc/athletic      ユーザー作成アスレチック等
 ```
+
+詳細な階層・エディタ方針は [`editor.md`](./editor.md)。
 
 ## なぜ単一の移動モデルにしないのか
 
@@ -77,7 +76,7 @@ fps タイプ
 - アカウント: **初期は匿名**（表示名＋一時 uid）。認証はマッチメイカー以降
 - voxel ワールド: **保存して再開できる**（方式はフェーズ 4 で詳細化）
 - プレーヤー同士の衝突: **すり抜け**（voxel-physics-engine の制約を受容）
-- FPS マップ配信: **CDN**
+- FPS マップ配信: **CDN**。公式/UGC とも `/fps/{official|ugc}/{slug}` で参照し、GLB 読み込み対応エディタで作成する
 - チャンク: 当面サーバがメモリに保持
 - 初期リージョン: **1 拠点**
 - ランキング・統計の RDB: 後続

@@ -3,6 +3,7 @@
 > 対応 task-list ID: `PLAT-0`（本計画） / 実装 `PH0-A` … `PH0-F`（docs/task-list.md）
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
 > 仕様正本: [`docs/arch/milestones.md`](../arch/milestones.md) フェーズ 0、[`protocol.md`](../arch/protocol.md)、[`server.md`](../arch/server.md)、[`engineering.md`](../arch/engineering.md)
+> 2026-09-06 note: 本ファイルは完了済み Phase 0 の履歴計画。外部 API の最新確認は [`../arch/api-sources.md`](../arch/api-sources.md) を正とする。
 
 ## 1. 開始前確認
 

@@ -19,9 +19,9 @@ Babylon 移行より前。
 
 ## フェーズ 1 — モノレポと Babylon（1–2 週）
 
-workspaces、`noRestrictedImports`、R3F シーン削除、`createEngine`、unadjustedMovement、入力累積、React を HUD/メニューのみ、単一マップで FFA が Babylon 上で動く。チャンク同期はまだ。地形は静的埋め込み可。
+workspaces、Biome `linter.rules.style.noRestrictedImports`、R3F シーン削除、`createEngine`、unadjustedMovement、入力累積、React を HUD/メニューのみ、単一マップで FFA が Babylon 上で動く。チャンク同期はまだ。地形は静的埋め込み可。
 
-**DoD:** ドローコール &lt; 100。中位機フレーム &lt; 8ms。移植したユニットテストが通る。
+**DoD:** 移植したユニットテストが通る。ドローコール &lt; 100 / 中位機フレーム &lt; 8ms は engineering 予算として残すが、PLAT-1 合意により Sandbox 完了判定からは外す。
 
 未決の確認: モバイル入力はこのフェーズでは入れない（後続）。FPS マップは CDN 前提でパスだけ決める。
 
@@ -39,13 +39,13 @@ defineGameMode、Ctx、Runtime、レート制限、ティックタイマー、`g
 
 ## フェーズ 4 — ハブとマッチメイカー（2 週）
 
-独立 matchmaker、Redis、HMAC 座席、マルチルーム、ハブ UI、動的 import、バージョンハッシュ。voxel 永続化の保存方式をここで決めて実装開始。匿名 uid。
+独立 matchmaker、Redis、HMAC 座席、マルチルーム、ハブ UI、動的 import、バージョンハッシュ。`/fps|voxel/{official|ugc}/<slug>` の一覧・検索メタデータ。voxel 永続化の保存方式をここで決めて実装開始。匿名 uid。
 
 **DoD:** 満室へ同時 20 接続で席重複なし。初期バンドル &lt; 300 KB gzip。
 
 ## フェーズ 5 — 2 つ目のタイプ ★最重要
 
-voxel-creative、voxel-bedwars、fps-tdm。
+`/fps/official/pvp`, `/fps/official/zombie`, `/voxel/official/survival`, `/voxel/official/bedwars` のように、2 type × official/ugc の階層で複数モードを増やす。
 
 **DoD:** 4 モードが動く。engine-core にタイプ分岐がない。
 
@@ -61,7 +61,7 @@ voxel-creative、voxel-bedwars、fps-tdm。
 
 ## フェーズ 8 — UGC（1–2 ヶ月）
 
-QuickJS、ブリッジ、制限、エディタ、モデレーション。
+QuickJS、ブリッジ、制限、Babylon.js 製 FPS/voxel エディタ、GLB 読み込み、モデレーション。
 
 ## フェーズ 9 — WebTransport（条件付き）
 
