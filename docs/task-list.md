@@ -94,6 +94,7 @@
 | DOC-3 | `.agent/skills` を理想形の実践ノウハウへ更新 | 完了 | 100% | DOC-1 | skills/index が arch を参照し旧 WT 主・R3F 前提が残らない | 本コミット |
 | LIC-1 | MIT の LICENSE ファイルをルートに配置 | 完了 | 100% | — | LICENSE が MIT 全文 | 本コミット |
 | DOC-4 | 現用ドキュメント全体の外部 API 記述を公式一次情報に追従 | 完了 | 100% | PLAT-1R | `docs/arch/api-sources.md` を追加し、現用 docs の古い API 記述を解消。リンク切れなし | 本コミット / Bun・Biome・Babylon・Noa・QuickJS・Colyseus 公式確認 / link check broken 0 / typecheck・lint・unit・build pass |
+| DOC-5 | 公式/UGC 階層とエディタ方針を仕様へ反映 | 完了 | 100% | DOC-4 | `/fps|voxel/{official|ugc}/<slug>`、Babylon GLB エディタ、voxel 公式地形生成、Noa 系依存候補が docs に反映 | 本コミット / `docs/arch/editor.md` / Babylon loaders・Noa 系 npm metadata 確認 / link check broken 0 / typecheck・lint・unit・build pass |
 
 ### 検証待ち・将来
 

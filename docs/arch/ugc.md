@@ -2,7 +2,7 @@
 
 `@sebastianwessel/quickjs`（WASM QuickJS）。[JSR](https://jsr.io/@sebastianwessel/quickjs) の latest は 2026-09-06 確認で `3.1.0`、MIT、Node.js と **Bun 対応**が明記され、Browsers / Deno / Cloudflare Workers は unknown。UGC はサーバ側 sandbox 前提で扱う。
 
-`RoomCtx` は変更しない。移行作業は ctx メソッドのブリッジ、PlayerRef のプレーン化（既に readonly）、実行時間とメモリ上限、スクリプト配信。
+`RoomCtx` は変更しない。移行作業は ctx メソッドのブリッジ、PlayerRef のプレーン化（既に readonly）、実行時間とメモリ上限、スクリプト配信。UGC は type ではなく Content Source であり、`/fps/ugc/<slug>` と `/voxel/ugc/<slug>` の形で扱う（[editor.md](./editor.md)）。
 
 | 項目 | 制限 |
 |---|---|
@@ -13,4 +13,4 @@
 | import / async / Promise | 禁止 |
 | 正規表現 | 許可。ReDoS タイムアウト |
 
-`gamemodes/*` が gamemode-sdk しか import できない規則が、そのままサンドボックス境界になる。
+`gamemodes/*` が gamemode-sdk しか import できない規則が、そのままサンドボックス境界になる。FPS/voxel エディタで作られた投稿物は、ライセンス・moderation 状態・バージョン・アセット hash を持つ。

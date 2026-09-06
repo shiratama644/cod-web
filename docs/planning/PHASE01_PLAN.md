@@ -43,11 +43,11 @@ milestones フェーズ 1 の文言は「workspaces、`noRestrictedImports`、R3
 - 入力 — `requestPointerLock({ unadjustedMovement: true })`。mousemove は累積しフレーム先頭で消費
 - `_tests_/` — ミラーを新パスへ。量子化・ingest fuzz・スナップショットは残す
 - `biome.json` — 依存規則（実装時に公式 schema でルール名を確認。発明しない）
-- マップパス — 静的埋め込み可。CDN 前提のパスだけ決める（実 CDN は置かない）
+- マップパス — 静的埋め込み可。CDN 前提のパスだけ決める（実 CDN は置かない）。将来の階層は `/fps/{official|ugc}/{slug}`（[editor.md](../arch/editor.md)）
 
 変更しない（境界外）:
 
-- `packages/profile-voxel` / `apps/web/client-voxel` / `gamemodes/*`（フェーズ 2–3）
+- `packages/profile-voxel` / `apps/web/client-voxel` / `gamemodes/*`（フェーズ 2–3）。`/fps|voxel/{official|ugc}` の本格ルーティング/エディタは後続
 - SimProfile インターフェース本実装・決定論 1000×100（フェーズ 2）
 - `defineGameMode` / Ctx / fps-ffa を独立モードパッケージ化（フェーズ 3）。本フェーズの「FFA」は現行単一ルームの位置同期を Babylon 上で動かすこと
 - Hello HMAC・座席・マッチメイカー・Redis（フェーズ 4）
@@ -162,12 +162,12 @@ architecture.md の目標構成のうち、本フェーズで作るもの:
 マップパス（CDN 前提・実ファイルはリポジトリ埋め込み可）:
 
 ```
-/maps/fps/ffa-default/render.glb
-/maps/fps/ffa-default/collision.glb
-/maps/fps/ffa-default/meta.json
+/fps/official/pvp/render.glb
+/fps/official/pvp/collision.glb
+/fps/official/pvp/meta.json
 ```
 
-本フェーズは平面または現行の埋め込み地形で足りる。glb が無ければプレーン地面。meta.json の sha256 照合は任意（フェーズ 2 でも可）。
+本フェーズは平面または現行の埋め込み地形で足りる。glb が無ければプレーン地面。meta.json の sha256 照合は任意（フェーズ 2 でも可）。Krunker.io 風エディタと UGC 公開フローは後続フェーズ。
 
 ### 10.2 依存規則（PH1-B）
 

@@ -24,6 +24,7 @@
 | [server.md](./server.md) | Room / TickScheduler / 入力キュー / レート制限 |
 | [matchmaker.md](./matchmaker.md) | HTTP API・チケット・Redis |
 | [client.md](./client.md) | バンドル分割・Babylon・入力・予測 |
+| [editor.md](./editor.md) | 公式/UGC 階層、FPS/voxel エディタ、GLB 読み込み方針 |
 | [sim-profiles.md](./sim-profiles.md) | voxel / fps のワールド・物理 |
 | [engineering.md](./engineering.md) | 決定論・テスト・予算・脅威モデル |
 | [ugc.md](./ugc.md) | QuickJS サンドボックス |

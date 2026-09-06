@@ -16,7 +16,7 @@ description: 理想スタックと移行元コードの使いどころ・ハマ�
 | 層 | 使うもの | 使わない |
 | :--- | :--- | :--- |
 | ランタイム | bun（`Bun.serve` ネイティブ WS） | Node `ws`、`uWebSockets.js` パッケージ（bun では動かない） |
-| 3D | `@babylonjs/core`。voxel は `noa-engine` | 新規の Three / R3F / drei |
+| 3D | `@babylonjs/core`。FPS/voxel エディタも Babylon.js。GLB 読み込みは `@babylonjs/loaders`。voxel は `noa-engine` | 新規の Three / R3F / drei |
 | UI | React はハブ・HUD・設定・メニュー | ゲームループを React State で回すこと。Context API 新規 |
 | シム | `SimProfile` 純粋 `step`。L1 に `if (type)` を書かない | `Math.random` / `Date.now` を step 内 |
 | ネット | 手書きバイナリ。Input **16 バイト固定**（不一致は切断）。制御は JSON | 高頻度の msgpack。ゲームコードから `WebSocket` 直接参照 |
@@ -64,7 +64,7 @@ description: 理想スタックと移行元コードの使いどころ・ハマ�
 
 - 現行は R3F v9 + `WebGPURenderer` 非同期ファクトリと WebGL2 フォールバック。**フェーズ 1 でシーンごと捨てる**。
 - drei `<Sky>` は WebGPU で白箱になる、等の現行ワークアラウンドは Babylon 移行後不要。
-- three-mesh-bvh は bun ヘッドレスで動く（現行権威衝突）。理想の fps 物理は [`sim-profiles.md`](../../../docs/arch/sim-profiles.md)。
+- three-mesh-bvh は bun ヘッドレスで動く（現行権威衝突）。理想の fps 物理は [`sim-profiles.md`](../../../docs/arch/sim-profiles.md)。FPS マップ/voxel ワールドの official/UGC 階層とエディタは [`editor.md`](../../../docs/arch/editor.md)。
 
 ### Zustand（ハブ UI には残してよい）
 
@@ -76,8 +76,14 @@ description: 理想スタックと移行元コードの使いどころ・ハマ�
 - Biome の import 制限は `linter.rules.style.noRestrictedImports`（diagnostic `lint/style/noRestrictedImports`）。recommended ではないため PH1-B で明示有効化する。
 - Babylon `Engine` は `new Engine(canvasOrContext, antialias?, options?, adaptToDeviceRatio?)`。`setHardwareScalingLevel` は typedoc で確認済み。
 - 2026-09-06 時点の Babylon typedoc `EngineOptions` 取得結果では `desynchronized` / `preserveDrawingBuffer` が property 一覧に出ていない。一方 Chrome は Canvas context attributes として両 key を公式に示す。PH1-D では installed `.d.ts` を見て、型に無い key を invent しない。
-- `@babylonjs/core` npm latest は `type: module`, `types: index.d.ts`, license Apache-2.0。`noa-engine@0.33.0` は `@babylonjs/core ^6.1.0` peer のため、voxel 導入時に Babylon major を再確認する。
+- `@babylonjs/core` npm latest は `type: module`, `types: index.d.ts`, license Apache-2.0。`@babylonjs/loaders` は GLB/glTF エディタ用候補。`noa-engine@0.33.0` は `@babylonjs/core ^6.1.0` peer のため、voxel 導入時に Babylon major を再確認する。
 
 ## API を記憶で書かない
 
 Babylon / noa / Bun WS は公式ドキュメントを検索する（AGENTS.md §7.5）。存在しないメソッドを発明しない。
+
+### DOC-5 official / UGC 階層（2026-09-06）
+
+- Game Type は `fps` / `voxel` の 2 種類。`official` / `ugc` は type ではなく Content Source。URL は `/fps/official/pvp`, `/fps/ugc/athletic`, `/voxel/official/survival`, `/voxel/ugc/athletic` の形。
+- FPS/voxel のエディタは Babylon.js。FPS エディタは GLB 読み込み対応。Babylon 公式は glTF loader に `@babylonjs/loaders` と module-level loader functions を推奨。
+- voxel 公式は Minecraft 風 terrain generation を独自実装し、Noa 系（`noa-engine`, `voxel-physics-engine`, `ent-comp`, `micro-game-shell`, `game-inputs`, `nipplejs`）を候補として扱う。

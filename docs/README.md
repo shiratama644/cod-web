@@ -22,6 +22,7 @@ docs/
 │   ├── server.md        # ゲームノード（Bun WS）
 │   ├── matchmaker.md    # マッチメイカー・チケット・Redis
 │   ├── client.md        # ハブ・Babylon・予測補間
+│   ├── editor.md        # 公式/UGC 階層とマップ/ワールドエディタ
 │   ├── sim-profiles.md  # VoxelProfile / FpsProfile
 │   ├── engineering.md   # 決定論・テスト・性能予算・セキュリティ
 │   ├── ugc.md           # ユーザー生成モード（フェーズ8）
@@ -50,5 +51,6 @@ docs/
 | 4 | [`arch/adr.md`](arch/adr.md) | 覆してはいけない決定 |
 | 5 | [`task-list.md`](task-list.md) | 次に着手するタスク |
 | 6 | [`arch/milestones.md`](arch/milestones.md) | フェーズと DoD |
+| 7 | [`arch/editor.md`](arch/editor.md) | `/fps|voxel/{official|ugc}/...` とエディタ方針 |
 
 実装担当は [`arch/README.md`](arch/README.md) の「実装時に守ること」も読むこと。

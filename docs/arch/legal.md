@@ -2,7 +2,7 @@
 
 ## 法務
 
-- Krunker / bloxd の **アセットは流用しない**
+- Krunker / bloxd / Minecraft の **アセット・コード・商標表現は流用しない**。地形生成は一般的なノイズ/バイオーム手法を独自実装する
 - bloxd 利用規約はリバースエンジニアリングを禁ずる。**ライブサービスへ接続しての解析は行わない**
 - 本プロジェクトのライセンスは **MIT**（ルート [`LICENSE`](../../LICENSE)）
 - UGC 受け入れ時は投稿ライセンスと権利侵害窓口が必要
@@ -16,6 +16,10 @@
 | noa-examples | ISC |
 | @babylonjs/core | Apache-2.0 |
 | ent-comp | MIT |
+| micro-game-shell | ISC |
+| game-inputs | ISC |
+| nipplejs | MIT |
+| @babylonjs/loaders | Apache-2.0 |
 
 ## 一次情報（実装で不明ならまずここ）
 
@@ -24,7 +28,11 @@
 - Noa: https://github.com/fenomas/noa / npm metadata: https://registry.npmjs.org/noa-engine/latest / history: https://raw.githubusercontent.com/fenomas/noa/master/docs/history.md
 - voxel-physics-engine: https://github.com/fenomas/voxel-physics-engine / npm metadata: https://registry.npmjs.org/voxel-physics-engine/latest
 - ent-comp: https://registry.npmjs.org/ent-comp/latest
+- micro-game-shell: https://registry.npmjs.org/micro-game-shell/latest
+- game-inputs: https://registry.npmjs.org/game-inputs/latest
+- nipplejs: https://registry.npmjs.org/nipplejs/latest
 - Babylon Engine / EngineOptions / Mesh / Material: https://doc.babylonjs.com/typedoc/
+- Babylon glTF / GLB loader: https://doc.babylonjs.com/features/featuresDeepDive/importers/glTF
 - @babylonjs/core npm metadata: https://registry.npmjs.org/@babylonjs/core/latest
 - Bun Workspaces: https://bun.com/docs/pm/workspaces
 - Bun WebSocket: https://bun.com/docs/runtime/http/websockets

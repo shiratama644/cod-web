@@ -46,7 +46,8 @@
 | PLAT-1 初版 | `663f815`。`PHASE01_PLAN.md` |
 | PLAT-1 API 表 | `87e0294`。§10.5 は arch 二次情報のみ（検索なし） |
 | PLAT-1R | `20fa678`。§10.5 を公式一次情報に差し替え。Babylon EngineOptions の不一致を明示 |
-| DOC-4 | 本コミット。docs 全体の外部 API 記述を公式確認メモへ集約し、古い重複仕様書を案内文に変更 |
+| DOC-4 | `02bcd7a`。docs 全体の外部 API 記述を公式確認メモへ集約し、古い重複仕様書を案内文に変更 |
+| DOC-5 | 本コミット。official/UGC 階層、Babylon GLB エディタ、voxel 公式地形生成、Noa 系依存候補を仕様へ反映 |
 | 現行ツリー | 単一 `package.json`。`src/` `shared/` `server/` `_tests_/`。R3F シーンはまだある |
 | テスト | `bun run test:unit` 72 passed（PH0-F 時点） |
 
@@ -130,7 +131,7 @@ voxel パッケージ、SimProfile 本実装、defineGameMode、Hello HMAC、Sna
 2. `AGENTS.md`
 3. `docs/task-list.md`
 4. `docs/planning/PHASE01_PLAN.md`（PLAT-1R 後。§10.5 が公式確認済み）
-5. `docs/arch/product.md` `architecture.md` `adr.md` `client.md` `protocol.md` `milestones.md` `legal.md`
+5. `docs/arch/product.md` `architecture.md` `editor.md` `adr.md` `client.md` `protocol.md` `milestones.md` `legal.md`
 6. `.agent/hooks/pre-task.md` → 必要なスキルだけ（`skills/index.md`）
 
 旧仕様は `.archive/docs/`。正本にしない。
