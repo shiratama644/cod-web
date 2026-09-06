@@ -11,6 +11,7 @@
 - 依存: フェーズ 0（PH0-A〜F）完了。本計画（PLAT-1）が実装の前提
 - 関連仕様: milestones フェーズ 1、architecture（workspaces・依存規則）、client（Babylon・入力累積）、protocol（Channel・WS のみ）、adr（ADR-002 / 003 / 005）
 - 本計画の §5 と §7 を再読してから実装サブタスクに入る
+- **外部 Web 検索は使わない**（失敗して作業が止まるため）。API は `docs/arch/` の「確認済み」記述と、実装着手時の `node_modules` 型・Biome schema だけを正とする
 
 ## 2. 目的 (Why)
 
@@ -67,7 +68,7 @@ milestones フェーズ 1 の文言は「workspaces、`noRestrictedImports`、R3
 - Input 16B 本体のレイアウト変更、Snapshot レイアウト変更
 - `dtMs` を ×10 にも ms にも「決定した」と書かない（OPEN-A）
 - fuzz を通すためだけのテスト削除
-- Babylon / noa の未確認 API を発明する。公式ドキュメントでシグネチャを確認してから書く
+- Babylon / noa / Biome / Bun の **リポジトリに無い名前を発明する**。型定義や schema に無いキーは書かない。無ければ停止して質問する
 
 強制されていないこと（本フェーズでやらない）: voxel パッケージ、Hello 認証、GPU 実測、タッチ入力、ハブ初期バンドル 300KB。
 
@@ -233,6 +234,24 @@ React: `App.tsx` / HUD / StartOverlay は DOM。キャンバスは `Engine` が�
 
 ネット: `GameClient` / prediction / interpolation はレンダラ非依存のまま移植（product.md）。
 
+### 10.5 確認済み API（出典はリポジトリ。未確認は型で再確認）
+
+Web 検索はしない。下表以外のメソッド名・オプション名は **書かない**。実装時はインストールしたパッケージの `.d.ts` / Biome `configuration_schema.json` と突き合わせる。
+
+| 領域 | 使ってよい（出典） | 使わない / 未確認 |
+|---|---|---|
+| Bun WS | `ws.send` 戻り値 -1 / 0 / 1+。`idleTimeout: 30`, `sendPings: true`, `perMessageDeflate: false`, `backpressureLimit`, `closeOnBackpressureLimit`, `maxPayloadLength`, `drain`（server.md・フェーズ 0 実装済み） | `bufferedAmount`（bun に無い。フェーズ 0） |
+| HTTP/3 / WT | 今は実装しない。Bun v1.3.14 時点で HTTP/3 は実験、WS over H3 未対応、WT は別プロジェクト（protocol.md） | `webtransport.ts`、geckos、生 UDP |
+| Channel | `Reliable=0` `Unreliable=1` `Bulk=2`。WS では先頭 1B（protocol.md） | ブラウザ `WebSocket.send` の戻り値（無い。クライアントは void） |
+| Pointer Lock | `requestPointerLock({ unadjustedMovement: true })`（client.md / legal.md） | タッチ / 仮想スティック（本フェーズ） |
+| Babylon Engine | 第 3 引数に WebGL コンテキスト属性。`desynchronized: true`, `preserveDrawingBuffer: true`, `alpha: false`, `stencil: false`, `powerPreference: 'high-performance'`。効いたかは `getContextAttributes()`（client.md） | 属性名の別名を発明しない。実装時 `@babylonjs/core` の `EngineOptions` にキーが無ければそのキーは落とす |
+| Babylon 最適化 | `setHardwareScalingLevel`, `freezeWorldMatrix`, `doNotSyncBoundingInfo`, `material.freeze`, `scene.freezeActiveMeshes`, thin instances。`freezeActiveMeshes` は RTT を止めるので必要なら `camera.customRenderTargets` に追加（client.md） | Havok（ADR-006） |
+| bun workspaces | ルート `package.json` の `workspaces` 配列（architecture.md「Bun workspaces」）。本リポジトリは `packageManager: bun@1.4.0` | catalog 等の未記載キーを invent しない。入らなければ停止 |
+| Biome | 現行 `biome.json` は recommended。制限は **PH1-B で** インストール済み schema を読んでからキーを書く。architecture.md の `noRestrictedImports` は意図。本計画でルール ID を確定しない | schema に無いルール名 |
+| noa / voxel-physics | フェーズ 2。本フェーズで import しない。出典だけ: `tickRate` は ticks/sec、`manuallyControlChunkLoading`、`Physics.tick(dtMs)`（sim-profiles.md） | フェーズ 1 で noa を足す |
+
+`createEngine` は milestones の作業名。Babylon 側が `Engine` コンストラクタなら **コンストラクタを使う**（名前を invent して工場関数を増やさない。薄く包むのは可）。
+
 ## 11. リスク・Gotchas
 
 - **ADR-005 vs 本計画:** ADR は Channel / Hello を「最初から」と言う。Hello はマッチメイカー（フェーズ 4）。**Channel だけ本フェーズ。** Hello を今入れないのは範囲の切り方であり、HMAC を実装して ADR を覆すものではない
@@ -248,7 +267,7 @@ React: `App.tsx` / HUD / StartOverlay は DOM。キャンバスは `Engine` が�
 
 | ID | コミット | テスト | 実測値・備考 |
 |---|---|---|---|
-| PLAT-1 | 本コミット | ドキュメント整合 | 合意: fps のみ / Channel 1B / GPU DoD 外す |
+| PLAT-1 | 本コミット | ドキュメント整合 | 合意: fps のみ / Channel 1B / GPU DoD 外す。API は arch 確認済みのみ（Web 検索なし） |
 | PH1-A | | | |
 | PH1-B | | | |
 | PH1-C | | | |
