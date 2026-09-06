@@ -1,10 +1,11 @@
-# 次セッションへの橋渡し（フェーズ 1 計画の直前）
+# 次セッションへの橋渡し（PH1-A 着手前）
 
-> 対象: 新しいセッションの AI。人間ではない。
-> 進捗の正本: [`docs/task-list.md`](../task-list.md)
-> 作業規約: [`AGENTS.md`](../../AGENTS.md)
-> 仕様正本: [`docs/arch/`](../arch/README.md)
-> このファイルは計画の代替ではない。**PLAT-1R は完了済み。次は `PHASE01_PLAN.md` を再読して PH1-A に進む。**
+> 対象: 新しいセッションの AI。人間ではない。  
+> 進捗の正本: [`docs/task-list.md`](../task-list.md)  
+> 作業規約: [`AGENTS.md`](../../AGENTS.md)  
+> 仕様正本: [`docs/arch/`](../arch/README.md)  
+> 調査の入口: [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md)  
+> このファイルは計画の代替ではない。**DR-5 / DOC-7 は完了済み。次は `PHASE01_PLAN.md` を再読して PH1-A に進む。**
 
 ## 0. 最初にやること（これ以外から始めない）
 
@@ -12,8 +13,8 @@
 2. ブランチ名は **毎回コマンドで確認**する。文書に書いてある過去ブランチ名を fetch/push しない（AGENTS.md §4.4）
 3. `git log` が起点 1 件だけ / status が大量削除+未追跡 / `bun` なし / `node_modules` なし → Sandbox 再構築。`.agent/hooks/sandbox-rebuild-recovery.md` どおり `git fetch origin <現在ブランチ>` → `git reset --hard FETCH_HEAD` → `bash .agent/hooks/restore-sandbox-env.sh`
 4. 未コミット変更を勝手に捨てない（再構築復旧の `reset --hard FETCH_HEAD` だけ例外）
-5. **進行中は 1 件。** PLAT-1R は完了済み。次の 1 件は **PH1-A**（bun workspaces + fps 系へ移動）
-6. PH1-A 着手前に `PHASE01_PLAN.md` §5 / §7 / §10.5 を再読する。公式・型・arch が食い違う場合は停止して人間に確認する
+5. **進行中は 1 件。** DR-5 / DOC-7 は完了済み。次の 1 件は **PH1-A**（bun workspaces + fps 系へ移動）
+6. PH1-A 着手前に `PHASE01_PLAN.md` §5 / §7 / §10.5 と [`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) を再読する。公式・型・arch が食い違う場合は停止して人間に確認する
 
 ## 1. いま決まっていること（覆さない）
 
@@ -47,7 +48,9 @@
 | PLAT-1 API 表 | `87e0294`。§10.5 は arch 二次情報のみ（検索なし） |
 | PLAT-1R | `20fa678`。§10.5 を公式一次情報に差し替え。Babylon EngineOptions の不一致を明示 |
 | DOC-4 | `02bcd7a`。docs 全体の外部 API 記述を公式確認メモへ集約し、古い重複仕様書を案内文に変更 |
-| DOC-5 | 本コミット。official/UGC 階層、Babylon GLB エディタ、voxel 公式地形生成、Noa 系依存候補を仕様へ反映 |
+| DOC-5 | `4805704`。official/UGC 階層、Babylon GLB エディタ、voxel 公式地形生成、Noa 系依存候補を仕様へ反映 |
+| DR-5 | `97594ba`。Perplexity DeepResearch と DR-1〜DR-4 の差分検証。古い cod-web 指摘と未解決課題を再分類 |
+| DOC-7 | 本コミット。Deep Research 統合サマリーを追加し、docs README / research README / HANDOFF を整理 |
 | 現行ツリー | 単一 `package.json`。`src/` `shared/` `server/` `_tests_/`。R3F シーンはまだある |
 | テスト | `bun run test:unit` 72 passed（PH0-F 時点） |
 
@@ -131,8 +134,9 @@ voxel パッケージ、SimProfile 本実装、defineGameMode、Hello HMAC、Sna
 2. `AGENTS.md`
 3. `docs/task-list.md`
 4. `docs/planning/PHASE01_PLAN.md`（PLAT-1R 後。§10.5 が公式確認済み）
-5. `docs/arch/product.md` `architecture.md` `editor.md` `adr.md` `client.md` `protocol.md` `milestones.md` `legal.md`
-6. `.agent/hooks/pre-task.md` → 必要なスキルだけ（`skills/index.md`）
+5. `docs/research/DEEP_RESEARCH_SYNTHESIS.md`（DR-1〜DR-5 の採用/不採用/要確認の入口）
+6. `docs/arch/product.md` `architecture.md` `editor.md` `adr.md` `client.md` `protocol.md` `milestones.md` `legal.md`
+7. `.agent/hooks/pre-task.md` → 必要なスキルだけ（`skills/index.md`）
 
 旧仕様は `.archive/docs/`。正本にしない。
 

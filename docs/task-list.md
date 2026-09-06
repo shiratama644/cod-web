@@ -96,6 +96,7 @@
 | DOC-4 | 現用ドキュメント全体の外部 API 記述を公式一次情報に追従 | 完了 | 100% | PLAT-1R | `docs/arch/api-sources.md` を追加し、現用 docs の古い API 記述を解消。リンク切れなし | 本コミット / Bun・Biome・Babylon・Noa・QuickJS・Colyseus 公式確認 / link check broken 0 / typecheck・lint・unit・build pass |
 | DOC-5 | 公式/UGC 階層とエディタ方針を仕様へ反映 | 完了 | 100% | DOC-4 | `/fps|voxel/{official|ugc}/<slug>`、Babylon GLB エディタ、voxel 公式地形生成、Noa 系依存候補が docs に反映 | 本コミット / `docs/arch/editor.md` / Babylon loaders・Noa 系 npm metadata 確認 / link check broken 0 / typecheck・lint・unit・build pass |
 | DOC-6 | Krunker.io / bloxd.io Deep Research 計画書作成 | 完了 | 100% | DOC-5 | 調査範囲・禁止事項・GitHub clone + SHA 記録ルールを明文化 | 本コミット / `docs/planning/DEEP_RESEARCH_PLAN.md` / link check broken 0 |
+| DOC-7 | ドキュメント整理（Deep Research 統合入口と読む順の整理） | 完了 | 100% | DR-5 | `docs/README.md` / `docs/research/README.md` / `docs/planning/HANDOFF.md` が DR-5 後の読む順と調査入口を示す | 本コミット / [`research/DEEP_RESEARCH_SYNTHESIS.md`](./research/DEEP_RESEARCH_SYNTHESIS.md) / link check broken 0 |
 
 ### 検証待ち・将来
 
