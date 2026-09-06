@@ -4,8 +4,9 @@
  *   bun run scripts/execute.ts   （または `bun run start`）
  *
  * 次を順に実行する:
- *   1. `bun run build`（vite build）。失敗したらそこで停止してサーバは起動しない。
- *   2. ビルド成功後、次の 2 プロセスを並列起動する:
+ *   1. `bun install`。失敗したらそこで停止。
+ *   2. `bun run build`（vite build）。失敗したらそこで停止してサーバは起動しない。
+ *   3. ビルド成功後、次の 2 プロセスを並列起動する:
  *        - game server : `bun run server` （権威ゲームサーバ・:8080）
  *        - web client  : `bun run preview`（vite preview・:4173、/ws を 8080 へプロキシ）
  *
@@ -19,12 +20,14 @@
 const RESET = '\x1b[0m'
 const DIM = '\x1b[2m'
 const colors = {
+  // インストール: 黄
+  install: { tag: 'INSTALL', fg: '\x1b[33m' },
   // ビルド: シアン
-  build: { tag: 'BUILD ', fg: '\x1b[36m' },
+  build: { tag: 'BUILD  ', fg: '\x1b[36m' },
   // ゲームサーバ: 緑
-  server: { tag: 'SERVER', fg: '\x1b[32m' },
+  server: { tag: 'SERVER ', fg: '\x1b[32m' },
   // Web クライアント（vite preview）: マゼンタ
-  client: { tag: 'CLIENT', fg: '\x1b[35m' },
+  client: { tag: 'CLIENT ', fg: '\x1b[35m' },
 } as const
 
 type Kind = keyof typeof colors
@@ -80,9 +83,24 @@ function spawn(kind: Kind, cmd: string[], cwd = process.cwd()) {
 }
 
 async function main(): Promise<number> {
-  logLine('build', 'Starting production build... (vite build)')
+  // ── 1. 依存関係のインストール ──────────────────────────────────────────
+  logLine('install', 'Installing dependencies... (bun install)')
+  const install = Bun.spawn(['bun', 'install'], {
+    cwd: process.cwd(),
+    stdout: 'pipe',
+    stderr: 'pipe',
+    stdin: 'inherit',
+  })
+  pipeOutput('install', install)
+  const installExit = await install.exited
+  if (installExit !== 0) {
+    logLine('install', `X Install failed (exit ${installExit}). Build and servers will not be started.`)
+    return installExit ?? 1
+  }
+  logLine('install', 'OK Install succeeded.')
 
-  // ── 1. ビルド（バッファして最後にまとめて色付け出力） ──────────────────
+  // ── 2. ビルド ─────────────────────────────────────────────────────────
+  logLine('build', 'Starting production build... (vite build)')
   const build = Bun.spawn(['bun', 'run', 'build'], {
     cwd: process.cwd(),
     stdout: 'pipe',
@@ -97,7 +115,7 @@ async function main(): Promise<number> {
   }
   logLine('build', 'OK Build succeeded. Starting game server and client...')
 
-  // ── 2. game server と vite preview を並列起動 ──────────────────────────
+  // ── 3. game server と vite preview を並列起動 ──────────────────────────
   const server = spawn('server', ['bun', 'run', 'server'])
   const client = spawn('client', ['bun', 'run', 'preview'])
 
