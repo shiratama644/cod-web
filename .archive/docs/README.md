@@ -1,6 +1,6 @@
 # cod-web ドキュメント索引
 
-cod-web（[Krunker.io](https://krunker.io) インスパイアのブラウザ向けクロスプラットフォーム・オンラインFPS／全端末 60FPS 目標）のドキュメント一式を種類別に整理したものです。ルート [`../README.md`](../README.md) からアプリの概要へアクセスできます。
+cod-web（[Krunker.io](https://krunker.io) インスパイアのブラウザ向けクロスプラットフォーム・オンラインFPS／全端末 60FPS 目標）のドキュメント一式を種類別に整理したものです。ルート [`../../README.md`](../../README.md) からアプリの概要へアクセスできます。
 
 ---
 
@@ -37,7 +37,7 @@ docs/
 
 | 見る順 | ドキュメント | 内容 |
 |---:|---|---|
-| 1 | [`../README.md`](../README.md) | アプリ概要、技術構成、セットアップ |
+| 1 | [`../../README.md`](../../README.md) | アプリ概要、技術構成、セットアップ |
 | 2 | [`arch/`](arch/README.md)（tech-stack / networking / 設計ルール） | 技術スタックの全容・ライブラリ選定・設計ルール |
 | 3 | [`task-list.md`](task-list.md) | **タスク管理の正本**（全フェーズの状態・証拠） |
 
@@ -48,8 +48,8 @@ docs/
 | 1 | [`task-list.md`](task-list.md) | 次に着手すべきタスクと依存・検証待ち項目の一覧 |
 | 2 | [`planning/PHASE00_PLAN.md`](planning/PHASE00_PLAN.md) | **直近フェーズ**: Phase 0（プロジェクト基盤構築） |
 | 3 | [`planning/_TEMPLATE.md`](planning/_TEMPLATE.md) | 計画書テンプレート（新規タスクはこの形式で計画） |
-| 4 | [`../AGENTS.md`](../AGENTS.md) | AI Agent 開発規約（コミット手順・検証・Git 運用・コミュニケーション） |
-| 5 | [`../.agent/skills/`](../.agent/skills) | コードベース知識（`index.md` が入口） |
+| 4 | [`../../AGENTS.md`](../../AGENTS.md) | AI Agent 開発規約（コミット手順・検証・Git 運用・コミュニケーション） |
+| 5 | [`../../.agent/skills/`](../../.agent/skills) | コードベース知識（`index.md` が入口） |
 
 ### 「デプロイしたい / CI を動かしたい」
 
