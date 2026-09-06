@@ -1,6 +1,6 @@
 # Deep Research 計画: Krunker.io / bloxd.io の技術調査
 
-> 対応 task-list ID: `DOC-6`（本計画） / 実調査 `DR-1` / 追加調査 `DR-2`  
+> 対応 task-list ID: `DOC-6`（本計画） / 実調査 `DR-1` / 追加調査 `DR-2` / 追加深掘り `DR-3`  
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠  
 > 関連仕様: [`docs/arch/legal.md`](../arch/legal.md)、[`docs/arch/editor.md`](../arch/editor.md)、[`docs/arch/api-sources.md`](../arch/api-sources.md)  
 > 重要: bloxd.io（ユーザー表記 Bloxed.io を含む）のライブサービスへ接続しての解析・リバースエンジニアリングは行わない。
@@ -61,7 +61,7 @@ cod-web の `fps` / `voxel` / `official` / `ugc` / エディタ方針を固め�
 - [ ] `docs/task-list.md` に `DOC-6` と `DR-1` が登録されている
 - [ ] Markdown relative link check が broken 0
 
-### DR-1（実調査）
+### DR-1 / DR-2 / DR-3（実調査）
 
 - [ ] Krunker.io / bloxd.io それぞれについて、ネットワーク・frontend・editor/UGC・法務制約を表で整理
 - [ ] すべての主張に source 種別（official / cloned code / npm metadata / secondary）と URL または clone commit SHA が付いている
@@ -108,6 +108,7 @@ cod-web の `fps` / `voxel` / `official` / `ugc` / エディタ方針を固め�
 | DR-1C | bloxd.io / Noa 系公開情報調査 | voxel / Noa / physics / ECS / terrain / input の調査メモ | DR-1A |
 | DR-1D | GitHub clone 監査 | clone した repo ごとの commit SHA、読んだファイル、API/設計メモ | DR-1A |
 | DR-1E | cod-web への示唆整理 | 採用候補 / 不採用 / 要確認、仕様変更提案 | DR-1B〜D |
+| DR-3A | ユーザー指示による追加 deep search | DR-3 文書、source inventory、採用候補/不採用/要確認 | DR-2 |
 
 ## 10. 調査プロトコル
 
@@ -189,3 +190,4 @@ git log -1 --oneline
 | DOC-6 | 本コミット | markdown link check | Deep Research 計画。GitHub clone + SHA 記録を必須化 |
 | DR-1 | 本コミット | markdown link check | `docs/research/DR-1_COMPETITOR_DEEP_RESEARCH.md`。Krunker / bloxd / Noa 系 clone SHA・読んだファイル一覧を記録。live service 解析なし |
 | DR-2 | 本コミット | markdown link check | `docs/research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md`。bloxd 公式 Terms、Krunker direct API URL、Noa/Babylon peer mismatch、Noa examples clone SHA を追加確認。live service 解析なし |
+| DR-3 | 本コミット | markdown link check | `docs/research/DR-3_DEEPER_COMPETITOR_RESEARCH.md`。`web_search` depth 3 で Krunker direct API、bloxd code-api 追加 docs、texture-packs、authoritative netcode を追加確認。live service 解析なし |

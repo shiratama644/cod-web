@@ -37,7 +37,8 @@ docs/
 └── research/            # 競合・関連技術の調査結果
     ├── README.md
     ├── DR-1_COMPETITOR_DEEP_RESEARCH.md
-    └── DR-2_ADDITIONAL_SOURCE_RESEARCH.md
+    ├── DR-2_ADDITIONAL_SOURCE_RESEARCH.md
+    └── DR-3_DEEPER_COMPETITOR_RESEARCH.md
 ```
 
 仕様書（`arch/`）= どう作るかの正本。計画書（`planning/`）= 何をどの順で。進捗（`task-list.md`）= 状態と証拠。
@@ -59,5 +60,6 @@ docs/
 | 8 | [`planning/DEEP_RESEARCH_PLAN.md`](planning/DEEP_RESEARCH_PLAN.md) | Krunker.io / bloxd.io Deep Research の手順 |
 | 9 | [`research/DR-1_COMPETITOR_DEEP_RESEARCH.md`](research/DR-1_COMPETITOR_DEEP_RESEARCH.md) | Krunker.io / bloxd.io 調査結果 |
 | 10 | [`research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md`](research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md) | DR-1 要確認の追加調査 |
+| 11 | [`research/DR-3_DEEPER_COMPETITOR_RESEARCH.md`](research/DR-3_DEEPER_COMPETITOR_RESEARCH.md) | 追加 deep research（Krunker direct API / bloxd code-api / texture packs / netcode） |
 
 実装担当は [`arch/README.md`](arch/README.md) の「実装時に守ること」も読むこと。
