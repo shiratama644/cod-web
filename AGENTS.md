@@ -3,7 +3,7 @@
 本ドキュメントは、AI Agent が本プロジェクトの開発・変更を行う際に**必ず遵守すべき開発規約**です。
 最優先事項は **「速く大量に作ること」ではなく「常に復旧可能で、壊れた状態を長時間維持しないこと」** です。
 
-本プロジェクトは **[Krunker.io](https://krunker.io) にインスパイアされたブラウザ向けクロスプラットフォーム・オンラインFPS**（Vite + React + Three.js + 権威型ゲームサーバー）です。**最重要目標は「どの端末でも安定 60FPS 以上」**（Krunker の完全上位互換）。技術スタックとゲーム設計ルールは [`docs/arch/tech-stack.md`](docs/arch/tech-stack.md) を正とします。
+本プロジェクトはブラウザ向け **マルチタイプ・ゲームプラットフォーム**（`voxel` / `fps`）です。現行コードは単一ルーム FPS の原型（移行元）。**理想形の仕様正本は [`docs/arch/`](docs/arch/README.md)**（入口 [`docs/arch/product.md`](docs/arch/product.md)）。旧 FPS 専用仕様は [`.archive/docs/`](.archive/docs/) にあり、正本としては使わない。
 
 ---
 
@@ -19,7 +19,7 @@
 
 | 区分 | 例 |
 | :--- | :--- |
-| **良い例（適切な粒度）** | Vite プロジェクト初期化 / R3F シーン基盤 / プレイヤー移動の実装 / ECS 基盤の導入 / テスト基盤の導入 |
+| **良い例（適切な粒度）** | BinaryReader 境界チェック / SimProfile の step 決定論テスト / ハブのルーム一覧 / fps-ffa 最小モード |
 | **悪い例（細かすぎる）** | ボタン1個追加ごとにコミット / CSS margin変更ごとにテスト |
 | **悪い例（大きすぎる）** | 3D基盤 + ネットワーク + 入力 + UI + 物理 を1タスクで一括実装 |
 
@@ -32,7 +32,7 @@
 各タスクは必ず以下の順序で進め、途中の検証が失敗した状態で次へ進んではならない。
 
 ```text
-1. 仕様・既存コード確認 (git status / package.json / 関連ファイル / docs/arch/tech-stack.md)
+1. 仕様・既存コード確認 (git status / package.json / 関連ファイル / docs/arch/ と docs/task-list.md)
    ↓
 2. 実装方針決定（曖昧点は ask_user で確認）
    ↓
@@ -56,15 +56,15 @@
 - **パッケージ管理・スクリプトランナーは bun**（`bun install` / `bun run` / `bunx`）。ロックファイルは `bun.lock`。
 - 原則として commit 前に以下 4 種を全て pass させる：
   ```bash
-  bun run typecheck             # tsc --noEmit
+  bun run typecheck             # tsc --noEmit および tsc -p tsconfig.server.json
   bunx biome lint .             # Biome 直接呼び出し（bun run lint より起動が速い）
   bun run test:unit             # vitest run（watch モードではない）
   bun run build                 # vite build（production）
   ```
 - **テストランナーは Vitest を使う。`bun test`（bun:test）は使わない**（jsdom + @testing-library/react の DOM テスト資産との互換を優先。bun はあくまでパッケージ管理・ランナーとして使用）。
 - **`vitest` を watch モードで起動しないこと**。commit 前検証には必ず `test:unit`（`vitest run`）を使う。
-- **E2E（Playwright）は Sandbox で実行不可**（§6.2 参照）。CI 上のみ実行。ローカルで無理に実行しようとしない。
-- ビルドサイズは `bun run build` 後の `dist/assets/` を `ls -lh dist/assets` 等で直接確認する（Three.js はバンドルが大きいため、chunk 分割・依存の重複に注意）。
+- **E2E（Playwright）は Sandbox で実行不可**（§6.2 参照）。`package.json` に `test:e2e` が無い限り捏造しない。CI 上のみ実行。
+- ビルドサイズは `bun run build` 後の `dist/assets/` を `ls -lh dist/assets` 等で直接確認する（3D エンジンはバンドルが大きい。chunk 分割・依存の重複に注意）。
 - ドキュメントのみの変更（コード無変更）では 4 検証はスキップ可。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。
 
 ### 3.2 エラー対応と品質維持
@@ -120,7 +120,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 - **重要な変更前のチェックポイント**: 大規模リファクタリング、ネットワーク基盤変更、依存関係更新の前には、作業前の正常状態を一度コミット（checkpoint）しておく。
 - **コミットメッセージ**: Conventional Commits 形式に従う。
   - `feat:`, `fix:`, `refactor:`, `perf:`, `test:`, `docs:`, `chore:`, `build:`, `ci:`
-  - タスク ID がある場合はスコープに含める（例: `feat(P0-B): R3F scene foundation`）。
+  - タスク ID がある場合はスコープに含める（例: `feat(PH1-A): binary reader bounds`）。
 
 ### 4.3 厳禁なGit操作（明示的な指示がない限り実行禁止）
 以下の破壊的・履歴改変コマンドは**絶対に実行してはならない**。
@@ -165,68 +165,66 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 ## 6. プロジェクト固有の遵守事項
 
-本プロジェクト（ブラウザFPS）で実際に踏みやすい地雷・確立した運用ルール。**計画書（`docs/planning/*PLAN.md`）に矛盾する指定があった場合は計画書を優先**するが、それ以外は本節を厳守する。技術スタックの網羅は [`docs/arch/tech-stack.md`](docs/arch/tech-stack.md) が正。
+本プロジェクトで踏みやすい地雷と運用ルール。**計画書（`docs/planning/*PLAN.md`）に矛盾する指定があった場合は計画書を優先**する。計画書に無い事項は本節と [`docs/arch/`](docs/arch/README.md) を厳守する。**ADR（[`docs/arch/adr.md`](docs/arch/adr.md)）に反する実装はせず、人間に確認する。**
+
+現行コード（R3F 単一ルーム FPS）と arch（Babylon プラットフォーム）が食い違う間は、**新規コードは arch に従う**。移行元の穴埋め（フェーズ 0）だけ現行ツリーを直す。
 
 ### 6.1 環境・ツールチェーン
-- **ランタイム / パッケージ管理: bun**（`bun install` / `bun run` / `bunx`、ロックファイル `bun.lock`）。Node.js 最新 LTS 上で bun を動かす。
-  - bun はサンドボックスにプリインストールされていない。**npm 経由（registry は到達可）で導入する**（`bun.sh` のインストールスクリプトは SSL エラーで到達不可）。導入・復旧は [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh) に集約。バージョンは devDependency として固定する。
-- **ビルド/Dev: Vite** + React + TypeScript（strict）。**3D**: Three.js（**WebGPU 最優先 + WebGL2 自動フォールバック**。WebGL2 を全端末 60FPS の基準レンダラーとし、WebGPU は対応端末での追加高速化）/ @react-three/fiber / @react-three/drei。
-- **状態管理**: Zustand（ゲーム状態は React State ではなく Zustand の `getState()` / `subscribe` または ref で直接更新）。Context API は新規に使わない。
+- **ランタイム / パッケージ管理: bun**（`bun install` / `bun run` / `bunx`、ロックファイル `bun.lock`）。
+  - bun はサンドボックスにプリインストールされていない。**npm 経由で導入**（`bun.sh` は SSL で到達不可）。復旧は [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh)。バージョンは devDependency で固定。
+- **ビルド/Dev: Vite** + React + TypeScript（strict）。React はハブ・HUD・設定・メニュー（DOM）に限定する（ADR-003）。
+- **3D（理想）: Babylon.js**（`@babylonjs/core`）。voxel クライアントは `noa-engine`。現行コードの Three.js / R3F シーンは破棄対象であり、新規 3D を R3F で足さない。
+- **状態**: 毎フレーム値は React State に置かない。ハブ UI は Zustand 可。Context API は新規に使わない。
 - **Lint/Format**: Biome（ESLint/Prettier は使わない）。
-- **テスト**: **Vitest** + @testing-library/react（UI）。bun 組み込みの `bun test`（bun:test）は使わない（§3.1）。E2E は Playwright（CI のみ）。
-- **ゲームサーバーのランタイムも bun を想定**。ただしトランスポート/フレームワーク（WebSocket 系 vs WebRTC-UDP 系）によっては bun 互換に差があるため、実結合・ランタイム互換の検証はネットワークフェーズ（Phase 1 以降）で行い、現状は方針として明記するに留める（§6.6）。
-- ツール選定の根拠は `docs/arch/tech-stack.md` を参照し、CONFIG に無いライブラリを導入する場合は一言ユーザーに相談する。
+- **テスト**: **Vitest** + @testing-library/react。`bun test` は使わない。テストは `_tests_/` にソース構造をミラー。E2E は Playwright（未導入なら書かない。CI のみ）。
+- **ゲームサーバー: bun**（`Bun.serve` ネイティブ WebSocket）。
+- arch に無い主要ライブラリを導入する場合はユーザーに相談する。
 
 ### 6.2 サンドボックス制約（乗り越えず、迂回する）
-以下は Sandbox 環境の恒常的制約であり、修正対象ではない。
 
 | 制約 | 対処 |
 |---|---|
-| Chromium バイナリの install 不可 | E2E (`bun run test:e2e` / Playwright) は**書けるが実行できない**。CI (GitHub Actions) 上のみ実行。ローカルで実行を試みない。 |
-| 外部ネットワークの一部到達不可 | ゲームサーバー（Colyseus/geckos.io）や外部 API への接続が必要な動作確認は Sandbox では限定的。ローカルではモック/オフライン経路を検証し、実ネットワーク結合は CI または実機確認として「実環境検証待ち」で報告する。 |
-| WebGPU のヘッドレスト環境差 | 3D レンダリングの目視確認はユーザー環境/プレビュー依存。ロジック（ECS・物理・当たり判定の入出力）はヘッドレスでユニットテスト可能な形に分離する。 |
+| Chromium バイナリの install 不可 | Playwright は**書けるが実行しない**（スクリプトが無いなら捏造しない）。CI のみ。 |
+| 外部ネットワークの一部到達不可 | 実 WS 結合は限定的。純粋関数・モックでユニットテスト。実結合は「実環境検証待ち」。 |
+| 3D のヘッドレス差 | 描画の目視はプレビュー依存。`SimProfile.step` 等は DOM/GPU 非依存でテスト。 |
 
 ### 6.3 GitHub App 権限制約
-- **`.github/workflows/` に書き込み不可**。CI ワークフローは `docs/ops/` に保管し、ユーザーが手動で `.github/workflows/` へ配置する。
-- 新規 CI ワークフローを作りたい時も同じ経路で提案する（勝手に `.github/workflows/` を作成しない）。
+- **`.github/workflows/` に書き込み不可**。CI は `docs/ops/` に保管し、ユーザーが配置する。勝手に `.github/workflows/` を作らない。
 
-### 6.4 React / R3F / ゲームループ実装ルール
-- **React のレンダリングサイクルとゲームループを完全分離**（CONFIG 黄金ルール4）。毎フレーム更新される座標・弾丸データは React State に置かず、Three.js オブジェクト参照（`ref`）または Zustand の `getState()` / `subscribe` で直接更新する。
-- **ゼロ・アロケーション（Zero Allocation in Loop）**（CONFIG 黄金ルール5）。`useFrame` 内での `new THREE.Vector3()` / `Quaternion` / `Matrix4` 等のオブジェクト生成は厳禁。モジュールスコープ等にプールした一時変数（`tempVec` など）を再利用し、GC スパイク・フレーム落ちを防ぐ。
-- **Rules of Hooks 厳守**: モーダル・オーバーレイ等のコンポーネントでは、全 hook（`useCallback` / `useState` / `useRef` / `useEffect` / `useId` 等）を早期 return（`if (!isOpen) return null;` 等）の**前**に配置する。
-- **JSX 内で日本語テキストと `{式}` を汚く混ぜない**: テンプレートリテラル（`` `${count}発` ``）または構造化（`<span>{count}</span>発`）で表現する。
-- **production build で動作確認する**: dev mode ではビルド時エラーや最適化の問題を見落とすことがある。ユーザーに変更を提供する前に `bun run build && bun run preview` で動作確認する。
+### 6.4 ゲームループ・決定論・ゼロアロケ
+- **React とシミュレーションを分離する。** 座標は React State にしない。
+- **`SimProfile.step` に `Math.random` / `Date.now` / `performance.now` / `setTimeout` / I/O を書かない**（[`docs/arch/engineering.md`](docs/arch/engineering.md)）。
+- **ホットパスでゼロアロケーション。** ティック内の `new`、`.slice()`、都度 `{x,y,z}` を禁止。送信は `subarray()`。
+- **L1（engine-core）に `if (type === 'voxel' | 'fps')` を書かない。** 書いたくなったら境界を見直して人間に確認する。
+- **Rules of Hooks 厳守**（早期 return の前に全 hook）。
+- **JSX 内で日本語と `{式}` を汚く混ぜない**。
+- ユーザー提供前は `bun run build && bun run preview` で確認する（現行クライアントがある場合）。
 
 ### 6.5 Biome 特有ルール
-- **`biome-ignore` コメントは対象コードの直前の行**に置く。1 行以上離れると unused 判定になり、逆に「意味のない ignore」として lint エラーになる。
-- `<span>` 等の generic 要素に `aria-label` を付ける時は `role="img"` を明示する（`lint/a11y/useAriaPropsSupportedByRole` 対応）。
-- テストファイル（`__tests__/**` / `*.test.{ts,tsx}` / `*.spec.{ts,tsx}`）では non-null assertion を緩和してよい（biome.json の `overrides` で `noNonNullAssertion: off`）。プロダクションコードでは non-null assertion 禁止。
+- **`biome-ignore` は対象コードの直前の行**。
+- `<span>` に `aria-label` を付ける時は `role="img"`。
+- テスト（`_tests_/**` / `*.test.{ts,tsx}`）の non-null 緩和は biome.json の `overrides` で行う。プロダクションでは non-null assertion 禁止。overrides が未設定なら勝手に緩めない。
 
-### 6.6 ネットワーク / ゲームサーバー設計ルール
-- **権威型サーバー（Authoritative Server）前提**: 当たり判定・スコア・プレイヤー状態の確定はサーバー側で行う。クライアントの BVH 即時判定はあくまで体感向上（先行表示）で、サーバーが Lag Compensation で検証する（CONFIG 黄金ルール1・2）。
-- クライアント予測・サーバー調停（Reconciliation）を基本とし、クライアント入力は即座に画面反映しつつサーバーのスナップショットで差分補正する。
-- **トランスポートは確定**（[`docs/arch/networking.md`](docs/arch/networking.md)）: **WebTransport（HTTP/3・QUIC、datagrams=非信頼 / streams=信頼）を主経路、WebSocket をフォールバック＆信頼メッセージ経路**とする。非対応・UDP/443 ブロック時は自動で WS へフォールバック。geckos.io（WebRTC-UDP）は採用しない（bun 非互換の恐れ＋別 UDP ポートで FW に弱い）。P2P ではないため STUN/TURN は不要。ネットコードはトランスポート非依存の抽象境界（NetTransport）の内側に書く。
-- **tick と描画**: サーバー tick・入力送信・状態スナップショットは **30Hz**。描画は**可変フレームレート（60〜120Hz+）**で tick と独立、全移動・アニメは delta time ベース。
-- **シリアライズは msgpackr** で開始（高頻度パケットのみ将来 bitpacking へ移行する余地を残す）。**FX/アニメはネットに流さず**、アクションフラグ（`isShooting` 等のビットフィールド）と発射トリガーだけ送り、クライアントが決定論的に再生する。
-- ネットワーク結合を含む機能は Sandbox で実結合できないため、ロジックを純粋関数・モック境界で分離し、ユニットテストで検証。実結合は CI/実機確認（「実環境検証待ち」）とする。
+### 6.6 ネットワーク / ゲームサーバー
+- **権威サーバー。** 位置・体力・スコア・ヒット確定はサーバ。クライアントは入力と意図だけ送る。
+- **トランスポートは今 WebSocket のみ**（[`docs/arch/protocol.md`](docs/arch/protocol.md)）。UDP / WebRTC DataChannel / geckos.io / WebTransport は**実装しない**。`NetTransport` 抽象と Channel 区分は維持する。ゲームコードから `WebSocket` を直接参照しない。
+- **レートはタイプごと**（`TYPE_SPECS`）。fps: シム 60 / 入力 60 / スナップショット 30。voxel: 30 / 30 / 15。描画は可変 FPS。
+- **高頻度は手書きバイナリ。** Input は理想 16 バイト固定（長さ不一致は切断）。msgpack は高頻度に使わない。制御のみ JSON。
+- **`ws.send()` の戻り値を見る**（-1 バックプレッシャ、0 破棄、1+ バイト）。存在しない `bufferedAmount` に頼らない。`perMessageDeflate: false`。
+- 実結合は Sandbox で不可。純粋関数でテストし、実機は「実環境検証待ち」。
 
 ### 6.7 ドキュメント運用
-- **仕様書と計画書は明確に区別する**:
-  - **仕様書（どう作るか：技術選定・プロトコル・アーキテクチャ・設計ルール）は `docs/arch/`** に置く（`docs/arch/README.md` が目次）。設計判断の正本で、更新され続ける。
-  - **計画書（何を・どの順で・どんな完了条件でやるか）は `docs/planning/`** に置く。
-  - `.agent/skills/` は **Agent のスキル**（プロジェクトをうまく進めるノウハウ・テクニック・手順・パターン）。設計仕様の正本は `docs/arch/` にあり、スキルはそれを踏まえつつ実践的なやり方を持つ。
-- ドキュメントは種類別フォルダに配置し、必ず `docs/README.md` と `docs/arch/README.md` の目次を更新する:
-  - `docs/arch/*.md` — 仕様書（tech-stack / networking / game-engineering-principles 等）
-  - `docs/planning/PHASE{N}_PLAN.md` — 実施計画書（着手前に作成、`docs/planning/_TEMPLATE.md` 準拠）
-  - `docs/planning/complete/PHASE{N}_COMPLETE.md` — 完了レポート（Phase 完了時に作成）
-  - `docs/audit/` — バグ監査・差分レポート
-  - `docs/ops/` — デプロイ・CI 運用手順
-- Phase 番号は 2 桁（`PHASE00_...` 等）で統一。サブフェーズは `Phase XX-A`, `XX-B`, ...、各サブフェーズ = 1 commit を原則（複雑な時のみ 2〜3 commit に分割可）。
+- **仕様書** = `docs/arch/`（[`docs/arch/README.md`](docs/arch/README.md) が目次）。
+- **計画書** = `docs/planning/`（`_TEMPLATE.md` 準拠）。
+- **進捗正本** = `docs/task-list.md`。
+- **旧仕様** = `.archive/docs/`。正本にしない。lint/test/build の対象外。
+- ファイル追加時は `docs/README.md` と `docs/arch/README.md` を更新する。
+- Phase 番号は 2 桁。サブフェーズ = 1 commit を原則。
 
 ### 6.8 計画書 > AGENT.md の優先順位
-- 計画書（`docs/planning/`）と本ドキュメントで指示が食い違う場合、**計画書を優先**する。
-- 計画書に記載のない事項については本ドキュメント（特に §6）と `docs/arch/tech-stack.md` を厳守する。
-- 計画書は着手前にユーザーと合意した仕様の記録であり、AGENT.md は「どう作業するか」の一般ルール。
+- 計画書と本ドキュメントが食い違う場合、**計画書を優先**する。
+- 計画書に無い事項は本節と `docs/arch/`（特に adr.md）。
+- 計画書は着手前合意、AGENT.md は作業の一般ルール。
 
 ### 6.9 計画書・タスク管理の形式（恒久ルール）
 - **進捗管理の唯一の正本は `docs/task-list.md`**。タスクは ID（P0-A 等）で管理し、状態（未着手/調査中/実装中/ローカル検証済み/実環境検証待ち/完了/保留/対象外）と完了条件・証拠（コミット SHA / テスト件数 / 実測値）を必ず記録・更新する。
@@ -278,7 +276,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 #### 7.4.1 質問すべき場面
 - 実装方針が 2 通り以上あり、どちらもメリット・デメリットがある時
-- 計画書 / docs/arch/tech-stack.md に記載されていない仕様判断が必要な時
+- 計画書 / `docs/arch/` に記載されていない仕様判断が必要な時
 - ユーザーの過去発言と現在の指示が矛盾している疑いがある時
 - 破壊的変更（ネットワークプロトコル変更、依存関係大規模更新、公開 API 変更等）を含む時
 - 「〜してください」の指示が曖昧で、複数解釈が成り立つ時
@@ -291,10 +289,10 @@ bash .agent/hooks/restore-sandbox-env.sh
 - **一度に 4 質問まで**
 
 ### 7.5 Web 検索の活用方針
-**わからないこと・記憶に自信がないことは Web 検索で確認する**。特に Three.js / R3F / WebGPU / Colyseus / geckos.io など、メジャーバージョン更新が速く API 仕様が変わりやすいライブラリは検索必須。
+**わからないこと・記憶に自信がないことは Web 検索で確認する**。特に Babylon.js / noa-engine / Bun WebSocket / Vite など、メジャーバージョン更新が速く API 仕様が変わりやすいライブラリは検索必須。
 
 - `web_search` ツールを使う。`depth` は状況で使い分け: depth=1（事実確認）/ depth=2（標準・複数ソース比較）/ depth=3（深掘り）。
-- 検索結果を引用する時は `[id](url)` 形式で必ずソースを明示。公式ドキュメント（threejs.org, docs.pmnd.rs, colyseus.io 等）を優先。
+- 検索結果を引用する時は `[id](url)` 形式で必ずソースを明示。公式ドキュメント（doc.babylonjs.com, bun.sh, vite.dev 等）を優先。
 - **記憶で断言せず、疑わしければ検索する**（ハルシネーション回避）。
 - **技術的事実の確認** → `web_search`（客観情報）/ **プロジェクト固有の仕様判断** → `ask_user`（ユーザー主観）。
 

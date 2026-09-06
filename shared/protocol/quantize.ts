@@ -6,14 +6,21 @@
  * encode → decode を経由することで、量子化誤差が両者で一致する（決定論）。
  */
 
-import { MOVE_AXIS_SCALE, PITCH_SCALE, POS_SCALE, VEL_SCALE, YAW_SCALE } from './constants'
+import {
+  MOVE_AXIS_MAX,
+  MOVE_AXIS_MIN,
+  MOVE_AXIS_SCALE,
+  PITCH_QUANT_MAX,
+  PITCH_SCALE,
+  POS_SCALE,
+  VEL_SCALE,
+  YAW_SCALE,
+} from './constants'
 
 const TWO_PI = Math.PI * 2
 const U16_MAX = 0xffff
 const I16_MIN = -0x8000
 const I16_MAX = 0x7fff
-const I8_MIN = -0x80
-const I8_MAX = 0x7f
 
 function clampInt(v: number, min: number, max: number): number {
   const n = Math.round(v)
@@ -40,10 +47,10 @@ export function dequantizeVelocity(quantized: number): number {
   return quantized / VEL_SCALE
 }
 
-// ── 移動軸入力 moveX/moveZ（-1..1 → -127..127, int8） ──────────────────────
+// ── 移動軸入力 moveX/moveZ（-1..1 → -100..100, int8） ──────────────────────
 
 export function quantizeMoveAxis(v: number): number {
-  return clampInt(v * MOVE_AXIS_SCALE, I8_MIN, I8_MAX)
+  return clampInt(v * MOVE_AXIS_SCALE, MOVE_AXIS_MIN, MOVE_AXIS_MAX)
 }
 
 export function dequantizeMoveAxis(quantized: number): number {
@@ -69,9 +76,8 @@ export function dequantizeYaw(quantized: number): number {
 // ── pitch（-π/2〜+π/2 → -128〜127, int8） ─────────────────────────────────
 
 export function quantizePitch(rad: number): number {
-  // クランプしてから丸める（視点はそもそも ±π/2 を超えないが安全のため）。
   const clamped = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rad))
-  return clampInt(clamped * PITCH_SCALE, I8_MIN, I8_MAX)
+  return clampInt(clamped * PITCH_SCALE, -PITCH_QUANT_MAX, PITCH_QUANT_MAX)
 }
 
 export function dequantizePitch(quantized: number): number {

@@ -15,10 +15,11 @@
  *  - seq が巻き戻る/重複する古い入力は破棄する（順序ガード）。
  */
 
-import { MAX_STEPS_PER_FRAME, SIM_DT } from '../../shared/protocol/constants'
+import { MAX_STEPS_PER_FRAME, SIM_DT, SIM_TICK_HZ } from '../../shared/protocol/constants'
 import type { PlayerInput } from '../../shared/protocol/messages'
 import { stepPlayer } from '../../shared/sim/movement'
 import type { CollisionWorld } from '../../shared/sim/collisionWorld'
+import { LagCompStore } from '../net/lagcomp-store'
 import type { Room } from '../room/Room'
 
 /** 1 プレイヤーあたりの入力キュー最大長（超えたら古いものから破棄して遅延を防ぐ）。 */
@@ -26,6 +27,8 @@ const MAX_QUEUED_INPUTS = 120
 
 export class Simulation {
   private tickNumber = 0
+  /** ラグ補償用位置履歴。毎ティック記録する。巻き戻し判定は後続。 */
+  readonly lagComp = new LagCompStore()
   /** playerId → 未消費の入力キュー（FIFO・seq 順）。tick ごとに先頭を 1 つ消費する。 */
   private readonly inputQueues = new Map<number, PlayerInput[]>()
   /** playerId → キュー済みの最新 seq（巻き戻り/重複を弾くガード）。 */
@@ -67,6 +70,8 @@ export class Simulation {
    * stepPlayer を適用。キューが空なら「入力なし」で進める。
    */
   step(): number {
+    const tick = this.tickNumber + 1
+    const timeMs = (tick * 1000) / SIM_TICK_HZ
     for (const player of this.room.getPlayers()) {
       const q = this.inputQueues.get(player.id)
       const queued = q && q.length > 0 ? q.shift() : undefined
@@ -76,8 +81,9 @@ export class Simulation {
         // 入力が無い tick: 重力は進めるが、水平移動 0・視点は現在値を維持する。
         stepPlayer(player, idleInput(player.yaw, player.pitch), SIM_DT, this.world)
       }
+      this.lagComp.record(tick, timeMs, player.id, player.x, player.y, player.z, player.yaw)
     }
-    this.tickNumber += 1
+    this.tickNumber = tick
     return this.tickNumber
   }
 

@@ -20,7 +20,7 @@ export interface NetTransport {
   /** 接続を開始する。 */
   connect(url: string): void
   /** バイナリパケットを送信する（高頻度・最新値優先）。 */
-  sendBinary(data: ArrayBuffer | DataView): void
+  sendBinary(data: ArrayBuffer | ArrayBufferView): void
   /** バイナリ受信ハンドラを登録する。 */
   onBinary(handler: BinaryMessageHandler): void
   /** 接続が開いたときのハンドラ。 */

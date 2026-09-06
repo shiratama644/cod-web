@@ -11,11 +11,12 @@
  * shared の純粋ロジック（three core/math + three-mesh-bvh、CPU のみ）を使う。
  */
 
-import { decodeInput, readMessageType } from '../shared/protocol/packer'
-import { MSG_C2S_INPUT } from '../shared/protocol/constants'
+import { ProtocolError } from '../shared/protocol/binary'
 import { Room, type Peer } from './room/Room'
 import { Simulation } from './sim/Simulation'
 import { SnapshotBroadcaster } from './net/snapshot'
+import { InputRateLimiter } from './net/rate-limit'
+import { ingestInput } from './net/ingest'
 import { buildServerWorld } from './physics/world'
 
 const PORT = Number(process.env.PORT ?? 8080)
@@ -30,6 +31,7 @@ const room = new Room()
 const world = buildServerWorld()
 const sim = new Simulation(room, world)
 const snapshots = new SnapshotBroadcaster()
+const inputRate = new InputRateLimiter()
 
 const server = Bun.serve<SocketData>({
   port: PORT,
@@ -45,16 +47,28 @@ const server = Bun.serve<SocketData>({
     })
   },
   websocket: {
+    maxPayloadLength: 64 * 1024,
+    idleTimeout: 30,
+    backpressureLimit: 1024 * 1024,
+    closeOnBackpressureLimit: true,
+    sendPings: true,
+    perMessageDeflate: false,
     open(ws) {
       const peer: Peer = {
         playerId: -1,
-        sendText: (data) => ws.send(data),
-        sendBinary: (data) => {
-          // bun の ws.send は詰まっていると -1 を返すことがある。
-          const sent = ws.send(data)
-          return sent < 0
+        sendText: (data) => {
+          ws.send(data)
         },
-        getBufferedAmount: () => (ws as unknown as { bufferedAmount?: number }).bufferedAmount ?? 0,
+        sendBinary: (data) => {
+          const u8 =
+            data instanceof Uint8Array
+              ? data
+              : new Uint8Array(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength)
+          return ws.send(u8)
+        },
+        disconnect: (code, reason) => {
+          ws.close(code, reason)
+        },
       }
       const id = room.join(peer)
       if (id === null) {
@@ -67,21 +81,32 @@ const server = Bun.serve<SocketData>({
       console.log(`[server] player joined: id=${id} (room=${room.playerCount})`)
     },
     message(ws, message) {
-      if (typeof message === 'string') {
-        // 制御テキストメッセージは現状なし（welcome/join/leave はサーバー発）。
-        return
+      try {
+        if (typeof message === 'string') {
+          // 制御テキストメッセージは現状なし（welcome/join/leave はサーバー発）。
+          return
+        }
+        const input = ingestInput(message)
+        const playerId = ws.data?.playerId
+        if (playerId != null && playerId > 0) {
+          if (!inputRate.allow(playerId, performance.now())) {
+            throw new ProtocolError('input rate exceeded')
+          }
+          sim.receiveInput(playerId, input)
+        }
+      } catch (err) {
+        const code = err instanceof ProtocolError ? err.closeCode : 1002
+        ws.close(code, 'protocol')
       }
-      // バイナリ: 入力パケット（Input Packet）。
-      const bytes = message instanceof ArrayBuffer ? message : toArrayBuffer(message)
-      const view = new DataView(bytes)
-      if (readMessageType(view) !== MSG_C2S_INPUT) return
-      const input = decodeInput(view, 1)
-      const playerId = ws.data?.playerId
-      if (playerId != null && playerId > 0) sim.receiveInput(playerId, input)
+    },
+    drain(ws) {
+      const id = ws.data?.playerId
+      if (id != null && id > 0) snapshots.markWritable(id)
     },
     close(ws) {
       const id = ws.data?.playerId
       if (id != null && id > 0) {
+        inputRate.remove(id)
         room.leave(id)
         console.log(`[server] player left: id=${id} (room=${room.playerCount})`)
       }
@@ -103,13 +128,6 @@ setInterval(() => {
     snapshots.maybeSend(room, t)
   }
 }, 1000 / TICK_HZ)
-
-/** Bun の Buffer（Uint8Array）を ArrayBuffer へ変換する。 */
-function toArrayBuffer(buf: ArrayBuffer | Uint8Array): ArrayBuffer {
-  if (buf instanceof ArrayBuffer) return buf
-  // Bun の WebSocket メッセージは Buffer/Uint8Array になることがある。
-  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
-}
 
 console.log(`[server] cod-web game server listening on ws://${HOST}:${server.port}`)
 

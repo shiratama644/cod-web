@@ -1,29 +1,34 @@
-# docs/arch — 仕様書（Architecture & Design Specs）
+# docs/arch — 仕様書（理想形）
 
-ここには **仕様書（どう作るか）** を置く。「何を・どの順で・どんな完了条件でやるか」の**計画書**は [`../planning/`](../planning/) とは明確に区別する。
+ここは **どう作るか** の正本です。計画は [`../planning/`](../planning/)、進捗は [`../task-list.md`](../task-list.md)。
 
-## 仕様書 vs 計画書
+現行コード（単一ルーム FPS）と食い違う場合、**本ディレクトリが目標**です。実装の現状は task-list の「移行元」を見る。
 
-| 種類 | 置き場所 | 内容 | ライフサイクル |
-| :--- | :--- | :--- | :--- |
-| **仕様書** | [`docs/arch/`](./) | 技術選定・プロトコル・アーキテクチャ・設計ルール（どう作るか） | 設計判断の**正本**。更新され続ける |
-| **計画書** | [`docs/planning/`](../planning/) | フェーズ/タスクの目的・変更範囲・完了条件・停止条件・サブタスク（何をやるか） | フェーズ単位・着手前に作成 |
-| **進捗正本** | [`../task-list.md`](../task-list.md) | タスク ID・状態・証拠 | 随時更新 |
-| **Agent 記憶** | [`../../.agent/`](../../.agent) | skills（**agent のスキル**＝ノウハウ・テクニック・手順・パターン）/ hooks（定型手順）/ logs（実行記録） | 設計事実の正本は arch。skills は「こうやるとうまく作れる」の実践知 |
+## 実装時に守ること
 
-- 仕様書が実コードと食い違う場合は、実コードを確認したうえで**このディレクトリの仕様書を更新**する。
-- 計画書・AGENTS.md と仕様書が矛盾する場合は、AGENTS.md §6.8 の優先順位（計画書 ＞ AGENTS.md）に従うが、アーキテクチャの事実そのものは本ディレクトリが正本。
+1. **存在しない API を発明しない。** 記載外の外部 API は公式ドキュメントで実在とシグネチャを確認する。
+2. **フェーズ順を飛ばさない。** [`milestones.md`](./milestones.md) の完了条件を満たす前に次へ進まない。
+3. **[`adr.md`](./adr.md) に反する実装をしない。** 変更が必要なら実装せず人間に確認する。
+4. **ADR に無い未決は勝手に決めない。** 該当箇所に到達したら質問する。
+5. **決定論を壊さない。** [`engineering.md`](./engineering.md) の規則に反するコードは、テストが通っても不正解。
+6. **トランスポートは現時点で WebSocket のみ。** UDP / WebRTC DataChannel / geckos.io / WebTransport は今は実装しない。将来 WT 移行のため `NetTransport` と Channel 区分は維持する（[`protocol.md`](./protocol.md) §トランスポート）。
 
 ## 仕様書一覧
 
 | ファイル | 内容 |
 | :--- | :--- |
-| [tech-stack.md](./tech-stack.md) | 技術スタック完全ガイド（採用ライブラリ・役割分担）＋ Krunker 上位互換・全端末 60FPS の設計・実装黄金ルール（WebGPU→WebGL2 フォールバック、可変 FPS 等） |
-| [modules.md](./modules.md) | モジュール＆アーキテクチャ構成（client / shared / server / web の層構成・責務分担・ディレクトリ構成・依存方向ルール） |
-| [networking.md](./networking.md) | ネットワーク＆リアルタイム設計の決定記録（WebTransport 主 / WebSocket フォールバック、シム60Hz・送信30Hz・入力60Hz、msgpackr、FX クライアント再生、サーバーランタイム構成）＋ **データ種別×プロトコル分類マトリクス（datagrams / streams / HTTPS）** |
-| [server-authority.md](./server-authority.md) | **権威サーバー設計**：ルーム形態（最大20人/FFA/TDM）・自前軽量実装（Colyseus はパターン参考のみ）・自前キネマティック物理先行・固定60Hzシム・入力60Hz/スナップショット30Hz送信（レート分離）・予測/調停/補間・Phase 1（WS で位置同期）マイルストン |
-| [game-engineering-principles.md](./game-engineering-principles.md) | FPS 設計の黄金ルールと実装パターン集（ゲームループ分離・ゼロアロケーション・可変 FPS・FX 同期・ネットワーク概要） |
+| [product.md](./product.md) | プロダクト・用語・現行資産の移植判定 |
+| [architecture.md](./architecture.md) | L0–L3、モノレポ、依存規則 |
+| [types.md](./types.md) | TypeSpec / SimProfile / GameModeDefinition / RoomCtx |
+| [protocol.md](./protocol.md) | パケット・AOI・WS 固定と WT 備え |
+| [server.md](./server.md) | Room / TickScheduler / 入力キュー / レート制限 |
+| [matchmaker.md](./matchmaker.md) | HTTP API・チケット・Redis |
+| [client.md](./client.md) | バンドル分割・Babylon・入力・予測 |
+| [sim-profiles.md](./sim-profiles.md) | voxel / fps のワールド・物理 |
+| [engineering.md](./engineering.md) | 決定論・テスト・予算・脅威モデル |
+| [ugc.md](./ugc.md) | QuickJS サンドボックス |
+| [adr.md](./adr.md) | 意思決定ログ |
+| [milestones.md](./milestones.md) | フェーズ 0–9 |
+| [legal.md](./legal.md) | ライセンス・OSS・一次情報 |
 
----
-
-> 新しい設計領域（例: ECS 設計・アセットパイプライン・マッチメイキング等）の仕様が固まったら、本ディレクトリに `kebab-case.md` で追加し、この一覧を更新する。
+新しい設計領域が固まったら `kebab-case.md` を追加し、本一覧と [`../README.md`](../README.md) を更新する。

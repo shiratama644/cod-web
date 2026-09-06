@@ -22,7 +22,7 @@ export interface PlayerInput {
   yaw: number
   /** 垂直視点（ラジアン、-π/2〜+π/2）。 */
   pitch: number
-  /** ビットフィールド（jump 等）。INPUT_FLAG_* を参照。 */
+  /** buttons u16（jump 等）。INPUT_FLAG_* を参照。 */
   flags: number
   /** 前入力からの経過時間（ms）。 */
   dtMs: number
