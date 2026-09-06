@@ -3,7 +3,7 @@
 ## 法務
 
 - Krunker / bloxd / Minecraft の **アセット・コード・商標表現は流用しない**。地形生成は一般的なノイズ/バイオーム手法を独自実装する
-- bloxd 利用規約はリバースエンジニアリングを禁ずる。**ライブサービスへ接続しての解析は行わない**
+- bloxd 公式 Terms of Service（https://bloxd.io/terms-of-service、2026-09-06 再確認）は reverse engineering / decompile / disassemble / unauthorized access を禁ずる。**ライブサービスへ接続しての解析は行わない**
 - 本プロジェクトのライセンスは **MIT**（ルート [`LICENSE`](../../LICENSE)）
 - UGC 受け入れ時は投稿ライセンスと権利侵害窓口が必要
 
@@ -45,5 +45,8 @@
 - Pointer Lock unadjustedMovement: https://w3c.github.io/pointerlock/
 - QuickJS sandbox: https://jsr.io/@sebastianwessel/quickjs
 - Krunker settings.txt（デフォルト思想の参考。アセットではない）: https://krunker.io/docs/settings.txt
+- Krunker NETWORK API（UGC networking の公開 API）: https://docs.krunker.io/api/network
+- bloxd Terms of Service（reverse engineering 禁止の公式根拠）: https://bloxd.io/terms-of-service
+- bloxd Privacy Policy（運用・moderation 参考）: https://bloxd.io/privacy-policy
 
 ソース仕様書 v2 全文は [`.archive/docs/マルチタイプ・ゲームプラットフォーム 設計書.md`](../../.archive/docs/マルチタイプ・ゲームプラットフォーム%20設計書.md)。
