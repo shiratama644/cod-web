@@ -29,7 +29,7 @@ Perplexity 文書は、既存 DR-1〜DR-4 よりも **現行 cod-web の通信�
 - `docs/research/DR-3_DEEPER_COMPETITOR_RESEARCH.md`
 - `docs/research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md`
 - `docs/task-list.md`
-- `docs/planning/DEEP_RESEARCH_PLAN.md`
+- `docs/planning/complete/DEEP_RESEARCH_PLAN.md`
 - 追加で現行コード/仕様確認: `package.json`, `server/index.ts`, `server/net/ingest.ts`, `server/net/rate-limit.ts`, `server/net/snapshot.ts`, `server/sim/Simulation.ts`, `server/net/lagcomp-store.ts`, `server/room/Room.ts`, `shared/protocol/binary.ts`, `shared/protocol/packer.ts`, `shared/protocol/constants.ts`, `src/game/net/GameClient.ts`, `src/game/net/websocket.ts`, `src/game/net/interpolation.ts`, `src/game/net/prediction.ts`, `docs/arch/protocol.md`, `docs/arch/server.md`, `docs/arch/adr.md`, `docs/arch/api-sources.md`
 
 ### 1.2 追加 Web 調査（depth 3）

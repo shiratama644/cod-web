@@ -1,15 +1,15 @@
 # Deep Research 計画: Krunker.io / bloxd.io の技術調査
 
-> 対応 task-list ID: `DOC-6`（本計画） / 実調査 `DR-1` / 追加調査 `DR-2` / 追加深掘り `DR-3` / engine・UGC・asset pipeline 深掘り `DR-4` / Perplexity 差分検証 `DR-5`  
-> 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠  
-> 関連仕様: [`docs/arch/legal.md`](../arch/legal.md)、[`docs/arch/editor.md`](../arch/editor.md)、[`docs/arch/api-sources.md`](../arch/api-sources.md)  
+> 対応 task-list ID: `DOC-6`（本計画） / 実調査 `DR-1` / 追加調査 `DR-2` / 追加深掘り `DR-3` / engine・UGC・asset pipeline 深掘り `DR-4` / Perplexity 差分検証 `DR-5`
+> 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
+> 関連仕様: [`docs/arch/legal.md`](../../arch/legal.md)、[`docs/arch/editor.md`](../../arch/editor.md)、[`docs/arch/api-sources.md`](../../arch/api-sources.md)
 > 重要: bloxd.io（ユーザー表記 Bloxed.io を含む）のライブサービスへ接続しての解析・リバースエンジニアリングは行わない。
 
 ## 1. 開始前確認
 
 - 現在のブランチ / HEAD / `git status` を確認する（未コミット変更があれば停止）
 - `docs/task-list.md` で対象 DR タスクの状態を確認する（完了済みタスクを再実施しない）
-- [`legal.md`](../arch/legal.md) の法務制約を再読する
+- [`legal.md`](../../arch/legal.md) の法務制約を再読する
 - GitHub 上のコードを調べる場合は、GitHub の検索結果や Web UI の断片だけで判断せず、**実際に `git clone` してローカル checkout を作り、commit SHA を記録してから読む**
 - 実調査前に、本計画 §4（禁止事項）と §7（停止条件）を再読する
 
@@ -30,7 +30,7 @@ cod-web の `fps` / `voxel` / `official` / `ugc` / エディタ方針を固め�
 ### 変更対象
 
 - `docs/research/`（実調査結果の保存先。必要なら新設）
-- `docs/planning/DEEP_RESEARCH_PLAN.md`（本計画）
+- `docs/planning/complete/DEEP_RESEARCH_PLAN.md`（本計画）
 - `docs/task-list.md`（`DOC-6` / `DR-1` / `DR-2` / `DR-3` / `DR-4` の状態）
 - 調査で得た **実装に使える一般化知見**のみ、後続タスクで `docs/arch/` へ提案として反映
 

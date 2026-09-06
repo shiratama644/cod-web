@@ -35,9 +35,11 @@ docs/
 │   ├── README.md        # 計画書索引・次に使う計画
 │   ├── _TEMPLATE.md
 │   ├── HANDOFF.md       # 次セッションへの橋渡し（先に読む）
-│   ├── PHASE00_PLAN.md  # フェーズ 0（現行コードの穴）
-│   ├── PHASE01_PLAN.md  # フェーズ 1（fps モノレポ + Babylon）
-│   └── DEEP_RESEARCH_PLAN.md # DR-1〜DR-5 調査計画
+│   ├── PHASE01_PLAN.md  # フェーズ 1（fps モノレポ + Babylon。次に使用）
+│   └── complete/        # 完了済み計画
+│       ├── README.md
+│       ├── PHASE00_PLAN.md
+│       └── DEEP_RESEARCH_PLAN.md
 └── research/            # 競合・関連技術の調査結果
     ├── README.md
     ├── DEEP_RESEARCH_SYNTHESIS.md
@@ -72,7 +74,7 @@ docs/
 
 | 順 | 文書 | 内容 |
 |---:|---|---|
-| 0 | [`planning/README.md`](planning/README.md) → [`planning/DEEP_RESEARCH_PLAN.md`](planning/DEEP_RESEARCH_PLAN.md) | 計画書入口と Krunker.io / bloxd.io Deep Research の手順・禁止事項 |
+| 0 | [`planning/README.md`](planning/README.md) → [`planning/complete/DEEP_RESEARCH_PLAN.md`](planning/complete/DEEP_RESEARCH_PLAN.md) | 計画書入口と Krunker.io / bloxd.io Deep Research の手順・禁止事項 |
 | 1 | [`research/DEEP_RESEARCH_SYNTHESIS.md`](research/DEEP_RESEARCH_SYNTHESIS.md) | 既存調査の統合サマリー |
 | 2 | [`research/DR-1_COMPETITOR_DEEP_RESEARCH.md`](research/DR-1_COMPETITOR_DEEP_RESEARCH.md) | Krunker.io / bloxd.io 初回調査 |
 | 3 | [`research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md`](research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md) | DR-1 要確認の追加調査 |

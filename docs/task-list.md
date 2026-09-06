@@ -5,7 +5,7 @@
 > 3. タスク ID は再利用しない。中止は「対象外」＋理由。
 > 4. 新問題は新タスク。混ぜない。
 > 5. 完了は証拠で判定。
-> 6. 詳細は `docs/planning/*_PLAN.md`（`_TEMPLATE.md` 準拠）。
+> 6. 詳細は `docs/planning/*_PLAN.md`。完了済み計画は `docs/planning/complete/`（`_TEMPLATE.md` 準拠）。
 > 7. 仕様の正本は `docs/arch/`（マルチタイププラットフォーム）。旧 FPS 専用仕様は `.archive/docs/`。
 
 **状態**: `未着手` / `調査中` / `実装中` / `ローカル検証済み` / `実環境検証待ち` / `完了` / `保留` / `対象外`
@@ -55,7 +55,7 @@
 
 ### Phase 0
 
-計画書: [`planning/PHASE00_PLAN.md`](./planning/PHASE00_PLAN.md)
+計画書: [`planning/complete/PHASE00_PLAN.md`](./planning/complete/PHASE00_PLAN.md)
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
@@ -95,9 +95,10 @@
 | LIC-1 | MIT の LICENSE ファイルをルートに配置 | 完了 | 100% | — | LICENSE が MIT 全文 | 本コミット |
 | DOC-4 | 現用ドキュメント全体の外部 API 記述を公式一次情報に追従 | 完了 | 100% | PLAT-1R | `docs/arch/api-sources.md` を追加し、現用 docs の古い API 記述を解消。リンク切れなし | 本コミット / Bun・Biome・Babylon・Noa・QuickJS・Colyseus 公式確認 / link check broken 0 / typecheck・lint・unit・build pass |
 | DOC-5 | 公式/UGC 階層とエディタ方針を仕様へ反映 | 完了 | 100% | DOC-4 | `/fps|voxel/{official|ugc}/<slug>`、Babylon GLB エディタ、voxel 公式地形生成、Noa 系依存候補が docs に反映 | 本コミット / `docs/arch/editor.md` / Babylon loaders・Noa 系 npm metadata 確認 / link check broken 0 / typecheck・lint・unit・build pass |
-| DOC-6 | Krunker.io / bloxd.io Deep Research 計画書作成 | 完了 | 100% | DOC-5 | 調査範囲・禁止事項・GitHub clone + SHA 記録ルールを明文化 | 本コミット / `docs/planning/DEEP_RESEARCH_PLAN.md` / link check broken 0 |
+| DOC-6 | Krunker.io / bloxd.io Deep Research 計画書作成 | 完了 | 100% | DOC-5 | 調査範囲・禁止事項・GitHub clone + SHA 記録ルールを明文化 | 本コミット / `docs/planning/complete/DEEP_RESEARCH_PLAN.md` / link check broken 0 |
 | DOC-7 | ドキュメント整理（Deep Research 統合入口と読む順の整理） | 完了 | 100% | DR-5 | `docs/README.md` / `docs/research/README.md` / `docs/planning/HANDOFF.md` が DR-5 後の読む順と調査入口を示す | `9bd5371` / [`research/DEEP_RESEARCH_SYNTHESIS.md`](./research/DEEP_RESEARCH_SYNTHESIS.md) / link check broken 0 |
-| DOC-8 | ドキュメント整理（planning/arch/research 導線と安全な索引追加） | 完了 | 100% | DOC-7 | ファイル移動なしで、読む順・計画書入口・仕様/調査の境界が docs に明示される | 本コミット / [`planning/README.md`](./planning/README.md) / link check broken 0 |
+| DOC-8 | ドキュメント整理（planning/arch/research 導線と安全な索引追加） | 完了 | 100% | DOC-7 | ファイル移動なしで、読む順・計画書入口・仕様/調査の境界が docs に明示される | `4f1e2fc` / [`planning/README.md`](./planning/README.md) / link check broken 0 |
+| DOC-9 | ドキュメント最終チェックと完了済み plan の整理 | 完了 | 100% | DOC-8 | 完了済み計画を `docs/planning/complete/` に移し、現用リンク・計画導線・API 根拠を再確認する | 本コミット / [`planning/complete/README.md`](./planning/complete/README.md) / link check broken 0 |
 
 ### 検証待ち・将来
 

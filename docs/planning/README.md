@@ -1,6 +1,6 @@
 # Planning Index
 
-計画書（`docs/planning/`）は、`docs/task-list.md` の各タスクを **どの順で、どの範囲で、何をもって完了とするか** に分解する場所です。仕様そのものの正本は [`../arch/`](../arch/README.md) です。
+計画書（`docs/planning/`）は、`docs/task-list.md` の各タスクを **どの順で、どの範囲で、何をもって完了とするか** に分解する場所です。仕様そのものの正本は [`../arch/`](../arch/README.md) です。完了済み計画は [`complete/`](./complete/) に置きます。
 
 ## まず読むもの
 
@@ -18,9 +18,9 @@
 |---|---|---|---|
 | [`_TEMPLATE.md`](./_TEMPLATE.md) | — | 現用 | 新規計画書の必須形式 |
 | [`HANDOFF.md`](./HANDOFF.md) | — | 現用 | 次セッションへの橋渡し。計画の代替ではない |
-| [`PHASE00_PLAN.md`](./PHASE00_PLAN.md) | `PLAT-0`, `PH0-A`〜`PH0-F` | 完了 | 現行コードの穴埋め（Input 16B、fuzz、backpressure、subarray、lagcomp record） |
+| [`PHASE00_PLAN.md`](./complete/PHASE00_PLAN.md) | `PLAT-0`, `PH0-A`〜`PH0-F` | 完了 | 現行コードの穴埋め（Input 16B、fuzz、backpressure、subarray、lagcomp record） |
 | [`PHASE01_PLAN.md`](./PHASE01_PLAN.md) | `PLAT-1`, `PH1-A`〜`PH1-F` | 次に使用 | bun workspaces + fps 系移動 + Babylon 移行 |
-| [`DEEP_RESEARCH_PLAN.md`](./DEEP_RESEARCH_PLAN.md) | `DOC-6`, `DR-1`〜`DR-5` | 完了 | Krunker.io / bloxd.io / engine / UGC / Perplexity 差分調査の手順と禁止事項 |
+| [`DEEP_RESEARCH_PLAN.md`](./complete/DEEP_RESEARCH_PLAN.md) | `DOC-6`, `DR-1`〜`DR-5` | 完了 | Krunker.io / bloxd.io / engine / UGC / Perplexity 差分調査の手順と禁止事項 |
 
 ## 次に着手可能なタスク
 

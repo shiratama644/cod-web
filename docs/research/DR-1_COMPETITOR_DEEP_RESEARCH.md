@@ -1,8 +1,8 @@
 # DR-1: Krunker.io / bloxd.io Deep Research
 
-> Date: 2026-09-06(JST)  
-> 対応計画: [`../planning/DEEP_RESEARCH_PLAN.md`](../planning/DEEP_RESEARCH_PLAN.md)  
-> 状態: 完了  
+> Date: 2026-09-06(JST)
+> 対応計画: [`../planning/complete/DEEP_RESEARCH_PLAN.md`](../planning/complete/DEEP_RESEARCH_PLAN.md)
+> 状態: 完了
 > 重要: 本調査では live service への接続解析、通信キャプチャ、production bundle 解析、アセット/コード流用を行っていない。
 
 ## 1. 調査方針と制約

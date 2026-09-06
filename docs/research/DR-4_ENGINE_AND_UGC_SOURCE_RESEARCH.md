@@ -19,7 +19,7 @@
 | `git log -5 --oneline` | HEAD `a09a374 docs(DR-3): add deeper competitor research` |
 | `AGENTS.md` / `.agent/hooks/pre-task.md` | 適用ルール再確認 |
 | `docs/task-list.md` | Phase 1 次タスクは `PH1-A`。ただし今回は追加 research のため実装しない |
-| `docs/planning/DEEP_RESEARCH_PLAN.md` | DR-1/2/3 まで完了。追加 deep research は `DR-4` として追記 |
+| `docs/planning/complete/DEEP_RESEARCH_PLAN.md` | DR-1/2/3 まで完了。追加 deep research は `DR-4` として追記 |
 | `docs/research/DR-3_DEEPER_COMPETITOR_RESEARCH.md` / `docs/research/README.md` | DR-3 成果と index を確認 |
 | `.agent/skills/index.md` | 調査専用 skill はなし。既存 `docs/arch` と research を正本/参照元にする |
 
