@@ -43,7 +43,7 @@ docs/
 
 | 順 | 文書 | 内容 |
 |---:|---|---|
-| 0 | [`planning/HANDOFF.md`](planning/HANDOFF.md) | 次セッション: 決まっていることと PLAT-1R |
+| 0 | [`planning/HANDOFF.md`](planning/HANDOFF.md) | 次セッション: PLAT-1R 完了後の PH1-A 着手メモ |
 | 1 | [`../README.md`](../README.md) | プロダクト概要・セットアップ（現行コード） |
 | 2 | [`arch/product.md`](arch/product.md) | 何を作るか・現行コードの扱い |
 | 3 | [`arch/architecture.md`](arch/architecture.md) | 層とモノレポ |
