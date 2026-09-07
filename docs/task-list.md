@@ -72,13 +72,14 @@
 計画書: [`planning/PHASE01_PLAN.md`](./planning/PHASE01_PLAN.md)  
 橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（PLAT-1R 完了後。次は **PH1-A**）
 
-合意: fps 系パッケージのみ。Channel 頭 1B。GPU 予算は本フェーズ DoD 外。
+合意: fps 系パッケージのみ。Channel 頭 1B。GPU 予算は本フェーズ DoD 外。`dtMs` はミリ秒。fps Snapshot は `vy` を含める。workspace package name は `@cod/*`。Babylon options は型にあるものだけ使う。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
 | PLAT-1 | フェーズ 1 計画書作成（`PHASE01_PLAN.md`） | 完了 | 100% | PH0-F | `_TEMPLATE.md` 準拠。arch と合意が矛盾しない | `663f815` / `87e0294` |
 | PLAT-1R | 公式 API を Web 検索して `PHASE01_PLAN` を書き直す | 完了 | 100% | PLAT-1 | 公式 URL 付き。D1–D10 維持。invent なし | `20fa678` / 公式一次情報 URL を PHASE01_PLAN §10.5 に記載 / link check broken 0 / typecheck・lint・unit・build pass |
-| PH1-A | bun workspaces + fps 系へ移動 | 未着手 | 0% | PLAT-1R | protocol / engine-core / profile-fps / gameserver / web がビルドできる | 次に着手可能 |
+| PLAT-1Q | 不確かな点の最終決定を docs へ反映 | 完了 | 100% | PLAT-1R | `dtMs` 単位、fps Snapshot `vy`、workspace package name、Babylon options 方針が arch / plan / handoff に反映される | 本コミット / 人間回答: `vy`含む・`@cod/*` / agent推奨採用: `dtMs`ミリ秒・Babylon型にあるものだけ |
+| PH1-A | bun workspaces + fps 系へ移動 | 未着手 | 0% | PLAT-1Q | `@cod/protocol` / `@cod/engine-core` / `@cod/profile-fps` / `@cod/gameserver` / `@cod/web` がビルドできる | 次に着手可能 |
 | PH1-B | 依存規則を Biome で強制 | 未着手 | 0% | PH1-A | 破ると lint が落ちる。ルール名は公式確認 | |
 | PH1-C | Channel 頭 1B | 未着手 | 0% | PH1-A | Unreliable の payload は Input 16B。欠落は 1002 | |
 | PH1-D | Babylon Engine + R3F シーン削除 | 未着手 | 0% | PH1-A | R3F シーンが無い。EngineOptions は公式どおり | |
@@ -110,4 +111,4 @@
 | DR-3 | 追加 Deep Research（search depth 3） | 完了 | 100% | DR-2 | Krunker direct API、bloxd code-api 追加 docs、texture-packs、authoritative netcode を deep search / fetch / clone SHA 付きで整理 | 本コミット / [`research/DR-3_DEEPER_COMPETITOR_RESEARCH.md`](./research/DR-3_DEEPER_COMPETITOR_RESEARCH.md) / web_search depth 3 / clone SHA 再確認 / link check broken 0 |
 | DR-4 | 追加 Deep Research（engine / UGC / asset pipeline） | 完了 | 100% | DR-3 | Noa 系 engine、voxel physics、input/mobile、QuickJS sandbox、glTF validation/optimization pipeline を deep search / fetch / clone SHA 付きで整理 | 本コミット / [`research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md`](./research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md) / web_search depth 3 / clone SHA 記録 / link check broken 0 |
 | DR-5 | Perplexity DeepResearch 差分検証 | 完了 | 100% | DR-4 | `docs/Perplexity-AI.md` と DR-1〜DR-4 の差分を分類し、一次情報/現行コードで修正済み・未解決・低信頼を整理 | 本コミット / [`research/DR-5_PERPLEXITY_DIFF_RESEARCH.md`](./research/DR-5_PERPLEXITY_DIFF_RESEARCH.md) / web_search depth 3 / 現行コード再監査 / link check broken 0 |
-| OPEN-A | Input `dtMs` の単位（ms か ×10 か）を決定 | 保留 | 0% | PLAT-0 | 人間の回答が protocol.md に反映 | |
+| OPEN-A | Input `dtMs` の単位（ms か ×10 か）を決定 | 完了 | 100% | PLAT-0 | 人間の回答が protocol.md に反映 | `dtMs` はミリ秒で確定。0.1ms単位（×10）は不採用 |

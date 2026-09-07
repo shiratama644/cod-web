@@ -3,7 +3,7 @@
 > 対応 task-list ID: `PLAT-1`（本計画） / 実装 `PH1-A` … `PH1-F`（docs/task-list.md）
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
 > 仕様正本: [`docs/arch/milestones.md`](../arch/milestones.md) フェーズ 1、[`architecture.md`](../arch/architecture.md)、[`client.md`](../arch/client.md)、[`protocol.md`](../arch/protocol.md)、[`adr.md`](../arch/adr.md)
-> 着手合意（2026-09-05）: モノレポは fps 系のみ / Channel 頭 1B のみ / GPU 予算は本フェーズ DoD から外す
+> 着手合意（2026-09-05 / 2026-09-08）: モノレポは fps 系のみ / Channel 頭 1B のみ / GPU 予算は本フェーズ DoD から外す / `dtMs` は ms / fps Snapshot は `vy` を含める / package 名は `@cod/*` / Babylon options は型にあるものだけ
 > 次セッション: [`HANDOFF.md`](./HANDOFF.md)。§10.5 は **PLAT-1R で公式一次情報を確認済み**。PH1-A は本計画を再読してから着手。
 
 ## 1. 開始前確認
@@ -27,6 +27,10 @@ milestones フェーズ 1 の文言は「workspaces、`noRestrictedImports`、R3
 | モノレポ | **fps 系パッケージだけ切る。** voxel / gamemodes パッケージはフェーズ 2–3 |
 | ワイヤ | **Channel 頭 1B だけ足す。** Input 16B 本体と Snapshot レイアウト（現行 type=2）は変えない |
 | GPU 予算 | engineering.md には残す。**本フェーズの完了条件からは外す**（Sandbox で計測不能） |
+| Input `dtMs` | **ミリ秒**で確定。0.1ms 単位（×10）にはしない |
+| fps Snapshot `vy` | **含める**。PH1-C では現行 Snapshot レイアウトを Channel 以外変えない |
+| workspace package name | **`@cod/*`** に統一する |
+| Babylon options | **型にあるものだけ**使う。型に無い canvas hint は後続最適化へ回す |
 
 ## 3. 変更範囲 (Scope)
 
@@ -51,12 +55,11 @@ milestones フェーズ 1 の文言は「workspaces、`noRestrictedImports`、R3
 - SimProfile インターフェース本実装・決定論 1000×100（フェーズ 2）
 - `defineGameMode` / Ctx / fps-ffa を独立モードパッケージ化（フェーズ 3）。本フェーズの「FFA」は現行単一ルームの位置同期を Babylon 上で動かすこと
 - Hello HMAC・座席・マッチメイカー・Redis（フェーズ 4）
-- Snapshot ワイヤを type `0x11` ヘッダへ変更、`vy` 削除、entity 17B（ADR 未決 B。今やらない）
+- Snapshot ワイヤを type `0x11` ヘッダへ変更、`vy` 削除、entity 17B 化（`vy` は含めると決定済み。PH1-C では現行 Snapshot レイアウトを Channel 以外変えない）
 - Channel 以外のプロトコル拡張（Ping / FireAction / AOI / チャンク）
 - `webtransport.ts`（フェーズ 9）
 - モバイルタッチ（`TouchControls.tsx` を本フェーズで新規実装・配線しない）
 - ボイス
-- OPEN-A（`dtMs` 単位）
 - GPU 数値 DoD（ドローコール &lt; 100、中位機 &lt; 8ms）
 - `.archive/` と過去ログの書き換え
 
@@ -67,7 +70,7 @@ milestones フェーズ 1 の文言は「workspaces、`noRestrictedImports`、R3
 - L1 に `if (type === 'voxel' | 'fps')` を書かない（voxel パッケージ自体を作らない）
 - 存在しない Bun API（`bufferedAmount`）を `NetTransport` に載せない。protocol.md の型例にあるが、フェーズ 0 どおり `send()` 戻り値を使う
 - Input 16B 本体のレイアウト変更、Snapshot レイアウト変更
-- `dtMs` を ×10 にも ms にも「決定した」と書かない（OPEN-A）
+- `dtMs` をミリ秒以外の単位として扱わない（OPEN-A はミリ秒で解決済み）
 - fuzz を通すためだけのテスト削除
 - Babylon / noa / Biome / Bun の **リポジトリに無い名前を発明する**。型定義や schema に無いキーは書かない。無ければ停止して質問する
 
@@ -81,7 +84,7 @@ milestones フェーズ 1 の文言は「workspaces、`noRestrictedImports`、R3
 - [ ] voxel / gamemodes パッケージがリポジトリに無い（意図的。フェーズ 2–3）
 - [ ] 依存規則が Biome で破ると lint が落ちる（少なくとも「web から `WebSocket` 直接」「engine-core から profile-fps を跨いだ実装詳細」の一方以上）
 - [ ] R3F / `@react-three/fiber` / `GameCanvas` の Three シーンがコードから無い
-- [ ] Babylon `Engine` を公式 constructor / installed `.d.ts` に沿って作る。`desynchronized` / `preserveDrawingBuffer` は Canvas/WebGL context attributes として扱い、型に無い key を invent しない。効いたかは `getContextAttributes()` で確認する
+- [ ] Babylon `Engine` を公式 constructor / installed `.d.ts` に沿って作る。`desynchronized` / `preserveDrawingBuffer` は Canvas/WebGL context attributes として扱うが、`@babylonjs/core` の型に無い場合は渡さず、後続最適化へ回す。型に無い key を invent しない
 - [ ] Pointer Lock が `unadjustedMovement: true`。視線はフレーム先頭で累積消費
 - [ ] React は HUD / メニュー / オーバーレイのみ。3D を JSX で組まない
 - [ ] 単一静的マップで既存の位置同期（Input 16B + Snapshot 現行）が Babylon 上で動く経路がある（ユニットまたはコンポーネント。実 2 タブは実環境検証待ち）
@@ -108,7 +111,6 @@ GPU ドローコール / フレーム ms は **本フェーズ DoD に含めな�
 - 仕様書同士に、本計画 §11 で解消していない矛盾があり、実装が進めない
 - task-list.md 記載の変更範囲を超える変更が必要
 - Snapshot ワイヤや Input 16B 本体を変えないと Babylon 化できない
-- OPEN-A を「決定」したくなる
 - 開始時点で作業ツリーに未確認の変更がある
 - bun workspaces / Biome 制限 / Babylon `Engine` の公式と arch が食い違い、arch を書き換えないと進めない
 
@@ -147,17 +149,17 @@ architecture.md の目標構成のうち、本フェーズで作るもの:
 /
 ├ package.json                 # workspaces
 ├ packages/
-│  ├ protocol/
-│  ├ engine-core/
-│  └ profile-fps/
+│  ├ protocol/                 # package name: @cod/protocol
+│  ├ engine-core/              # package name: @cod/engine-core
+│  └ profile-fps/              # package name: @cod/profile-fps
 ├ apps/
-│  ├ gameserver/
-│  └ web/                      # React シェル + client-fps 相当
+│  ├ gameserver/               # package name: @cod/gameserver
+│  └ web/                      # package name: @cod/web。React シェル + client-fps 相当
 ```
 
 作らない: `profile-voxel`、`gamemode-sdk`、`matchmaker`、`gamemodes/*`、`client-voxel`。
 
-移動は git mv 相当を優先（履歴を残す）。`shared/` と `server/` と `src/` は空になったら削除する。エイリアス `@shared` は `packages/protocol` へ張り替えるか、パッケージ名 import に変える。
+移動は git mv 相当を優先（履歴を残す）。`shared/` と `server/` と `src/` は空になったら削除する。内部 package 名は `@cod/*`（`@cod/protocol`, `@cod/engine-core`, `@cod/profile-fps`, `@cod/gameserver`, `@cod/web`）に統一し、workspace 間依存は `workspace:*` を使う。エイリアス `@shared` は `@cod/protocol` 等の package import へ張り替える。
 
 マップパス（CDN 前提・実ファイルはリポジトリ埋め込み可）:
 
@@ -197,7 +199,7 @@ protocol.md の Channel:
 1..    payload
 ```
 
-Input の payload はフェーズ 0 の 16B のまま（type=0x10 … dtMs）。**アプリから見た Input は 16B。** ソケット上は 17B。
+Input の payload はフェーズ 0 の 16B のまま（type=0x10 … dtMs）。**アプリから見た Input は 16B。** ソケット上は 17B。`dtMs` は **ミリ秒**として扱う（通常 60Hz で 16〜17ms、clamp 500ms）。
 
 サーバ `ingestInput`:
 
@@ -218,7 +220,7 @@ Input の payload はフェーズ 0 の 16B のまま（type=0x10 … dtMs）。
 client.md / api-sources.md どおり（導入時の `.d.ts` で再確認してから書く）:
 
 - `Engine` は公式 constructor `new Engine(canvasOrContext, antialias?, options?: EngineOptions, adaptToDeviceRatio?)` を使う
-- `desynchronized` / `preserveDrawingBuffer` は Chrome の Canvas/WebGL context attributes として公式確認済み。ただし 2026-09-06 の Babylon typedoc `EngineOptions` ページでは同名プロパティが一覧に出ていない。実装時にインストールした `@babylonjs/core` の型で再確認し、型に無い名前を invent しない（必要なら停止して人間に確認）
+- `desynchronized` / `preserveDrawingBuffer` は Chrome の Canvas/WebGL context attributes として公式確認済み。ただし 2026-09-06 の Babylon typedoc `EngineOptions` ページでは同名プロパティが一覧に出ていない。実装時にインストールした `@babylonjs/core` の型で再確認し、型に無い場合は渡さず後続最適化へ回す。型に無い名前を invent しない
 - `alpha: false`, `stencil: false`, `powerPreference: 'high-performance'`, `failIfMajorPerformanceCaveat` 等は導入時の型で許されるものだけ渡す
 - 効いたかは WebGL context の `getContextAttributes()` で読む。Babylon private field（例: `_gl`）に依存しない
 - 解像度 `setHardwareScalingLevel`。動的解像度は本フェーズ任意
@@ -242,7 +244,7 @@ PLAT-1R では `HANDOFF.md` の指示どおり、下表を公式ドキュメン�
 
 | 領域 | 公式確認した内容 | PH1 実装での扱い | 出典 |
 |---|---|---|---|
-| Bun workspaces | ルート `package.json` の `workspaces` キーに workspace ディレクトリを列挙する。例は `"workspaces": ["packages/*"]`。各 workspace は自分の `package.json` を持ち、workspace 内依存は `"workspace:*"` 等で参照できる。glob と negative pattern も対応。最新 docs には catalog / self-contained workspaces もある。 | PH1-A は単純な `workspaces` に `packages/*` と `apps/*` を置く。catalog / self-contained は必要になった時だけ再確認して導入する。 | [1](https://bun.com/docs/pm/workspaces) |
+| Bun workspaces | ルート `package.json` の `workspaces` キーに workspace ディレクトリを列挙する。例は `"workspaces": ["packages/*"]`。各 workspace は自分の `package.json` を持ち、workspace 内依存は `"workspace:*"` 等で参照できる。glob と negative pattern も対応。最新 docs には catalog / self-contained workspaces もある。 | PH1-A は単純な `workspaces` に `packages/*` と `apps/*` を置く。内部 package 名は `@cod/*` に統一する。catalog / self-contained は必要になった時だけ再確認して導入する。 | [1](https://bun.com/docs/pm/workspaces) |
 | Bun install / workspace 実行 | `bun install` は workspace をサポートする。`--filter` で一部 package の依存インストールや script 実行対象を絞れる。 | まず root で `bun install --frozen-lockfile`。必要なら `bun --filter` を使うが、root の 4 検証を正とする。 | [2](https://bun.com/docs/pm/cli/install) |
 | Bun WebSocket | `Bun.serve({ websocket })` は `open` / `message` / `close` / `error` / `drain` を持つ。`maxPayloadLength` 既定 16MB、`idleTimeout` 既定 120 秒、`backpressureLimit` 既定 16MB、`closeOnBackpressureLimit` 既定 false、`sendPings` 既定 true、`publishToSelf` 既定 false、`perMessageDeflate` を設定できる。最新 docs は `ws.data` typing を `websocket.data` property で示す。 | PH1 でも現行の明示値（`idleTimeout: 30`, `backpressureLimit: 1MB`, `closeOnBackpressureLimit: true`, `sendPings: true`, `perMessageDeflate: false`）を維持する。serve call の generic 型引数 前提は使わない。 | [1](https://bun.com/docs/runtime/http/websockets) |
 | Bun `ServerWebSocket.send` | `send(message, compress?)` は number を返す。`-1` は enqueue されたが backpressure、`0` は connection issue により dropped、`1+` は送信バイト数。`drain` で再開する。 | サーバ側は `send()` 戻り値を見る。`bufferedAmount` は Bun server WS の公式型に載っていないため使わない。 | [1](https://bun.com/docs/runtime/http/websockets) |
@@ -252,7 +254,7 @@ PLAT-1R では `HANDOFF.md` の指示どおり、下表を公式ドキュメン�
 | Pointer Lock | `Element.requestPointerLock(options?)` の `options.unadjustedMovement` は OS の mouse acceleration 調整を無効化し raw mouse input を取るための optional boolean。例は `await canvas.requestPointerLock({ unadjustedMovement: true })`。 | PH1-E はユーザー操作（click 等）から呼ぶ。Promise/非Promise 差は実装時に型とブラウザ挙動を確認し、失敗時は通常 pointer lock へフォールバックする設計にする。 | [2](https://developer.mozilla.org/en-US/docs/Web/API/Element/requestPointerLock) / [spec](https://w3c.github.io/pointerlock/) |
 | Canvas `desynchronized` | Chrome の公式記事は `canvas.getContext('webgl', { desynchronized: true, preserveDrawingBuffer: true })` を示し、`getContextAttributes().desynchronized` で feature detection する例を載せている。 | 低遅延 canvas の意図は維持。ただし Babylon `EngineOptions` 型に同名 key が無い場合は型に無い key を invent しない。 | [4](https://developer.chrome.com/blog/desynchronized) |
 | Babylon `Engine` | Babylon typedoc の `Engine` constructor は `new Engine(canvasOrContext, antialias?, options?: EngineOptions, adaptToDeviceRatio?)`。`getCreationOptions()` で作成時 options を取得できる。 | PH1-D は `new Engine(canvas, antiAlias, options, adaptToDeviceRatio)` を使う。`createEngine` は本プロジェクトの薄い wrapper 名としてのみ可。 | [2](https://doc.babylonjs.com/typedoc/classes/BABYLON.Engine) |
-| Babylon `EngineOptions` | Babylon typedoc の `EngineOptions` は `stencil`, `failIfMajorPerformanceCaveat`, `premultipliedAlpha`, `useHighPrecisionFloats`, `xrCompatible` 等を列挙する。一方、2026-09-06 に取得した同ページの property 一覧には `desynchronized` / `preserveDrawingBuffer` が出ていない。 | `client.md` の記述と typedoc の取得結果が食い違う可能性がある。PH1-D では installed `.d.ts` を確認し、無ければその key を入れず停止/確認する。 | [EngineOptions](https://doc.babylonjs.com/typedoc/interfaces/BABYLON.EngineOptions) |
+| Babylon `EngineOptions` | Babylon typedoc の `EngineOptions` は `stencil`, `failIfMajorPerformanceCaveat`, `premultipliedAlpha`, `useHighPrecisionFloats`, `xrCompatible` 等を列挙する。一方、2026-09-06 に取得した同ページの property 一覧には `desynchronized` / `preserveDrawingBuffer` が出ていない。 | PH1-D では installed `.d.ts` を確認し、型に無ければその key を渡さない。低遅延 canvas hint は後続最適化へ回す。 | [EngineOptions](https://doc.babylonjs.com/typedoc/interfaces/BABYLON.EngineOptions) |
 | Babylon 解像度 | `setHardwareScalingLevel(level: number): void` は typedoc にあり、level=1 が canvas 等倍、0.5 が 2 倍解像度。 | PH1-D/F で `engine.setHardwareScalingLevel(1 / resolutionScale)` 相当を使う場合は型確認して使う。 | [2](https://doc.babylonjs.com/typedoc/classes/BABYLON.Engine) |
 | Babylon Mesh 最適化 | `Mesh` typedoc は `freezeWorldMatrix`, `thinInstanceSetBuffer`, `thinInstanceSetMatrixAt` を method として持ち、`doNotSyncBoundingInfo: boolean` property を持つ。 | 静的メッシュ / リモートプレイヤー多数化の最適化候補。PH1-D では必要最小限。 | [4](https://doc.babylonjs.com/typedoc/classes/BABYLON.Mesh) |
 | Babylon Material | `Material.freeze(): void` は typedoc にあり、material update を lock する。 | 静的 material にだけ使う。動的変更が必要な material に無条件で使わない。 | [2](https://doc.babylonjs.com/typedoc/classes/babylon.material) |
@@ -262,7 +264,7 @@ PLAT-1R では `HANDOFF.md` の指示どおり、下表を公式ドキュメン�
 
 | 論点 | 片方の記述 | もう片方の記述 / 確認結果 | PH1 計画での扱い |
 |---|---|---|---|
-| `EngineOptions.desynchronized` / `preserveDrawingBuffer` | `docs/arch/client.md`: `Babylon の EngineOptions に desynchronized / preserveDrawingBuffer がある。` | Babylon typedoc `EngineOptions` の 2026-09-06 取得結果では property 一覧に `desynchronized` / `preserveDrawingBuffer` が出ていない。一方 Chrome は canvas context attributes として両 key を示す。 | PH1-D 実装時に installed `.d.ts` を確認。型に無い key は invent しない。必要なら停止して人間に確認。 |
+| `EngineOptions.desynchronized` / `preserveDrawingBuffer` | 低遅延 canvas hint として使いたい意図がある。 | Babylon typedoc `EngineOptions` の 2026-09-06 取得結果では property 一覧に `desynchronized` / `preserveDrawingBuffer` が出ていない。一方 Chrome は canvas context attributes として両 key を示す。 | PH1-D 実装時に installed `.d.ts` を確認。型に無ければ渡さず、後続最適化へ回す。 |
 | `noRestrictedImports` の置き場所 | `docs/arch/architecture.md`: 「Biome `noRestrictedImports` で強制」 | Biome 公式 rule ID は `lint/style/noRestrictedImports`、設定は `linter.rules.style.noRestrictedImports`。 | PH1-B では `style.noRestrictedImports` と schema を使う。 |
 
 
@@ -282,7 +284,8 @@ PLAT-1R では `HANDOFF.md` の指示どおり、下表を公式ドキュメン�
 | ID | コミット | テスト | 実測値・備考 |
 |---|---|---|---|
 | PLAT-1 | `663f815` / `87e0294` | ドキュメント整合 | 合意: fps のみ / Channel 1B / GPU DoD 外す。初版 API 表は arch 二次情報のみ |
-| PLAT-1R | 本コミット | 公式検索 + docs 整合 | §10.5 を公式一次情報に差し替え。D1–D10 維持。Babylon EngineOptions の不一致を明示 |
+| PLAT-1R | `20fa678` | 公式検索 + docs 整合 | §10.5 を公式一次情報に差し替え。D1–D10 維持。Babylon EngineOptions の不一致を明示 |
+| PLAT-1Q | 本コミット | 人間確認 + docs 整合 | `dtMs` はミリ秒、fps Snapshot は `vy` 含む、workspace package name は `@cod/*`、Babylon options は型にあるものだけ使う、と確定 |
 | PH1-A | | | |
 | PH1-B | | | |
 | PH1-C | | | |

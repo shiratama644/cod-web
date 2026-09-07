@@ -38,16 +38,16 @@ L0  プラットフォーム  ★タイプ非依存
 ├ tsconfig.base.json
 ├ biome.json
 ├ packages/
-│  ├ protocol/                    # L0: バイト定義・量子化・パッカー
-│  ├ engine-core/                 # L1: Room 基盤。SimProfile.ts のみ L2 境界
+│  ├ protocol/                    # L0: バイト定義・量子化・パッカー（PH1: @cod/protocol）
+│  ├ engine-core/                 # L1: Room 基盤。SimProfile.ts のみ L2 境界（PH1: @cod/engine-core）
 │  ├ profile-voxel/               # L2
-│  ├ profile-fps/                 # L2
+│  ├ profile-fps/                 # L2（PH1: @cod/profile-fps）
 │  ├ gamemode-sdk/                # L3 が import する唯一のパッケージ
 │  └ shared-types/
 ├ apps/
 │  ├ matchmaker/                  # L0 HTTP
-│  ├ gameserver/                  # L0+L1+L2 Bun WS
-│  └ web/
+│  ├ gameserver/                  # L0+L1+L2 Bun WS（PH1: @cod/gameserver）
+│  └ web/                         # PH1: @cod/web
 │     ├ hub/                      # React。初期バンドル。Babylon 禁止
 │     ├ shell/
 │     ├ net/                      # タイプ非依存ネットコード
@@ -64,7 +64,7 @@ L0  プラットフォーム  ★タイプ非依存
       └ ugc/
 ```
 
-`packages/protocol` の中は `common/` / `voxel/` / `fps/` にパケットを分ける。`engine-core` の `profile/SimProfile.ts` が L2 の実装契約。エディタとコンテンツ階層は [`editor.md`](./editor.md)。
+`packages/protocol` の中は `common/` / `voxel/` / `fps/` にパケットを分ける。PH1-A の内部 package 名は `@cod/protocol`, `@cod/engine-core`, `@cod/profile-fps`, `@cod/gameserver`, `@cod/web`。`engine-core` の `profile/SimProfile.ts` が L2 の実装契約。エディタとコンテンツ階層は [`editor.md`](./editor.md)。
 
 ## 依存規則（Biome `linter.rules.style.noRestrictedImports` で強制）
 

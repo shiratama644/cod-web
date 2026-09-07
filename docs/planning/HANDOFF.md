@@ -19,7 +19,7 @@
 
 ## 1. いま決まっていること（覆さない）
 
-人間が 2026-09-05 に選んだ。計画の範囲切り。ADR を覆すものではない。
+人間が 2026-09-05 と 2026-09-08 に選んだ。計画の範囲切り。ADR を覆すものではない。
 
 | ID | 決定 | 意味 |
 |---|---|---|
@@ -27,12 +27,15 @@
 | D2 | ワイヤは **Channel 頭 1B だけ** | Input **本体 16B** と Snapshot **現行 type=2 レイアウト**は変えない。ソケット上の Input は 17B。Hello HMAC は入れない（フェーズ 4） |
 | D3 | GPU 数値 DoD は **フェーズ 1 完了条件から外す** | engineering.md の「ドローコール &lt; 100」「中位機 &lt; 8ms」は残す。本フェーズをそれで 100% にしない |
 | D4 | lagcomp は **残して毎ティック record**。窓 500ms | 削除しない（PH0-E 済み） |
-| D5 | OPEN-A（`dtMs` が ms か ×10 か）は **触らない** | 決めたと書かない |
+| D5 | OPEN-A 解決: `dtMs` は **ミリ秒** | 0.1ms 単位（×10）にしない。`500` clamp は 500ms |
 | D6 | トランスポートは **WebSocket のみ** | WT / geckos / 生 UDP / WebRTC DataChannel を実装しない |
 | D7 | `bufferedAmount` は **使わない** | bun `ws.send` の -1 / 0 / 1+。共通 `NetTransport` API に `bufferedAmount` を必須にしない |
 | D8 | ホットパス送信は **`subarray`** | `slice` でバイトコピーしない |
 | D9 | ライセンス MIT。初期は匿名。モバイル両タイプだが **タッチは後続**。ボイスは理想、ゲーム同期に WebRTC は使わない |
 | D10 | プレーヤー同士はすり抜け。FPS マップは CDN 前提で **パスだけ**。チャンクは当面メモリ。初期リージョン 1 拠点 |
+| D11 | fps Snapshot には **`vy` を含める** | PH1-C では現行 Snapshot レイアウトを Channel 以外変えない。将来 0x11 化でも `vy` 前提で bytes/MTU を再計算 |
+| D12 | PH1 workspace package name は **`@cod/*`** | `@cod/protocol`, `@cod/engine-core`, `@cod/profile-fps`, `@cod/gameserver`, `@cod/web` |
+| D13 | Babylon options は **型にあるものだけ** | `desynchronized` / `preserveDrawingBuffer` が `@babylonjs/core` 型に無ければ渡さず、後続最適化へ回す |
 
 ## 2. コードの現状（事実）
 
@@ -67,7 +70,7 @@
 
 ### やってはいけない
 
-- D1–D10 を覆す（覆したくなったら実装せず人間に聞く）
+- D1–D13 を覆す（覆したくなったら実装せず人間に聞く）
 - 不一致を「こちらが正しい」と決める（§4 を読め）
 - PH1-A に PH1-B/C/D の内容を混ぜる（依存規則・Channel・Babylon は後続）
 - `.agent/logs/` の過去ログを書き換える
@@ -129,7 +132,7 @@
 
 ## 5. 強制されていない（やらない）
 
-voxel パッケージ、SimProfile 本実装、defineGameMode、Hello HMAC、Snapshot `0x11` 化、`vy` 削除、タッチ配線、ボイス、OPEN-A の決定、GPU 実測、Playwright 捏造、`.github/workflows/` 作成。
+voxel パッケージ、SimProfile 本実装、defineGameMode、Hello HMAC、Snapshot `0x11` 化、`vy` 削除、タッチ配線、ボイス、GPU 実測、Playwright 捏造、`.github/workflows/` 作成。
 
 ## 6. 読み順（次セッション）
 

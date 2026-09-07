@@ -72,7 +72,7 @@ Reject reason: 1 バージョン、2 チケット、3 ルームなし、4 満員
 
 検証: 長さ≠16 で切断。moveX/Z 範囲外で切断。`dtMs > 500` は clamp（切断しない）。
 
-**未決（OPEN-A）:** `dtMs` の単位は「ミリ秒」か「ミリ秒×10」かをまだ決めない。フェーズ 0 で現行 packer は type 込み **16 バイト**に更新済み。実装は `dtMs` を u16 の整数として運び、単位を確定したくなったら人間に確認する。
+**決定（OPEN-A 解決済み）:** `dtMs` の単位は **ミリ秒**。60Hz 入力では通常 16〜17ms を入れる。0.1ms 単位（×10）にはしない。`500` は 500ms clamp を意味する。
 
 ## Snapshot (0x11)
 
@@ -88,11 +88,12 @@ Reject reason: 1 バージョン、2 チケット、3 ルームなし、4 満員
 
 単体で復元できるか、baseline seq を明示する。「直前スナップショットが必ず届いている」前提を置かない。
 
-### fps エンティティ 17B
+### fps エンティティ
 
-`playerId u16`, `flags u8`（alive/crouch/sprint/onGround/reloading）, `x,y,z i16`（1cm 絶対）, `vx,vz i16`（1cm/s）, `yaw u16`, `pitch i8`, `health u8`。
+**決定:** fps Snapshot には `vy` を含める。補間・デバッグ・現行実装からの移行単純さを優先する。
 
-`vy` は送らない（重力は決定論、onGround と位置から補間）。実装単純さのため追加してよいが、MTU 予算を守ること。
+- PH1 の現行 Snapshot レイアウトは **1人 16B**（`playerId u16`, `x,y,z i16`, `vx,vy,vz i16`, `yaw u16`）を維持し、PH1-C では Channel 頭 1B 以外を変えない。
+- 将来 Snapshot `0x11` ヘッダへ更新する時も `vy` を含める。`flags u8`（alive/crouch/sprint/onGround/reloading）, `pitch i8`, `health u8` 等を足す場合は、entity bytes と MTU 予算を再計算する。
 
 ### voxel エンティティ 15B（AOI 相対）
 

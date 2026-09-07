@@ -14,7 +14,7 @@
 
 `Engine` は公式 constructor `new Engine(canvasOrContext, antialias?, options?: EngineOptions, adaptToDeviceRatio?)` を使う。第 3 引数 `EngineOptions` には `stencil`, `failIfMajorPerformanceCaveat`, `premultipliedAlpha` 等がある。
 
-低遅延の `desynchronized: true` と、ちらつき対策の `preserveDrawingBuffer: true` は Chrome の Canvas/WebGL context attributes として公式確認済み。ただし 2026-09-06 時点の Babylon typedoc `EngineOptions` property 一覧には出ていない（[api-sources.md](./api-sources.md)）。実装時は導入した `@babylonjs/core` の `.d.ts` と public API を確認し、型に無い key は invent しない。実際に効いたかは WebGL context の `getContextAttributes()` で確認する。Babylon の private field（例: `_gl`）には依存しない。
+低遅延の `desynchronized: true` と、ちらつき対策の `preserveDrawingBuffer: true` は Chrome の Canvas/WebGL context attributes として公式確認済み。ただし 2026-09-06 時点の Babylon typedoc `EngineOptions` property 一覧には出ていない（[api-sources.md](./api-sources.md)）。実装時は導入した `@babylonjs/core` の `.d.ts` と public API を確認し、**型にある `EngineOptions` だけを使う**。型に無い場合、`desynchronized` / `preserveDrawingBuffer` は渡さず、低遅延 canvas hint は後続最適化タスクへ回す。型に無い key を invent しない。Babylon の private field（例: `_gl`）には依存しない。
 
 解像度は `setHardwareScalingLevel`。動的解像度: 平均フレーム &gt;20ms なら scale を下げ、&lt;13ms ならゆっくり上げる。下限 0.5。
 

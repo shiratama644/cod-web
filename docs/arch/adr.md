@@ -64,14 +64,28 @@ HMAC チケット。マッチメイカーとノードで秘密鍵共有。
 - 初期リージョンは **1 拠点**
 - ランキング / 戦績の RDB は後続
 
+## ADR-015: Input `dtMs` はミリ秒
+
+`Input` 16B 固定レイアウト末尾の `dtMs` は **ミリ秒**として扱う。60Hz 入力では通常 16〜17ms。0.1ms 単位（×10）は採用しない。名前・ログ・clamp（500ms）の意味が一致し、実装とデバッグが単純になるため。
+
+## ADR-016: fps Snapshot には `vy` を含める
+
+fps Snapshot の速度成分には `vy` を含める。重力は決定論だが、現行実装からの移行・補間・デバッグを単純にすることを優先する。PH1-C では現行 Snapshot レイアウトを Channel 以外変更しない。将来 Snapshot `0x11` 化や delta/AOI を入れる時も `vy` を含める前提で bytes と MTU 予算を再計算する。
+
+## ADR-017: PH1 workspace package name は `@cod/*`
+
+PH1-A で作る Bun workspaces の内部 package 名は `@cod/*` に統一する。対象は `@cod/protocol`, `@cod/engine-core`, `@cod/profile-fps`, `@cod/gameserver`, `@cod/web`。workspace 間依存は Bun の `workspace:*` を使う。
+
+## ADR-018: Babylon Engine options は型にあるものだけ使う
+
+Babylon 導入時、`desynchronized` / `preserveDrawingBuffer` が導入済み `@babylonjs/core` の public `.d.ts` に無い場合は、`EngineOptions` に渡さない。Canvas/WebGL context attributes としての低遅延 hint は後続最適化タスクへ回す。型に無い key を invent したり、Babylon private field に依存したりしない。
+
 ## 実装時まで持ち越す未決
 
 | # | 事項 |
 |---|---|
-| A | Input の `dtMs` 単位（ミリ秒か ×10 か） |
-| B | fps スナップショットに `vy` を含めるか |
-| C | 認証方式（ADR-012 の「後続」の中身） |
-| D | ボイスの SFU / 着手フェーズ |
-| E | voxel 永続化の保存先（オブジェクトストレージ等） |
+| A | 認証方式（ADR-012 の「後続」の中身） |
+| B | ボイスの SFU / 着手フェーズ |
+| C | voxel 永続化の保存先（オブジェクトストレージ等） |
 
 これらに到達したら人間に聞く。

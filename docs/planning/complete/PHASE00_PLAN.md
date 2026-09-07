@@ -4,6 +4,7 @@
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
 > 仕様正本: [`docs/arch/milestones.md`](../../arch/milestones.md) フェーズ 0、[`protocol.md`](../../arch/protocol.md)、[`server.md`](../../arch/server.md)、[`engineering.md`](../../arch/engineering.md)
 > 2026-09-06 note: 本ファイルは完了済み Phase 0 の履歴計画。外部 API の最新確認は [`../../arch/api-sources.md`](../../arch/api-sources.md) を正とする。
+> 2026-09-08 note: OPEN-A は Phase 1 着手前確認で解決済み。現在の正本では `dtMs` は **ミリ秒**（[`../../arch/protocol.md`](../../arch/protocol.md)）であり、本ファイル内の「OPEN-A は触らない」は Phase 0 実装時点の履歴記述。
 
 ## 1. 開始前確認
 
@@ -53,7 +54,7 @@ Babylon 移行（フェーズ 1）より前に、現行 bun WS 権威サーバ�
 - AOI、FireAction、チャンク、UGC
 - クライアント予測を rAF から setInterval へ戻すこと（マイルストーンに無い）
 - 入力キュー上限 120 → 32（server.md）。今はやらない
-- OPEN-A（`dtMs` の単位）。本フェーズは **現行どおり u16 に載せる整数**を維持し、`dtMs > 500` は clamp（切断しない）。単位の公式決定はしない
+- OPEN-A（`dtMs` の単位）。本フェーズは **現行どおり u16 に載せる整数**を維持し、`dtMs > 500` は clamp（切断しない）。単位の公式決定はしない（2026-09-08 に後続決定: ミリ秒）
 - `.archive/` と過去ログ
 
 ## 4. 禁止事項
@@ -64,7 +65,7 @@ Babylon 移行（フェーズ 1）より前に、現行 bun WS 権威サーバ�
 - 存在しない Bun API（`bufferedAmount` 等）を使わない。`send()` の意味は公式どおり -1 / 0 / 1+
 - fuzz を通すためだけのテスト削除・アサーション緩和
 - Input 16B と無関係な Snapshot レイアウト変更
-- `dtMs` を ×10 にも ms にも「決定した」と書かない（OPEN-A）
+- `dtMs` を ×10 にも ms にも「決定した」と書かない（OPEN-A。当時の Phase 0 範囲。2026-09-08 に後続決定: ミリ秒）
 
 強制されていないこと（本フェーズでやらない）: Channel バイト、Hello 認証、モノレポ、Babylon。
 
@@ -157,7 +158,7 @@ protocol.md どおり:
 - 長さ ≠ 16 は切断 1002。空バッファも 1002（server.md）
 - Snapshot の type バイト（現行 `2`）は変えない
 
-`dtMs`: 現行クライアントは `Math.round(1000/60)` を載せる。本フェーズもそれを続ける。`> 500` は clamp。OPEN-A は触らない。
+`dtMs`: 現行クライアントは `Math.round(1000/60)` を載せる。本フェーズもそれを続ける。`> 500` は clamp。OPEN-A は Phase 0 では触らない（2026-09-08 に後続決定: ミリ秒）。
 
 ### 10.2 BinaryReader（PH0-A）
 
