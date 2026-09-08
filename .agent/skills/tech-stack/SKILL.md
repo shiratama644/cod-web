@@ -26,6 +26,8 @@ description: 理想スタックと移行元コードの使いどころ・ハマ�
 
 `ws.send()` は **-1 バックプレッシャ / 0 ドロップ / 1+ バイト**。存在しない `bufferedAmount` に頼らない。`perMessageDeflate: false`。
 
+PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload は 16B のまま、WS frame は 17B。ブラウザ送信は payload view の 1B 前に余白を持たせ、transport が Channel を書くと payload コピーを避けられる。
+
 ## ツールチェーン（現行も同じ）
 
 | 用途 | 技術 |

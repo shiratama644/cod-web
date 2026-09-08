@@ -6,6 +6,8 @@
  */
 
 import {
+  CHANNEL_BYTES,
+  Channel,
   SNAPSHOT_SEND_EVERY_TICKS,
   snapshotPayloadBytes,
 } from '@cod/protocol/protocol/constants'
@@ -15,11 +17,13 @@ import type { Room } from '../room/Room'
 
 /** リング送信バッファの本数。 */
 const RING_SIZE = 3
+/** Channel 1B を含むスナップショット frame の最大バイト長。 */
+export const SNAPSHOT_MAX_FRAME_BYTES = CHANNEL_BYTES + SNAPSHOT_MAX_BYTES
 
 export class SnapshotBroadcaster {
   private readonly ring: Uint8Array[] = Array.from(
     { length: RING_SIZE },
-    () => new Uint8Array(SNAPSHOT_MAX_BYTES),
+    () => new Uint8Array(SNAPSHOT_MAX_FRAME_BYTES),
   )
   private ringIndex = 0
   /** send() === -1 になったプレイヤー。drain までスナップショットを送らない。 */
@@ -33,7 +37,7 @@ export class SnapshotBroadcaster {
 
   /**
    * シム tick ごとに呼ぶ。SNAPSHOT_SEND_EVERY_TICKS（2）に 1 回だけ送信する。
-   * @returns 送信した場合の payload バイト数、スキップしたら null。
+   * @returns 送信した場合の payload バイト数（Channel を除く）、スキップしたら null。
    */
   maybeSend(room: Room, serverTick: number): number | null {
     if (serverTick - this.lastSentTick < SNAPSHOT_SEND_EVERY_TICKS) return null
@@ -44,7 +48,12 @@ export class SnapshotBroadcaster {
 
     const u8 = this.ring[this.ringIndex]
     this.ringIndex = (this.ringIndex + 1) % RING_SIZE
-    const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength)
+    u8[0] = Channel.Unreliable
+    const view = new DataView(
+      u8.buffer,
+      u8.byteOffset + CHANNEL_BYTES,
+      u8.byteLength - CHANNEL_BYTES,
+    )
 
     const snapshot: Snapshot = {
       serverTick,
@@ -67,8 +76,9 @@ export class SnapshotBroadcaster {
       if (!peer) continue
       if (this.paused.has(p.id)) continue
       snapshot.lastAckSeq = p.lastInputSeq
-      const bytes = encodeSnapshot(view, snapshot)
-      const sent = peer.sendBinary(u8.subarray(0, bytes))
+      const payloadBytes = encodeSnapshot(view, snapshot)
+      const frameBytes = CHANNEL_BYTES + payloadBytes
+      const sent = peer.sendBinary(u8.subarray(0, frameBytes))
       if (sent === 0) {
         peer.disconnect?.(1011, 'send failed')
         dropped.push(p.id)

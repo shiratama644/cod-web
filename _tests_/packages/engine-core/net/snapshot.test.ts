@@ -1,13 +1,19 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import {
+  CHANNEL_BYTES,
+  Channel,
   MSG_S2C_SNAPSHOT,
   snapshotPayloadBytes,
 } from '@cod/protocol/protocol/constants'
+import { decodeFrame } from '@cod/protocol/protocol/framing'
 import { decodeSnapshot, readMessageType } from '@cod/protocol/protocol/packer'
 import { Room, type Peer } from '@cod/engine-core/room/Room'
 import { SNAPSHOT_MAX_BYTES } from '@cod/protocol/protocol/packer'
-import { SnapshotBroadcaster } from '@cod/engine-core/net/snapshot'
+import {
+  SNAPSHOT_MAX_FRAME_BYTES,
+  SnapshotBroadcaster,
+} from '@cod/engine-core/net/snapshot'
 
 interface TestPeer extends Peer {
   binary: Uint8Array[]
@@ -67,6 +73,12 @@ function viewOf(buf: ArrayBufferView): DataView {
   return new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
 }
 
+function payloadOfFrame(buf: ArrayBufferView): DataView {
+  const frame = decodeFrame(viewOf(buf))
+  expect(frame.channel).toBe(Channel.Unreliable)
+  return frame.payload
+}
+
 describe('SnapshotBroadcaster', () => {
   it('tick 0 で送信、tick 1 ではスキップ、tick 2 でまた送信（1 tick おき＝30Hz）', () => {
     const room = roomWith(2)
@@ -80,15 +92,15 @@ describe('SnapshotBroadcaster', () => {
     }
   })
 
-  it('送信バイナリはスナップショット形式で、全プレイヤーを含む', () => {
+  it('送信バイナリは Channel.Unreliable + スナップショット形式で、全プレイヤーを含む', () => {
     const room = roomWith(3)
     const bc = new SnapshotBroadcaster()
     bc.maybeSend(room, 10)
     const p = peer(room, 0)
     const buf = firstPacket(p)
-    const view = viewOf(buf)
-    expect(readMessageType(view)).toBe(MSG_S2C_SNAPSHOT)
-    const snap = decodeSnapshot(view, buf.byteLength)
+    const payload = payloadOfFrame(buf)
+    expect(readMessageType(payload)).toBe(MSG_S2C_SNAPSHOT)
+    const snap = decodeSnapshot(payload, payload.byteLength)
     expect(snap.serverTick).toBe(10)
     expect(snap.players).toHaveLength(3)
   })
@@ -142,8 +154,8 @@ describe('SnapshotBroadcaster', () => {
 
     const peer1 = peer(room, 0)
     const packet = firstPacket(peer1)
-    const view1 = viewOf(packet)
-    const snap1 = decodeSnapshot(view1, packet.byteLength)
+    const payload = payloadOfFrame(packet)
+    const snap1 = decodeSnapshot(payload, payload.byteLength)
     expect(snap1.lastAckSeq).toBe(77)
   })
 
@@ -162,7 +174,8 @@ describe('SnapshotBroadcaster', () => {
     const sent = peer(room, 0).lastView
     if (!sent) throw new Error('no view')
     expect(sent).toBeInstanceOf(Uint8Array)
-    expect(sent.byteLength).toBe(snapshotPayloadBytes(1))
-    expect(sent.buffer.byteLength).toBe(SNAPSHOT_MAX_BYTES)
+    expect(sent.byteLength).toBe(CHANNEL_BYTES + snapshotPayloadBytes(1))
+    expect(sent.buffer.byteLength).toBe(SNAPSHOT_MAX_FRAME_BYTES)
+    expect(SNAPSHOT_MAX_FRAME_BYTES).toBe(CHANNEL_BYTES + SNAPSHOT_MAX_BYTES)
   })
 })

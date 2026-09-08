@@ -32,7 +32,22 @@ export const LAGCOMP_HISTORY_MS = 500
 export const MAX_PLAYERS = 20
 
 // ─────────────────────────────────────────────────────────────────────────
-// パケット種別（全バイナリパケットの先頭 1B）
+// Channel framing（PH1-C: 全バイナリフレームの先頭 1B）
+// ─────────────────────────────────────────────────────────────────────────
+
+export const Channel = {
+  Reliable: 0,
+  Unreliable: 1,
+  Bulk: 2,
+} as const
+
+export type ChannelId = (typeof Channel)[keyof typeof Channel]
+
+/** バイナリフレーム先頭の Channel バイト数。 */
+export const CHANNEL_BYTES = 1
+
+// ─────────────────────────────────────────────────────────────────────────
+// パケット種別（Channel を除いた payload の先頭 1B）
 // ─────────────────────────────────────────────────────────────────────────
 
 /** クライアント→サーバー: 入力パケット（60Hz・非信頼・バイナリ）。 protocol PacketType.Input */
@@ -58,8 +73,10 @@ export const INPUT_BODY_BYTES =
   2 + // pitch:i16
   2 + // buttons:u16
   2 //  dtMs:u16
-/** 入力パケットの総サイズ（type 込み）。 */
+/** 入力パケットの payload 総サイズ（type 込み）。 */
 export const INPUT_PACKET_BYTES = PACKET_TYPE_BYTES + INPUT_BODY_BYTES
+/** 入力の WS フレーム総サイズ（Channel + Input payload）。 */
+export const INPUT_FRAME_BYTES = CHANNEL_BYTES + INPUT_PACKET_BYTES
 
 /** スナップショットのヘッダサイズ（type 1B を除く）: serverTick:u32 + lastAckSeq:u32。 */
 export const SNAPSHOT_HEADER_BYTES = 4 + 4

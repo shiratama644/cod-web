@@ -10,8 +10,10 @@
  * 捨ててよい最新値」という前提で作り、WT 切替時にそのまま活きるようにする。
  */
 
-/** バイナリパケットを受信したときのコールバック。 */
-export type BinaryMessageHandler = (data: ArrayBuffer) => void
+import type { ChannelId } from '@cod/protocol/protocol/constants'
+
+/** バイナリ payload を受信したときのコールバック（Channel 1B は transport が剥がす）。 */
+export type BinaryMessageHandler = (channel: ChannelId, payload: DataView) => void
 
 /** 接続状態。 */
 export type TransportStatus = 'connecting' | 'open' | 'closed' | 'error'
@@ -19,8 +21,8 @@ export type TransportStatus = 'connecting' | 'open' | 'closed' | 'error'
 export interface NetTransport {
   /** 接続を開始する。 */
   connect(url: string): void
-  /** バイナリパケットを送信する（高頻度・最新値優先）。 */
-  sendBinary(data: ArrayBuffer | ArrayBufferView): void
+  /** Channel 付きバイナリフレームを送信する（高頻度・最新値優先）。 */
+  send(channel: ChannelId, payload: ArrayBuffer | ArrayBufferView): void
   /** バイナリ受信ハンドラを登録する。 */
   onBinary(handler: BinaryMessageHandler): void
   /** 接続が開いたときのハンドラ。 */

@@ -16,6 +16,8 @@
  */
 
 import {
+  CHANNEL_BYTES,
+  Channel,
   INPUT_PACKET_BYTES,
   INPUT_SEND_HZ,
   MAX_STEPS_PER_FRAME,
@@ -62,9 +64,9 @@ export class GameClient {
   onStatusChange: ((s: ConnectionStatus) => void) | null = null
 
   // 送信バッファ（プールして毎フレーム new しない）
-  private readonly sendBuffer = new ArrayBuffer(INPUT_PACKET_BYTES)
-  private readonly sendView = new DataView(this.sendBuffer)
-  private readonly sendBytes = new Uint8Array(this.sendBuffer)
+  private readonly sendBuffer = new ArrayBuffer(CHANNEL_BYTES + INPUT_PACKET_BYTES)
+  private readonly sendView = new DataView(this.sendBuffer, CHANNEL_BYTES, INPUT_PACKET_BYTES)
+  private readonly sendBytes = new Uint8Array(this.sendBuffer, CHANNEL_BYTES, INPUT_PACKET_BYTES)
 
   /** 現在の部屋にいるリモートプレイヤー補間結果（フレームごとに更新）。 */
   remotes: Map<number, InterpolatedPlayer> = new Map()
@@ -80,7 +82,7 @@ export class GameClient {
     this.setStatus('connecting')
     this.transport.onOpen(() => this.setStatus('connected'))
     this.transport.onClose(() => this.setStatus('disconnected'))
-    this.transport.onBinary((data) => this.onBinary(data))
+    this.transport.onBinary((channel, payload) => this.onBinary(channel, payload))
     // テキスト制御（welcome で自 playerId を得る）
     const t = this.transport as WebSocketTransport
     if (typeof t.onText === 'function') {
@@ -135,11 +137,11 @@ export class GameClient {
     }
   }
 
-  private onBinary(data: ArrayBuffer): void {
-    const view = new DataView(data)
+  private onBinary(channel: number, payload: DataView): void {
+    if (channel !== Channel.Unreliable) return
     let snap: ReturnType<typeof decodeSnapshot>
     try {
-      snap = decodeSnapshot(view, data.byteLength)
+      snap = decodeSnapshot(payload, payload.byteLength)
     } catch {
       return
     }
@@ -236,7 +238,7 @@ export class GameClient {
 
   private encodeAndSend(input: PlayerInput): void {
     const len = encodeInput(this.sendView, input)
-    this.transport.sendBinary(this.sendBytes.subarray(0, len))
+    this.transport.send(Channel.Unreliable, this.sendBytes.subarray(0, len))
   }
 
   private updateRemotes(): void {

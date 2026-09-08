@@ -6,6 +6,8 @@
  * 追加する（docs/arch/server-authority.md §3）。
  */
 
+import { CHANNEL_BYTES, type ChannelId } from '@cod/protocol/protocol/constants'
+import { decodeFrame } from '@cod/protocol/protocol/framing'
 import type { BinaryMessageHandler, NetTransport, TransportStatus } from './transport'
 
 export class WebSocketTransport implements NetTransport {
@@ -14,6 +16,7 @@ export class WebSocketTransport implements NetTransport {
   private openHandler: (() => void) | null = null
   private closeHandler: (() => void) | null = null
   private _status: TransportStatus = 'closed'
+  private frameBuffer = new Uint8Array(0)
 
   get status(): TransportStatus {
     return this._status
@@ -36,7 +39,12 @@ export class WebSocketTransport implements NetTransport {
         this.textHandler?.(event.data)
         return
       }
-      this.binaryHandler?.(event.data as ArrayBuffer)
+      try {
+        const frame = decodeFrame(new DataView(event.data as ArrayBuffer))
+        this.binaryHandler?.(frame.channel, frame.payload)
+      } catch {
+        ws.close(1002, 'protocol')
+      }
     }
     ws.onclose = () => {
       this._status = 'closed'
@@ -53,13 +61,32 @@ export class WebSocketTransport implements NetTransport {
     this.textHandler = handler
   }
 
-  sendBinary(data: ArrayBuffer | ArrayBufferView): void {
+  send(channel: ChannelId, payload: ArrayBuffer | ArrayBufferView): void {
     if (!this.ws || this._status !== 'open') return
     const view =
-      data instanceof ArrayBuffer
-        ? new Uint8Array(data)
-        : new Uint8Array(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength)
-    this.ws.send(view)
+      payload instanceof ArrayBuffer
+        ? new Uint8Array(payload)
+        : new Uint8Array(payload.buffer as ArrayBuffer, payload.byteOffset, payload.byteLength)
+
+    // 呼び出し側が「1B 前に Channel 用の余白を持つ payload view」を渡した場合は、
+    // 同じ backing buffer の直前に Channel を書いて送る。payload はコピーしない。
+    if (view.byteOffset >= CHANNEL_BYTES) {
+      const frame = new Uint8Array(
+        view.buffer as ArrayBuffer,
+        view.byteOffset - CHANNEL_BYTES,
+        view.byteLength + CHANNEL_BYTES,
+      )
+      frame[0] = channel
+      this.ws.send(frame)
+      return
+    }
+
+    // 汎用 fallback。通常の Input 送信は上の no-copy path を通る。
+    const frameBytes = view.byteLength + CHANNEL_BYTES
+    if (this.frameBuffer.byteLength < frameBytes) this.frameBuffer = new Uint8Array(frameBytes)
+    this.frameBuffer[0] = channel
+    this.frameBuffer.set(view, CHANNEL_BYTES)
+    this.ws.send(this.frameBuffer.subarray(0, frameBytes))
   }
 
   onBinary(handler: BinaryMessageHandler): void {
