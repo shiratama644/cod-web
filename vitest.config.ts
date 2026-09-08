@@ -10,19 +10,19 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(rootDir, 'src'),
-      '@shared': path.resolve(rootDir, 'shared'),
-      '@server': path.resolve(rootDir, 'server'),
+      '@': path.resolve(rootDir, 'apps/web/src'),
+      '@cod/protocol': path.resolve(rootDir, 'packages/protocol/src'),
+      '@cod/engine-core': path.resolve(rootDir, 'packages/engine-core/src'),
+      '@cod/profile-fps': path.resolve(rootDir, 'packages/profile-fps/src'),
     },
   },
   test: {
     // 既定は jsdom（クライアント/R3F コンポーネント用）。
-    // shared/ と server/ の純粋ロジックはファイル先頭の
+    // packages/ と apps/gameserver の純粋ロジックはファイル先頭の
     // `// @vitest-environment node` で DOM 非依存に切り替える。
     //
-    // テストファイルは全て ./_tests_/ 配下に集約し、ソース（src/shared/server）と
-    // 同じディレクトリ構造をミラーする（例: src/lib/clamp.ts →
-    // _tests_/src/lib/clamp.test.ts）。import は @/@shared/@server のエイリアスを使う。
+    // テストファイルは全て ./_tests_/ 配下に集約し、ワークスペース構造をミラーする
+    // （例: apps/web/src/lib/clamp.ts → _tests_/apps/web/src/lib/clamp.test.ts）。
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],

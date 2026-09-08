@@ -286,7 +286,7 @@ PLAT-1R では `HANDOFF.md` の指示どおり、下表を公式ドキュメン�
 | PLAT-1 | `663f815` / `87e0294` | ドキュメント整合 | 合意: fps のみ / Channel 1B / GPU DoD 外す。初版 API 表は arch 二次情報のみ |
 | PLAT-1R | `20fa678` | 公式検索 + docs 整合 | §10.5 を公式一次情報に差し替え。D1–D10 維持。Babylon EngineOptions の不一致を明示 |
 | PLAT-1Q | 本コミット | 人間確認 + docs 整合 | `dtMs` はミリ秒、fps Snapshot は `vy` 含む、workspace package name は `@cod/*`、Babylon options は型にあるものだけ使う、と確定 |
-| PH1-A | | | |
+| PH1-A | 本コミット | `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` pass | fps 系 5 workspaces（`@cod/protocol`, `@cod/engine-core`, `@cod/profile-fps`, `@cod/gameserver`, `@cod/web`）へ移動。R3F/Three 描画は PH1-D まで残置 |
 | PH1-B | | | |
 | PH1-C | | | |
 | PH1-D | | | |

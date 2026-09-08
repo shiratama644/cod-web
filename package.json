@@ -8,13 +8,19 @@
   "engines": {
     "bun": ">=1.4.0"
   },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "cd apps/web && bun run dev",
+    "build": "bun run build:packages && bun run build:apps",
+    "build:packages": "cd packages/protocol && bun run build && cd ../profile-fps && bun run build && cd ../engine-core && bun run build",
+    "build:apps": "cd apps/gameserver && bun run build && cd ../web && bun run build",
+    "preview": "cd apps/web && bun run preview",
     "start": "bun run scripts/execute.ts",
-    "server": "bun run server/index.ts",
-    "server:dev": "bun --watch server/index.ts",
+    "server": "cd apps/gameserver && bun run start",
+    "server:dev": "cd apps/gameserver && bun run dev",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
     "lint": "biome lint .",
     "format": "biome format --write .",

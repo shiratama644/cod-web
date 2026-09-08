@@ -33,6 +33,56 @@
         "vitest": "^4.1.11",
       },
     },
+    "apps/gameserver": {
+      "name": "@cod/gameserver",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cod/engine-core": "workspace:*",
+        "@cod/profile-fps": "workspace:*",
+        "@cod/protocol": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.4.0",
+      },
+    },
+    "apps/web": {
+      "name": "@cod/web",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cod/profile-fps": "workspace:*",
+        "@cod/protocol": "workspace:*",
+        "@react-three/drei": "^10.7.8",
+        "@react-three/fiber": "^9.7.0",
+        "nipplejs": "^1.0.4",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "screenfull": "^6.0.2",
+        "three": "^0.185.1",
+        "three-mesh-bvh": "^0.9.14",
+        "zustand": "^5.0.15",
+      },
+    },
+    "packages/engine-core": {
+      "name": "@cod/engine-core",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cod/profile-fps": "workspace:*",
+        "@cod/protocol": "workspace:*",
+      },
+    },
+    "packages/profile-fps": {
+      "name": "@cod/profile-fps",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cod/protocol": "workspace:*",
+        "three": "^0.185.1",
+        "three-mesh-bvh": "^0.9.14",
+      },
+    },
+    "packages/protocol": {
+      "name": "@cod/protocol",
+      "version": "0.0.0",
+    },
   },
   "packages": {
     "@adobe/css-tools": ["@adobe/css-tools@4.5.0", "", {}, "sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q=="],
@@ -66,6 +116,16 @@
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.5.12", "", { "os": "win32", "cpu": "x64" }, "sha512-B1R/l+CwEpKFSuqiwePzPNRk1EiJN8kc0UhdafNz6MZN9v5OFP9HYP1irptvWzHrwVI4blVNGMbxc5zt70m3IA=="],
 
     "@bramus/specificity": ["@bramus/specificity@2.4.2", "", { "dependencies": { "css-tree": "^3.0.0" }, "bin": { "specificity": "bin/cli.js" } }, "sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw=="],
+
+    "@cod/engine-core": ["@cod/engine-core@workspace:packages/engine-core"],
+
+    "@cod/gameserver": ["@cod/gameserver@workspace:apps/gameserver"],
+
+    "@cod/profile-fps": ["@cod/profile-fps@workspace:packages/profile-fps"],
+
+    "@cod/protocol": ["@cod/protocol@workspace:packages/protocol"],
+
+    "@cod/web": ["@cod/web@workspace:apps/web"],
 
     "@csstools/color-helpers": ["@csstools/color-helpers@6.1.1", "", {}, "sha512-gLNsunvwf3mCi5u5o46/Z/JcJMnhbHSaZ69rkgPzNM3J4s8hWwpPUQB6/tt0EDFyCiWzxANlx+2LJwpYj4zS1w=="],
 
