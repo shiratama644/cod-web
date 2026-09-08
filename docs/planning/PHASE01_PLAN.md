@@ -4,7 +4,7 @@
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
 > 仕様正本: [`docs/arch/milestones.md`](../arch/milestones.md) フェーズ 1、[`architecture.md`](../arch/architecture.md)、[`client.md`](../arch/client.md)、[`protocol.md`](../arch/protocol.md)、[`adr.md`](../arch/adr.md)
 > 着手合意（2026-09-05 / 2026-09-08）: モノレポは fps 系のみ / Channel 頭 1B のみ / GPU 予算は本フェーズ DoD から外す / `dtMs` は ms / fps Snapshot は `vy` を含める / package 名は `@cod/*` / Babylon options は型にあるものだけ
-> 次セッション: [`HANDOFF.md`](./HANDOFF.md)。§10.5 は **PLAT-1R で公式一次情報を確認済み**。PH1-E は本計画を再読してから着手。
+> 次セッション: [`HANDOFF.md`](./HANDOFF.md)。§10.5 は **PLAT-1R で公式一次情報を確認済み**。PH1-F は本計画を再読してから着手。
 
 ## 1. 開始前確認
 
@@ -290,5 +290,5 @@ PLAT-1R では `HANDOFF.md` の指示どおり、下表を公式ドキュメン�
 | PH1-B | 本コミット | `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` pass | `biome.json` overrides で `lint/style/noRestrictedImports` と `lint/style/noRestrictedGlobals` を有効化。`SimulationStep<TWorld>` 注入で `engine-core` から `profile-fps` 依存を削除。probe file で違反時 lint error を確認後削除 |
 | PH1-C | 本コミット | `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` pass | Channel 1B framing を追加。Input payload は 16B のまま、WS frame は 17B。Snapshot も `Channel.Unreliable` + 現行 payload。Channel 欠落・空・Reliable・Bulk は ProtocolError 1002 |
 | PH1-D | 本コミット | `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` pass | `@babylonjs/core@9.25.0` を導入し、R3F scene / renderer / loop を削除。Babylon `Engine` は installed `.d.ts` の `EngineOptions` に沿い、型に無い `desynchronized` / `preserveDrawingBuffer` は渡さない。preview HTTP 200 |
-| PH1-E | | | |
+| PH1-E | 本コミット | `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` pass | Pointer Lock は `unadjustedMovement: true` を first try し、Promise rejection の `NotSupportedError` 時だけ通常 Pointer Lock へ fallback。mousemove/pointermove は yaw/pitch を直接変更せず delta をキューへ積み、Babylon render loop 先頭の `consumeLookDelta()` で消費。jsdom unit で raw fallback と蓄積消費を検証。Sandbox では実ブラウザ raw mouse の成否は実環境検証待ち |
 | PH1-F | | | |

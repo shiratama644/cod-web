@@ -1,4 +1,4 @@
-# 次セッションへの橋渡し（PH1-E 着手前）
+# 次セッションへの橋渡し（PH1-F 着手前）
 
 > 対象: 新しいセッションの AI。人間ではない。
 > 進捗の正本: [`docs/task-list.md`](../task-list.md)
@@ -6,7 +6,7 @@
 > 仕様正本: [`docs/arch/`](../arch/README.md)
 > 計画の入口: [`docs/planning/README.md`](./README.md)
 > 調査の入口: [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md)
-> このファイルは計画の代替ではない。**DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D は完了済み。次は `PHASE01_PLAN.md` を再読して PH1-E に進む。**
+> このファイルは計画の代替ではない。**DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E は完了済み。次は `PHASE01_PLAN.md` を再読して PH1-F に進む。**
 
 ## 0. 最初にやること（これ以外から始めない）
 
@@ -14,8 +14,8 @@
 2. ブランチ名は **毎回コマンドで確認**する。文書に書いてある過去ブランチ名を fetch/push しない（AGENTS.md §4.4）
 3. `git log` が起点 1 件だけ / status が大量削除+未追跡 / `bun` なし / `node_modules` なし → Sandbox 再構築。`.agent/hooks/sandbox-rebuild-recovery.md` どおり `git fetch origin <現在ブランチ>` → `git reset --hard FETCH_HEAD` → `bash .agent/hooks/restore-sandbox-env.sh`
 4. 未コミット変更を勝手に捨てない（再構築復旧の `reset --hard FETCH_HEAD` だけ例外）
-5. **進行中は 1 件。** DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D は完了済み。次の 1 件は **PH1-E**（unadjustedMovement + 入力累積）
-6. PH1-E 着手前に [`README.md`](./README.md)、`PHASE01_PLAN.md` §5 / §7 / §10.4 / §10.5、[`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) を再読する。公式・型・arch が食い違う場合は停止して人間に確認する
+5. **進行中は 1 件。** DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E は完了済み。次の 1 件は **PH1-F**（React は HUD のみ + 位置同期経路）
+6. PH1-F 着手前に [`README.md`](./README.md)、`PHASE01_PLAN.md` §5 / §7 / §10.4 / §10.5、[`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) を再読する。公式・型・arch が食い違う場合は停止して人間に確認する
 
 ## 1. いま決まっていること（覆さない）
 
@@ -58,48 +58,48 @@
 | DOC-8 | `4f1e2fc`。planning README と arch/research/docs の入口導線を追加整理。raw ファイル移動なし |
 | DOC-9 | 本コミット。完了済み plan を `docs/planning/complete/` へ移動し、現用リンクと API 根拠を最終確認 |
 | 現行ツリー | bun workspaces 化済み。Biome import/global 境界あり。高頻度 WS バイナリは Channel 1B + payload。`apps/web` の 3D は Babylon Engine 命令型シーン |
-| テスト | PH1-C: `bun run test:unit` 12 files / 78 tests passed |
+| テスト | PH1-E: `bun run test:unit` 13 files / 81 tests passed |
 
-フェーズ 1 は **PH1-D 完了済み**。次は PH1-E（unadjustedMovement + 入力累積）。
+フェーズ 1 は **PH1-E 完了済み**。次は PH1-F（React は HUD のみ + 位置同期経路）。
 
-## 3. PH1-D 完了後の次の 1 件: PH1-E
+## 3. PH1-E 完了後の次の 1 件: PH1-F
 
 ### 目的
 
-`docs/planning/PHASE01_PLAN.md` の §10.5 は公式一次情報で確認済み。次は **PH1-E** として、計画に従い Pointer Lock の `unadjustedMovement` と入力累積を実装する。
+`docs/planning/PHASE01_PLAN.md` の §10.5 は公式一次情報で確認済み。次は **PH1-F** として、計画に従い React が HUD / メニュー / オーバーレイに留まり、単一静的マップで既存ネットワーク経路が Babylon 上で動くことを最終整理する。
 
 ### やってはいけない
 
 - D1–D13 を覆す（覆したくなったら実装せず人間に聞く）
 - 不一致を「こちらが正しい」と決める（§4 を読め）
-- PH1-E に PH1-F の内容を混ぜる（React HUD 化・最終位置同期経路整理は後続）
+- PH1-F に Phase 2 以降の内容を混ぜる（SimProfile 本実装、voxel、gamemode SDK、matchmaker は後続）
 - `.agent/logs/` の過去ログを書き換える
 - `.archive/` を正本にする
 - `git reset --hard`（再構築復旧以外）/ rebase / force push
 - セッション固定ブランチ以外へ push
 
-### PH1-E 開始条件
+### PH1-F 開始条件
 
 - [ ] `git status` / `git branch --show-current` / `git log -5 --oneline`
-- [ ] `docs/task-list.md` で PH1-D ローカル検証済みを確認
+- [ ] `docs/task-list.md` で PH1-E ローカル検証済みを確認
 - [ ] `PHASE01_PLAN.md` §5（DoD）/ §7（停止条件）/ §9（サブタスク）/ §10.4（Babylon）/ §10.5（公式 API）を再読
 - [ ] 未コミット変更があれば停止
 
-### PH1-E の範囲
+### PH1-F の範囲
 
-- `requestPointerLock({ unadjustedMovement: true })` をユーザージェスチャ経路から要求する
-- Pointer Lock の Promise / 非 Promise 差を吸収し、raw input が拒否されたら通常 Pointer Lock へフォールバックする
-- mousemove / pointermove の視点 delta を直接 yaw/pitch に足さず、フレーム先頭で累積消費する
-- タッチ配線や React HUD 最終整理は広げない
-- 作らない: PH1-F の React HUD 最終整理、voxel パッケージ、WebTransport
+- React は HUD / メニュー / オーバーレイのみで、3D JSX / R3F / Three 描画を戻さない
+- `GameClient` / prediction / interpolation / Input 16B + Channel 1B のネット経路が Babylon render loop から使われることを、既存コードとテストで確認・必要最小限に整理する
+- 単一静的マップで FFA 相当の位置同期経路を維持する
+- 実 2 タブ目視や raw pointer lock のブラウザ実検証は Sandbox で捏造しない。必要なら「実環境検証待ち」と明記する
+- 作らない: SimProfile 本実装、voxel パッケージ、WebTransport、Hello HMAC、gamemode SDK
 
-### PH1-E 完了条件
+### PH1-F 完了条件
 
-- [ ] Pointer Lock 要求で `unadjustedMovement: true` を試す
-- [ ] raw input 拒否時の通常 Pointer Lock fallback がある
-- [ ] 視線 delta はフレーム先頭で累積消費される
+- [ ] React は HUD / メニュー / オーバーレイのみで、3D を JSX で組まない
+- [ ] 単一静的マップで既存の位置同期（Input 16B + Snapshot 現行）が Babylon 上で動く経路がある
+- [ ] R3F / Three 描画コードを戻していない
 - [ ] `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` 全 pass
-- [ ] `docs/task-list.md` の PH1-E を証拠付きで更新
+- [ ] `docs/task-list.md` の PH1-F を証拠付きで更新
 - [ ] Conventional Commit + セッションブランチへ push
 
 

@@ -82,6 +82,7 @@ export class BabylonGame {
     window.addEventListener('resize', this.resize)
     this.engine.runRenderLoop(() => {
       if (this.disposed) return
+      this.input.consumeLookDelta()
       const dtSec = Math.min(this.engine.getDeltaTime() / 1000, 0.1)
       this.client.frame(dtSec)
       this.renderPlayers(performance.now())

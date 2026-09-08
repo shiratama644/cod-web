@@ -20,7 +20,9 @@ PH1-D で旧 R3F scene / renderer / loop は破棄済み。ネットコード（
 
 ## 入力
 
-`requestPointerLock({ unadjustedMovement: true })`。mousemove ではカメラを動かさず累積し、**フレーム先頭で消費**してから描画する。
+`requestPointerLock({ unadjustedMovement: true })`。mousemove/pointermove ではカメラを動かさず累積し、**フレーム先頭で消費**してから描画する。
+
+PH1-E で `InputController` は raw pointer lock を first try し、`NotSupportedError` 時に通常 Pointer Lock へフォールバックするようになった。視線 delta は `consumeLookDelta()` で Babylon render loop 先頭に消費する。Sandbox/jsdom では raw mouse の実ブラウザ成否までは検証しない。
 
 モバイルは両タイプ対象。タッチ（仮想スティック等）は後続フェーズ。初期は Pointer Lock + キーボード。
 

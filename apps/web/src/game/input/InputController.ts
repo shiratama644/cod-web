@@ -7,12 +7,17 @@
  *     直接反映し、キーボード入力と合成する（どちらでも動く）。
  * - **ジャンプ**: Space キー、または画面右下のジャンプボタン（ワンショット）。
  * - **視点**（マルチタッチ対応）:
- *   - PointerLock 対応端末（PC ブラウザ）: クリックでロックし、マウス移動で視点操作。
+ *   - PointerLock 対応端末（PC ブラウザ）: クリックでロックし、まず
+ *     `unadjustedMovement: true` の raw mouse input を要求する。未対応で拒否された場合は
+ *     通常 PointerLock へフォールバックする。
  *   - **PointerLock 非対応端末（Android/iOS の Edge・Chrome、タッチ）**:
  *     画面の「空き領域」を別の指でドラッグすると視点が動く。視点用のポインタは
  *     **window レベルで監視し、ジョイスティック/ボタン（.touch-ui）から始まった
  *     指は視点にしない**。これにより「スティックを押しながら視点ドラッグ/ジャンプ」が
  *     同時にできる（マルチタッチ）。
+ *
+ * 視線 delta はイベント中に yaw/pitch へ直接足さず、描画フレーム先頭の
+ * `consumeLookDelta()` でまとめて消費する。
  *
  * ブラウザ API（DOM イベント・PointerLock・Fullscreen）に依存するのはこのクラスと
  * オーバーレイだけ。
@@ -38,6 +43,14 @@ function clampAxis(v: number): number {
   return v > 1 ? 1 : v < -1 ? -1 : v
 }
 
+function isPromiseLike(value: unknown): value is Promise<void> {
+  return typeof value === 'object' && value !== null && 'catch' in value
+}
+
+function isNotSupportedError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'NotSupportedError'
+}
+
 export class InputController {
   private readonly keys = new Set<string>()
   private yawValue = 0
@@ -45,6 +58,10 @@ export class InputController {
   private jumpQueued = false
   private el: HTMLElement | null = null
   private locked = false
+
+  // イベントで受け取った視線 delta。描画フレーム先頭で consumeLookDelta() が消費する。
+  private pendingLookDx = 0
+  private pendingLookDy = 0
 
   // 仮想ジョイスティックのアナログ入力（-1..1）。nipplejs から setMoveVector で渡る。
   private joyX = 0
@@ -68,11 +85,29 @@ export class InputController {
     this.keys.delete(e.code)
   }
 
-  /** 視点を dx/dy ピクセル分だけ回す（ロック/ドラッグ共通）。 */
+  /** 視点を dx/dy ピクセル分だけ回す（描画フレーム先頭から呼ぶ）。 */
   private applyLook(dx: number, dy: number): void {
     this.yawValue -= dx * LOOK_SENS
     this.pitchValue -= dy * LOOK_SENS
     this.pitchValue = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitchValue))
+  }
+
+  private queueLookDelta(dx: number, dy: number): void {
+    this.pendingLookDx += dx
+    this.pendingLookDy += dy
+  }
+
+  /**
+   * pointer/mouse event で貯めた視線 delta をフレーム先頭でまとめて消費する。
+   * これにより、入力イベントの到着タイミングに直接カメラ姿勢を変えない。
+   */
+  consumeLookDelta(): void {
+    const dx = this.pendingLookDx
+    const dy = this.pendingLookDy
+    if (dx === 0 && dy === 0) return
+    this.pendingLookDx = 0
+    this.pendingLookDy = 0
+    this.applyLook(dx, dy)
   }
 
   /**
@@ -110,8 +145,8 @@ export class InputController {
 
   private readonly onPointerMove = (e: PointerEvent) => {
     if (this.locked && e.pointerType === 'mouse') {
-      // PointerLock 中: movementX/Y が相対移動量。
-      this.applyLook(e.movementX ?? 0, e.movementY ?? 0)
+      // PointerLock 中: movementX/Y が相対移動量。イベント中は蓄積だけ行う。
+      this.queueLookDelta(e.movementX ?? 0, e.movementY ?? 0)
       return
     }
     if (e.pointerId === this.lookPointerId) {
@@ -121,7 +156,7 @@ export class InputController {
       const dy = e.clientY - this.lastLookY
       this.lastLookX = e.clientX
       this.lastLookY = e.clientY
-      this.applyLook(dx, dy)
+      this.queueLookDelta(dx, dy)
     }
   }
 
@@ -132,7 +167,11 @@ export class InputController {
   private readonly onLockChange = () => {
     this.locked = document.pointerLockElement === this.el
     // ロックが外れたら視点ドラッグ状態もリセット。
-    if (!this.locked) this.lookPointerId = -1
+    if (!this.locked) {
+      this.lookPointerId = -1
+      this.pendingLookDx = 0
+      this.pendingLookDy = 0
+    }
   }
 
   /** 入力購読を開始する。視点は window レベルで監視しマルチタッチに対応する。 */
@@ -154,14 +193,32 @@ export class InputController {
   }
 
   private readonly requestLock = () => {
-    // PointerLock を要求。非対応/失敗しても例外にせずドラッグへフォールバック。
+    const el = this.el
+    if (!el) return
+    // PointerLock を要求。unadjustedMovement 未対応で NotSupportedError になった場合は
+    // 通常 PointerLock を再要求し、非対応/失敗しても例外にせずドラッグへフォールバック。
     try {
-      const p = this.el?.requestPointerLock?.() as unknown as Promise<void> | undefined
-      p?.catch?.(() => {
-        /* モバイル等でロック不可 → ドラッグルックを使う */
-      })
+      const result = el.requestPointerLock({ unadjustedMovement: true })
+      if (isPromiseLike(result)) {
+        result.catch((error: unknown) => {
+          if (isNotSupportedError(error)) this.requestPlainLock(el)
+        })
+      }
+    } catch (error) {
+      if (isNotSupportedError(error)) this.requestPlainLock(el)
+    }
+  }
+
+  private requestPlainLock(el: HTMLElement): void {
+    try {
+      const result = el.requestPointerLock()
+      if (isPromiseLike(result)) {
+        result.catch(() => {
+          /* モバイル等でロック不可 → ドラッグルックを使う */
+        })
+      }
     } catch {
-      /* requestPointerLock が存在しない環境 */
+      /* requestPointerLock が存在しない/拒否された環境 */
     }
   }
 

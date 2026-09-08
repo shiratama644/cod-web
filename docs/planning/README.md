@@ -7,7 +7,7 @@
 | 順 | 文書 | いつ読むか | 内容 |
 |---:|---|---|---|
 | 1 | [`../task-list.md`](../task-list.md) | 常に最初 | 状態・依存・次に着手できるタスクの唯一の正本 |
-| 2 | [`HANDOFF.md`](./HANDOFF.md) | 次セッション/実装再開時 | PH1-A 着手前の注意、直近の決定、読んではいけない旧前提 |
+| 2 | [`HANDOFF.md`](./HANDOFF.md) | 次セッション/実装再開時 | PH1-F 着手前の注意、直近の決定、読んではいけない旧前提 |
 | 3 | 対象タスクの `*_PLAN.md` | 実装/調査に入る前 | 変更範囲、禁止事項、DoD、停止条件、検証方法 |
 | 4 | [`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) | 外部技術・競合調査の根拠が必要な時 | DR-1〜DR-5 の採用/不採用/要確認の入口 |
 | 5 | [`../arch/api-sources.md`](../arch/api-sources.md) | 外部 API を実装で使う直前 | Bun / Biome / Babylon / Noa 等の公式 API 確認メモ |
@@ -26,7 +26,7 @@
 
 | 優先 | ID | 内容 | 事前に読むもの |
 |---:|---|---|---|
-| 1 | `PH1-E` | unadjustedMovement + 入力累積 | [`HANDOFF.md`](./HANDOFF.md), [`PHASE01_PLAN.md`](./PHASE01_PLAN.md), [`../arch/client.md`](../arch/client.md), [`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) |
+| 1 | `PH1-F` | React は HUD のみ + 位置同期経路 | [`HANDOFF.md`](./HANDOFF.md), [`PHASE01_PLAN.md`](./PHASE01_PLAN.md), [`../arch/client.md`](../arch/client.md), [`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) |
 
 ## 計画書を書く/更新する時のルール
 

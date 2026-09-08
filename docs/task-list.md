@@ -43,7 +43,7 @@
 | Phase | テーマ | 状態 |
 |---|---|---|
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
-| **1** | モノレポ + Babylon 移行 | PH1-D ローカル検証済み（次: PH1-E） |
+| **1** | モノレポ + Babylon 移行 | PH1-E ローカル検証済み（次: PH1-F） |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4** | ハブ + マッチメイカー + voxel 永続化方針 | 未着手 |
@@ -70,7 +70,7 @@
 ### Phase 1
 
 計画書: [`planning/PHASE01_PLAN.md`](./planning/PHASE01_PLAN.md)  
-橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（PLAT-1R 完了後。次は **PH1-E**）
+橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（PLAT-1R 完了後。次は **PH1-F**）
 
 合意: fps 系パッケージのみ。Channel 頭 1B。GPU 予算は本フェーズ DoD 外。`dtMs` はミリ秒。fps Snapshot は `vy` を含める。workspace package name は `@cod/*`。Babylon options は型にあるものだけ使う。
 
@@ -83,7 +83,7 @@
 | PH1-B | 依存規則を Biome で強制 | ローカル検証済み | 100% | PH1-A | 破ると lint が落ちる。ルール名は公式確認 | 本コミット / `biome.json` overrides / `SimulationStep<TWorld>` 注入で engine-core→profile-fps 依存を解消 / probe: WebSocket 直接参照は `lint/style/noRestrictedGlobals`、engine-core→profile-fps は `lint/style/noRestrictedImports` で失敗 / 4検証 pass |
 | PH1-C | Channel 頭 1B | ローカル検証済み | 100% | PH1-A | Unreliable の payload は Input 16B。欠落は 1002 | 本コミット / `Channel` + `decodeFrame` 追加 / Input frame 17B・payload 16B / Channel 欠落・空・Reliable・Bulk は ProtocolError 1002 / `bun run test:unit` 12 files・78 tests pass / 4検証 pass |
 | PH1-D | Babylon Engine + R3F シーン削除 | ローカル検証済み | 100% | PH1-A | R3F シーンが無い。EngineOptions は公式どおり | 本コミット / `@babylonjs/core@9.25.0` / `new Engine(canvas, false, options, false)` / installed `.d.ts` で `EngineOptions` を確認し型にある key のみ使用 / R3F scene・renderer・loop 削除 / `bun run test:unit` 12 files・78 tests pass / 4検証 pass / preview HTTP 200 |
-| PH1-E | unadjustedMovement + 入力累積 | 未着手 | 0% | PH1-D | 視線はフレーム先頭で消費 | |
+| PH1-E | unadjustedMovement + 入力累積 | ローカル検証済み | 100% | PH1-D | 視線はフレーム先頭で消費 | 本コミット / `requestPointerLock({ unadjustedMovement: true })` first + `NotSupportedError` fallback / look delta queue + `consumeLookDelta()` / `bun run test:unit` 13 files・81 tests pass / 4検証 pass |
 | PH1-F | React は HUD のみ + 位置同期経路 | 未着手 | 0% | PH1-C〜E | 単一静的マップで既存ネットが Babylon 上の経路になる | |
 
 ### ドキュメント・規約
