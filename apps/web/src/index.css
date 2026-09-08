@@ -55,7 +55,7 @@ body {
   }
 }
 
-/* R3F Canvas は全画面を占有 */
+/* Babylon canvas は全画面を占有 */
 .app canvas {
   display: block;
   width: 100%;

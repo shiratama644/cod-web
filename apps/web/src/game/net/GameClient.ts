@@ -1,9 +1,9 @@
 /**
  * GameClient — クライアントのネット/予測/補間を束ねるフレームワーク非依存のコア。
  *
- * React/three のレンダリングとは切り離し、R3F の useFrame から毎フレーム
- * `frame(dtSec)` を呼ぶだけにする。高頻度値（座標）は React state を経由せず
- * このオブジェクトが保持し、描画側が ref を直接更新する（黄金ルール4/5）。
+ * Babylon のレンダリングとは切り離し、描画ループから毎フレーム `frame(dtSec)` を
+ * 呼ぶだけにする。高頻度値（座標）は React state を経由せずこのオブジェクトが保持し、
+ * 描画側が mesh を直接更新する（黄金ルール4/5）。
  *
  * - **入力サンプリング・ローカル予測・サーバーへの送信は wall-clock の固定
  *   タイマー（60Hz）で駆動する**。requestAnimationFrame はタブがバックグラウンド/
@@ -182,7 +182,7 @@ export class GameClient {
    */
   frame(dtSec: number): void {
     if (!this.disposed) {
-      // 呼び出し側（R3F useFrame）の delta を実時間として積む。rAF のタイムスタンプと
+      // 呼び出し側（Babylon render loop）の delta を実時間として積む。rAF のタイムスタンプと
       // 同じクロックなので、カメラ外挿（performance.now）とも連続する。
       let frameSec = dtSec
       // 異常に大きい間隔（バックグラウンド復帰など）はクランプして一気に巻き戻さない。

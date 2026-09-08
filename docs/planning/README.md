@@ -26,7 +26,7 @@
 
 | 優先 | ID | 内容 | 事前に読むもの |
 |---:|---|---|---|
-| 1 | `PH1-A` | bun workspaces + fps 系へ移動 | [`HANDOFF.md`](./HANDOFF.md), [`PHASE01_PLAN.md`](./PHASE01_PLAN.md), [`../arch/architecture.md`](../arch/architecture.md), [`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) |
+| 1 | `PH1-E` | unadjustedMovement + 入力累積 | [`HANDOFF.md`](./HANDOFF.md), [`PHASE01_PLAN.md`](./PHASE01_PLAN.md), [`../arch/client.md`](../arch/client.md), [`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) |
 
 ## 計画書を書く/更新する時のルール
 

@@ -17,7 +17,7 @@ export default defineConfig({
     },
   },
   test: {
-    // 既定は jsdom（クライアント/R3F コンポーネント用）。
+    // 既定は jsdom（クライアント DOM コンポーネント用）。
     // packages/ と apps/gameserver の純粋ロジックはファイル先頭の
     // `// @vitest-environment node` で DOM 非依存に切り替える。
     //

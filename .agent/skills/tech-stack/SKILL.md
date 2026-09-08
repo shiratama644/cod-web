@@ -16,7 +16,7 @@ description: 理想スタックと移行元コードの使いどころ・ハマ�
 | 層 | 使うもの | 使わない |
 | :--- | :--- | :--- |
 | ランタイム | bun（`Bun.serve` ネイティブ WS） | Node `ws`、`uWebSockets.js` パッケージ（bun では動かない） |
-| 3D | `@babylonjs/core`。FPS/voxel エディタも Babylon.js。GLB 読み込みは `@babylonjs/loaders`。voxel は `noa-engine` | 新規の Three / R3F / drei |
+| 3D | `@babylonjs/core`。FPS/voxel エディタも Babylon.js。GLB 読み込みは `@babylonjs/loaders`。voxel は `noa-engine` | 新規の Three / R3F / drei。apps/web の 3D へ Three を戻さない |
 | UI | React はハブ・HUD・設定・メニュー | ゲームループを React State で回すこと。Context API 新規 |
 | シム | `SimProfile` 純粋 `step`。L1 に `if (type)` を書かない | `Math.random` / `Date.now` を step 内 |
 | ネット | 手書きバイナリ。Input **16 バイト固定**（不一致は切断）。制御は JSON | 高頻度の msgpack。ゲームコードから `WebSocket` 直接参照 |
@@ -64,9 +64,9 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 
 ### 描画（破棄。新規に真似しない）
 
-- 現行は R3F v9 + `WebGPURenderer` 非同期ファクトリと WebGL2 フォールバック。**フェーズ 1 でシーンごと捨てる**。
-- drei `<Sky>` は WebGPU で白箱になる、等の現行ワークアラウンドは Babylon 移行後不要。
-- three-mesh-bvh は bun ヘッドレスで動く（現行権威衝突）。理想の fps 物理は [`sim-profiles.md`](../../../docs/arch/sim-profiles.md)。FPS マップ/voxel ワールドの official/UGC 階層とエディタは [`editor.md`](../../../docs/arch/editor.md)。
+- PH1-D で apps/web の R3F scene / renderer / loop は削除済み。`GameCanvas.tsx` は `<canvas>` を置き、`BabylonGame` が `new Engine(canvas, false, options, false)` で命令型に所有する。
+- `EngineOptions` は `@babylonjs/core@9.25.0` の installed `.d.ts` で `Engines/thinEngine.pure` から import できることを確認済み。`desynchronized` / `preserveDrawingBuffer` は PH1-D では渡していない。
+- three-mesh-bvh は bun ヘッドレスで動く（server/profile-fps の衝突用に残す）。apps/web の 3D 描画へ Three / R3F / drei を戻さない。FPS マップ/voxel ワールドの official/UGC 階層とエディタは [`editor.md`](../../../docs/arch/editor.md)。
 
 ### Zustand（ハブ UI には残してよい）
 

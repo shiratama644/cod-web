@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Browser-based cross-platform online FPS inspired by Krunker.io (WebGPU-first, WebGL2 fallback, 60+ FPS on every device).",
+  "description": "Browser-based multi-type game platform prototype using Bun, React, and Babylon.js.",
   "packageManager": "bun@1.4.0",
   "engines": {
     "bun": ">=1.4.0"
@@ -27,8 +27,6 @@
     "test:unit": "vitest run"
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.8",
-    "@react-three/fiber": "^9.7.0",
     "nipplejs": "^1.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

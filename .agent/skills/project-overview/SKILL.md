@@ -27,7 +27,7 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 | 層 | 理想 | 現行コード（移行元） |
 | :--- | :--- | :--- |
 | ビルド | Vite + React + TypeScript（strict）、bun | 同じ（単一パッケージ） |
-| 3D | Babylon.js。voxel は noa | Three.js / R3F / WebGPU→WebGL2。**破棄予定** |
+| 3D | Babylon.js。voxel は noa | PH1-D で apps/web の R3F scene は破棄済み。server/profile-fps の three-mesh-bvh は衝突用に残す |
 | シム | `SimProfile.step`。L1 にタイプ分岐を書かない | shared の FPS 物理（three-mesh-bvh CC） |
 | ネットワーク | bun `Bun.serve` WS。手書きバイナリ。Input 16B | bun WS + 手書きバイナリ。レイアウトは理想へ更新 |
 | UI | React はハブ・HUD・設定のみ（ADR-003） | R3F Canvas + HUD |
@@ -42,7 +42,7 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 | Phase | 内容 | 状態 |
 | :--- | :--- | :--- |
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
-| **1** | モノレポ + Babylon 移行（fps 系のみ。Channel 1B） | 計画済み（`PLAT-1`） |
+| **1** | モノレポ + Babylon 移行（fps 系のみ。Channel 1B） | PH1-D ローカル検証済み（次: PH1-E） |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4–9** | ハブ / official/UGC 一覧 / モード追加 / API 再設計 / チャンク / エディタ・UGC / WT | 未着手 |
