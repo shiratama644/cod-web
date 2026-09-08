@@ -44,7 +44,7 @@ description: 理想スタックと移行元コードの使いどころ・ハマ�
 
 - bun はプリインストールされない。`bun.sh` は SSL で到達不可。**npm registry 経由**（`restore-sandbox-env.sh`）。バージョンは devDependency で exact 固定。
 - **TypeScript 7**: `baseUrl` 廃止。`paths` は相対（`"@/*": ["./src/*"]`）。
-- **Biome 2**: `rules: { preset: "recommended" }`。`vcs.useIgnoreFile: true` で `files.includes` を書かない。import 制限は `linter.rules.style.noRestrictedImports`。
+- **Biome 2**: `rules: { preset: "recommended" }`。`vcs.useIgnoreFile: true` で `files.includes` を書かない。import 制限は `linter.rules.style.noRestrictedImports`。scope package の深い subpath は `@cod/profile-fps/**` のように `**` で捕捉する（`*` は 1 階層だけ）。DOM global の `WebSocket` 直接参照禁止は import rule ではなく `linter.rules.style.noRestrictedGlobals` を使う。
 - ESM の `vite.config.ts` では `__dirname` 未定義。`path.dirname(fileURLToPath(import.meta.url))`。
 - ライブプレビュー（e2b.app）では `server.allowedHosts: true`（preview も）+ `host: true`。未設定は 403。
 - **tsconfig は 2 構成**: `tsconfig.json`（client+shared、DOM）と `tsconfig.server.json`（server+shared、`types: ["bun"]`、DOM なし）。エイリアス `@/` `@shared/` `@server/` は tsconfig・vite・vitest の 3 箇所。

@@ -4,7 +4,7 @@
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
 > 仕様正本: [`docs/arch/milestones.md`](../arch/milestones.md) フェーズ 1、[`architecture.md`](../arch/architecture.md)、[`client.md`](../arch/client.md)、[`protocol.md`](../arch/protocol.md)、[`adr.md`](../arch/adr.md)
 > 着手合意（2026-09-05 / 2026-09-08）: モノレポは fps 系のみ / Channel 頭 1B のみ / GPU 予算は本フェーズ DoD から外す / `dtMs` は ms / fps Snapshot は `vy` を含める / package 名は `@cod/*` / Babylon options は型にあるものだけ
-> 次セッション: [`HANDOFF.md`](./HANDOFF.md)。§10.5 は **PLAT-1R で公式一次情報を確認済み**。PH1-A は本計画を再読してから着手。
+> 次セッション: [`HANDOFF.md`](./HANDOFF.md)。§10.5 は **PLAT-1R で公式一次情報を確認済み**。PH1-C は本計画を再読してから着手。
 
 ## 1. 開始前確認
 
@@ -287,7 +287,7 @@ PLAT-1R では `HANDOFF.md` の指示どおり、下表を公式ドキュメン�
 | PLAT-1R | `20fa678` | 公式検索 + docs 整合 | §10.5 を公式一次情報に差し替え。D1–D10 維持。Babylon EngineOptions の不一致を明示 |
 | PLAT-1Q | 本コミット | 人間確認 + docs 整合 | `dtMs` はミリ秒、fps Snapshot は `vy` 含む、workspace package name は `@cod/*`、Babylon options は型にあるものだけ使う、と確定 |
 | PH1-A | 本コミット | `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` pass | fps 系 5 workspaces（`@cod/protocol`, `@cod/engine-core`, `@cod/profile-fps`, `@cod/gameserver`, `@cod/web`）へ移動。R3F/Three 描画は PH1-D まで残置 |
-| PH1-B | | | |
+| PH1-B | 本コミット | `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` pass | `biome.json` overrides で `lint/style/noRestrictedImports` と `lint/style/noRestrictedGlobals` を有効化。`SimulationStep<TWorld>` 注入で `engine-core` から `profile-fps` 依存を削除。probe file で違反時 lint error を確認後削除 |
 | PH1-C | | | |
 | PH1-D | | | |
 | PH1-E | | | |

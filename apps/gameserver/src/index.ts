@@ -18,6 +18,7 @@ import { SnapshotBroadcaster } from '@cod/engine-core/net/snapshot'
 import { InputRateLimiter } from '@cod/engine-core/net/rate-limit'
 import { ingestInput } from '@cod/engine-core/net/ingest'
 import { buildServerWorld } from '@cod/profile-fps/physics/world'
+import { stepPlayer } from '@cod/profile-fps/sim/movement'
 
 const PORT = Number(process.env.PORT ?? 8080)
 const HOST = '0.0.0.0'
@@ -29,7 +30,7 @@ interface SocketData {
 
 const room = new Room()
 const world = buildServerWorld()
-const sim = new Simulation(room, world)
+const sim = new Simulation(room, world, stepPlayer)
 const snapshots = new SnapshotBroadcaster()
 const inputRate = new InputRateLimiter()
 

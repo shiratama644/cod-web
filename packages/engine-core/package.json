@@ -14,7 +14,6 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@cod/protocol": "workspace:*",
-    "@cod/profile-fps": "workspace:*"
+    "@cod/protocol": "workspace:*"
   }
 }

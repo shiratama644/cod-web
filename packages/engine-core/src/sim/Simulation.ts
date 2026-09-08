@@ -17,15 +17,21 @@
 
 import { MAX_STEPS_PER_FRAME, SIM_DT, SIM_TICK_HZ } from '@cod/protocol/protocol/constants'
 import type { PlayerInput } from '@cod/protocol/protocol/messages'
-import { stepPlayer } from '@cod/profile-fps/sim/movement'
-import type { CollisionWorld } from '@cod/profile-fps/sim/collisionWorld'
+import type { PlayerState } from '@cod/protocol/types'
 import { LagCompStore } from '../net/lagcomp-store'
 import type { Room } from '../room/Room'
+
+export type SimulationStep<TWorld> = (
+  player: PlayerState,
+  input: PlayerInput,
+  dt: number,
+  world: TWorld,
+) => PlayerState
 
 /** 1 プレイヤーあたりの入力キュー最大長（超えたら古いものから破棄して遅延を防ぐ）。 */
 const MAX_QUEUED_INPUTS = 120
 
-export class Simulation {
+export class Simulation<TWorld> {
   private tickNumber = 0
   /** ラグ補償用位置履歴。毎ティック記録する。巻き戻し判定は後続。 */
   readonly lagComp = new LagCompStore()
@@ -38,7 +44,8 @@ export class Simulation {
 
   constructor(
     private readonly room: Room,
-    private readonly world: CollisionWorld,
+    private readonly world: TWorld,
+    private readonly stepPlayer: SimulationStep<TWorld>,
   ) {}
 
   /** 現在のシム tick 番号。 */
@@ -76,10 +83,10 @@ export class Simulation {
       const q = this.inputQueues.get(player.id)
       const queued = q && q.length > 0 ? q.shift() : undefined
       if (queued) {
-        stepPlayer(player, queued, SIM_DT, this.world)
+        this.stepPlayer(player, queued, SIM_DT, this.world)
       } else {
         // 入力が無い tick: 重力は進めるが、水平移動 0・視点は現在値を維持する。
-        stepPlayer(player, idleInput(player.yaw, player.pitch), SIM_DT, this.world)
+        this.stepPlayer(player, idleInput(player.yaw, player.pitch), SIM_DT, this.world)
       }
       this.lagComp.record(tick, timeMs, player.id, player.x, player.y, player.z, player.yaw)
     }

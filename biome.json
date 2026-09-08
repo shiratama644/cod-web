@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -23,5 +23,135 @@
       "trailingCommas": "all",
       "semicolons": "asNeeded"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/protocol/src/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cod/engine-core",
+                      "@cod/engine-core/**",
+                      "@cod/profile-fps",
+                      "@cod/profile-fps/**",
+                      "@cod/gameserver",
+                      "@cod/gameserver/**",
+                      "@cod/web",
+                      "@cod/web/**"
+                    ],
+                    "message": "@cod/protocol は最下層の protocol package です。他の @cod package へ依存しないでください。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/engine-core/src/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cod/profile-fps",
+                      "@cod/profile-fps/**",
+                      "@cod/gameserver",
+                      "@cod/gameserver/**",
+                      "@cod/web",
+                      "@cod/web/**"
+                    ],
+                    "message": "@cod/engine-core はタイプ非依存の L1 です。profile / app 実装はコンストラクタ注入や公開インターフェース経由にしてください。"
+                  },
+                  {
+                    "group": ["three", "three/**", "three-mesh-bvh", "@react-three/fiber"],
+                    "message": "@cod/engine-core に描画・物理実装詳細を持ち込まないでください。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/profile-fps/src/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cod/gameserver",
+                      "@cod/gameserver/**",
+                      "@cod/web",
+                      "@cod/web/**"
+                    ],
+                    "message": "@cod/profile-fps は L2 profile です。app 層へ依存しないでください。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/web/src/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "WebSocket": "WebSocket の直接参照は net transport 実装に限定してください。ゲームコードは NetTransport を使います。"
+                }
+              }
+            },
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cod/engine-core",
+                      "@cod/engine-core/**",
+                      "@cod/gameserver",
+                      "@cod/gameserver/**"
+                    ],
+                    "message": "@cod/web は server / engine-core 実装へ直接依存しないでください。protocol / profile / net 境界を使います。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/web/src/game/net/websocket.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedGlobals": "off"
+          }
+        }
+      }
+    }
+  ]
 }

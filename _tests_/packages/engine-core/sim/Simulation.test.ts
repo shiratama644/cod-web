@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { LAGCOMP_HISTORY_MS, SIM_DT } from '@cod/protocol/protocol/constants'
 import type { PlayerInput } from '@cod/protocol/protocol/messages'
 import { createPlaneWorld } from '@cod/profile-fps/sim/collisionWorld'
+import { stepPlayer } from '@cod/profile-fps/sim/movement'
 import { Room, type Peer } from '@cod/engine-core/room/Room'
 import { Simulation } from '@cod/engine-core/sim/Simulation'
 
@@ -27,7 +28,7 @@ describe('Simulation — 権威シミュレーション', () => {
   it('入力なしでも tick が進み、プレイヤーは重力で落下して床に着地する', () => {
     const room = new Room()
     room.join(noopPeer())
-    const sim = new Simulation(room, createPlaneWorld())
+    const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
 
     for (let i = 0; i < 60 * 3; i++) sim.step()
 
@@ -41,7 +42,7 @@ describe('Simulation — 権威シミュレーション', () => {
   it('移動入力を渡すと権威状態が yaw 方向に進む', () => {
     const room = new Room()
     const id = room.join(noopPeer()) as number
-    const sim = new Simulation(room, createPlaneWorld())
+    const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
 
     // まず着地させる（入力なし）
     for (let i = 0; i < 60; i++) sim.step()
@@ -62,7 +63,7 @@ describe('Simulation — 権威シミュレーション', () => {
   it('seq が巻き戻る古い入力は無視する（最新のみ保持）', () => {
     const room = new Room()
     const id = room.join(noopPeer()) as number
-    const sim = new Simulation(room, createPlaneWorld())
+    const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
 
     sim.receiveInput(id, input({ seq: 10 }))
     sim.receiveInput(id, input({ seq: 5 })) // 古い → 無視
@@ -73,7 +74,7 @@ describe('Simulation — 権威シミュレーション', () => {
   it('1 tick に複数入力が届いても取りこぼさず順に消費する（ジャンプフラグが消えない）', () => {
     const room = new Room()
     const id = room.join(noopPeer()) as number
-    const sim = new Simulation(room, createPlaneWorld())
+    const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
     // 着地させる
     for (let i = 0; i < 90; i++) sim.step()
     const p = room.getPlayer(id) as NonNullable<ReturnType<typeof room.getPlayer>>
@@ -92,7 +93,7 @@ describe('Simulation — 権威シミュレーション', () => {
   it('入力が無い tick でも視点（yaw/pitch）は現在値に維持される（yaw=0 に戻らない）', () => {
     const room = new Room()
     const id = room.join(noopPeer()) as number
-    const sim = new Simulation(room, createPlaneWorld())
+    const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
     for (let i = 0; i < 90; i++) sim.step()
 
     sim.receiveInput(id, input({ seq: 300, yaw: 1.5, pitch: 0.3 }))
@@ -107,7 +108,7 @@ describe('Simulation — 権威シミュレーション', () => {
   it('update() はアキュムレータで固定ステップに分解する（60Hz ≈ 16.7ms）', () => {
     const room = new Room()
     room.join(noopPeer())
-    const sim = new Simulation(room, createPlaneWorld())
+    const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
 
     // 初回は基準時刻合わせで 0 ステップ
     expect(sim.update(0)).toBe(0)
@@ -121,7 +122,7 @@ describe('Simulation — 権威シミュレーション', () => {
   it('step 後に lagcomp 履歴が 1 件以上ある', () => {
     const room = new Room()
     const id = room.join(noopPeer()) as number
-    const sim = new Simulation(room, createPlaneWorld())
+    const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
     expect(sim.lagComp.getHistory(id)).toHaveLength(0)
     sim.step()
     const hist = sim.lagComp.getHistory(id)
@@ -132,7 +133,7 @@ describe('Simulation — 権威シミュレーション', () => {
   it('lagcomp 履歴窓は 500ms で古いサンプルを落とす', () => {
     const room = new Room()
     const id = room.join(noopPeer()) as number
-    const sim = new Simulation(room, createPlaneWorld())
+    const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
     for (let i = 0; i < 60; i++) sim.step()
     const hist = sim.lagComp.getHistory(id)
     const oldest = hist[0]

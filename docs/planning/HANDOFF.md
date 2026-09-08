@@ -1,4 +1,4 @@
-# 次セッションへの橋渡し（PH1-B 着手前）
+# 次セッションへの橋渡し（PH1-C 着手前）
 
 > 対象: 新しいセッションの AI。人間ではない。
 > 進捗の正本: [`docs/task-list.md`](../task-list.md)
@@ -6,7 +6,7 @@
 > 仕様正本: [`docs/arch/`](../arch/README.md)
 > 計画の入口: [`docs/planning/README.md`](./README.md)
 > 調査の入口: [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md)
-> このファイルは計画の代替ではない。**DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A は完了済み。次は `PHASE01_PLAN.md` を再読して PH1-B に進む。**
+> このファイルは計画の代替ではない。**DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B は完了済み。次は `PHASE01_PLAN.md` を再読して PH1-C に進む。**
 
 ## 0. 最初にやること（これ以外から始めない）
 
@@ -14,8 +14,8 @@
 2. ブランチ名は **毎回コマンドで確認**する。文書に書いてある過去ブランチ名を fetch/push しない（AGENTS.md §4.4）
 3. `git log` が起点 1 件だけ / status が大量削除+未追跡 / `bun` なし / `node_modules` なし → Sandbox 再構築。`.agent/hooks/sandbox-rebuild-recovery.md` どおり `git fetch origin <現在ブランチ>` → `git reset --hard FETCH_HEAD` → `bash .agent/hooks/restore-sandbox-env.sh`
 4. 未コミット変更を勝手に捨てない（再構築復旧の `reset --hard FETCH_HEAD` だけ例外）
-5. **進行中は 1 件。** DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A は完了済み。次の 1 件は **PH1-B**（依存規則を Biome で強制）
-6. PH1-B 着手前に [`README.md`](./README.md)、`PHASE01_PLAN.md` §5 / §7 / §10.2 / §10.5、[`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) を再読する。公式・型・arch が食い違う場合は停止して人間に確認する
+5. **進行中は 1 件。** DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B は完了済み。次の 1 件は **PH1-C**（Channel 頭 1B）
+6. PH1-C 着手前に [`README.md`](./README.md)、`PHASE01_PLAN.md` §5 / §7 / §10.3 / §10.5、[`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) を再読する。公式・型・arch が食い違う場合は停止して人間に確認する
 
 ## 1. いま決まっていること（覆さない）
 
@@ -57,46 +57,49 @@
 | DOC-7 | `9bd5371`。Deep Research 統合サマリーを追加し、docs README / research README / HANDOFF を整理 |
 | DOC-8 | `4f1e2fc`。planning README と arch/research/docs の入口導線を追加整理。raw ファイル移動なし |
 | DOC-9 | 本コミット。完了済み plan を `docs/planning/complete/` へ移動し、現用リンクと API 根拠を最終確認 |
-| 現行ツリー | bun workspaces 化済み。`packages/protocol` / `packages/engine-core` / `packages/profile-fps` / `apps/gameserver` / `apps/web`。R3F シーンは PH1-D まで残置 |
-| テスト | PH1-A: `bun run test:unit` 11 files / 72 tests passed |
+| 現行ツリー | bun workspaces 化済み。Biome import/global 境界あり。`engine-core` は `SimulationStep<TWorld>` 注入で `profile-fps` に直接依存しない。R3F シーンは PH1-D まで残置 |
+| テスト | PH1-B: `bun run test:unit` 11 files / 72 tests passed |
 
-フェーズ 1 は **PH1-A 完了済み**。次は PH1-B（依存規則）。
+フェーズ 1 は **PH1-B 完了済み**。次は PH1-C（Channel 頭 1B）。
 
-## 3. PH1-A 完了後の次の 1 件: PH1-B
+## 3. PH1-B 完了後の次の 1 件: PH1-C
 
 ### 目的
 
-`docs/planning/PHASE01_PLAN.md` の §10.5 は公式一次情報で確認済み。次は **PH1-B** として、計画に従い依存規則を Biome で強制する。
+`docs/planning/PHASE01_PLAN.md` の §10.5 は公式一次情報で確認済み。次は **PH1-C** として、計画に従い高頻度バイナリフレームに Channel 頭 1B を追加する。
 
 ### やってはいけない
 
 - D1–D13 を覆す（覆したくなったら実装せず人間に聞く）
 - 不一致を「こちらが正しい」と決める（§4 を読め）
-- PH1-B に PH1-C/D の内容を混ぜる（Channel・Babylon は後続）
+- PH1-C に PH1-D/E/F の内容を混ぜる（Babylon・入力累積・React HUD 化は後続）
 - `.agent/logs/` の過去ログを書き換える
 - `.archive/` を正本にする
 - `git reset --hard`（再構築復旧以外）/ rebase / force push
 - セッション固定ブランチ以外へ push
 
-### PH1-B 開始条件
+### PH1-C 開始条件
 
 - [ ] `git status` / `git branch --show-current` / `git log -5 --oneline`
-- [ ] `docs/task-list.md` で PH1-A ローカル検証済みを確認
-- [ ] `PHASE01_PLAN.md` §5（DoD）/ §7（停止条件）/ §9（サブタスク）/ §10.2（依存規則）/ §10.5（公式 API）を再読
+- [ ] `docs/task-list.md` で PH1-B ローカル検証済みを確認
+- [ ] `PHASE01_PLAN.md` §5（DoD）/ §7（停止条件）/ §9（サブタスク）/ §10.3（Channel）/ §10.5（公式 API）を再読
 - [ ] 未コミット変更があれば停止
 
-### PH1-B の範囲
+### PH1-C の範囲
 
-- `biome.json` に公式 rule ID `lint/style/noRestrictedImports` の設定を追加する
-- WebSocket 直接参照禁止など、PHASE01_PLAN §10.2 のうち PH1-B で扱う依存規則をテスト可能な形にする
-- 作らない: Channel、Babylon、voxel パッケージ、gamemode SDK
+- バイナリフレーム先頭に 1B の Channel を追加する
+- `Reliable = 0`, `Unreliable = 1`, `Bulk = 2` を protocol に定義する
+- Input payload 本体は 16B のまま維持し、ソケット上だけ 17B にする
+- server ingest は Channel を剥がしてから既存 `decodeInput` に渡す
+- client/server/tests を同一 commit で変更する
+- 作らない: Hello HMAC、Snapshot 0x11 化、Babylon、voxel パッケージ
 
-### PH1-B 完了条件
+### PH1-C 完了条件
 
-- [ ] 依存規則を破ると `bunx biome lint .` が落ちる
-- [ ] 既存の許可箇所（net 実装等）は通る
+- [ ] Unreliable Channel の payload は Input 16B
+- [ ] Channel 欠落・空・不正 Channel は 1002 / ProtocolError
 - [ ] `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` 全 pass
-- [ ] `docs/task-list.md` の PH1-B を証拠付きで更新
+- [ ] `docs/task-list.md` の PH1-C を証拠付きで更新
 - [ ] Conventional Commit + セッションブランチへ push
 
 
