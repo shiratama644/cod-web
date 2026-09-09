@@ -58,8 +58,8 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 
 ### Coverage / Playwright（Phase 1.5）
 
-- coverage は **baseline → meaningful tests → threshold ratchet** の順。初回から高すぎる threshold を置かない。
-- `coverage.include` は production source を明示する。難しいファイルを除外して数字を作らない。除外は entrypoint / 型のみ / generated / artifact 等に限定し理由を残す。
+- coverage は **baseline → meaningful tests → threshold ratchet** の順。PH1.5-A baseline は Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009)。初回から高すぎる threshold を置かない。
+- `coverage.include` は production source を明示する。PH1.5-A では package barrel、browser entrypoint、type-only transport、ambient d.ts だけを理由付き exclude。難しいファイルを除外して数字を作らない。
 - meaningful tests は protocol 境界、Input 16B / Channel 1B、prediction/reconcile、interpolation、server backpressure / rate-limit、GameClient transport 経路を優先する。
 - Playwright は `webServer` で `bun run start` を起動し、`baseURL` は Vite preview `http://127.0.0.1:4173` を基本にする。app code は `/ws` 相対 URL を維持し、browser-facing code が backend localhost を直叩きしない。
 - `.github/workflows/` は書けない。CI YAML が必要なら `docs/ops/` に提案を置く。

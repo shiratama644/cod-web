@@ -28,5 +28,35 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
     include: ['_tests_/**/*.{test,spec}.{ts,tsx}'],
     css: false,
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: './coverage',
+      reporter: ['text-summary', 'json-summary', 'lcov'],
+      include: [
+        'packages/protocol/src/**/*.{ts,tsx}',
+        'packages/engine-core/src/**/*.{ts,tsx}',
+        'packages/profile-fps/src/**/*.{ts,tsx}',
+        'apps/web/src/**/*.{ts,tsx}',
+        'apps/gameserver/src/**/*.{ts,tsx}',
+      ],
+      exclude: [
+        // package public barrels: runtime behavior is covered through concrete modules.
+        'packages/*/src/index.ts',
+        // browser entrypoint: verified by build/E2E, not by jsdom unit coverage.
+        'apps/web/src/main.tsx',
+        // type-only transport contract; concrete behavior is in websocket.ts.
+        'apps/web/src/game/net/transport.ts',
+        // ambient references only.
+        'apps/web/src/vite-env.d.ts',
+      ],
+      thresholds: {
+        // PH1.5-A records the baseline without gating. PH1.5-B raises these
+        // after meaningful tests cover critical protocol/net/sim branches.
+        statements: 0,
+        branches: 0,
+        functions: 0,
+        lines: 0,
+      },
+    },
   },
 })

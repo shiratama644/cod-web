@@ -20,14 +20,14 @@
 | [`HANDOFF.md`](./HANDOFF.md) | — | 現用 | 次セッションへの橋渡し。計画の代替ではない |
 | [`PHASE00_PLAN.md`](./complete/PHASE00_PLAN.md) | `PLAT-0`, `PH0-A`〜`PH0-F` | 完了 | 現行コードの穴埋め（Input 16B、fuzz、backpressure、subarray、lagcomp record） |
 | [`PHASE01_PLAN.md`](./PHASE01_PLAN.md) | `PLAT-1`, `PH1-A`〜`PH1-F` | ローカル検証済み | bun workspaces + fps 系移動 + Babylon 移行 |
-| [`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md) | `PLAT-1.5`, `PH1.5-A`〜`PH1.5-D` | 計画作成済み | Vitest coverage 測定、意味ある coverage 増加、Playwright E2E 品質ゲート |
+| [`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md) | `PLAT-1.5`, `PH1.5-A`〜`PH1.5-D` | PH1.5-A ローカル検証済み | Vitest coverage 測定、意味ある coverage 増加、Playwright E2E 品質ゲート |
 | [`DEEP_RESEARCH_PLAN.md`](./complete/DEEP_RESEARCH_PLAN.md) | `DOC-6`, `DR-1`〜`DR-5` | 完了 | Krunker.io / bloxd.io / engine / UGC / Perplexity 差分調査の手順と禁止事項 |
 
 ## 次に着手可能なタスク
 
 | 優先 | ID | 内容 | 事前に読むもの |
 |---:|---|---|---|
-| 1 | `PH1.5-A` | Vitest coverage 測定導入。`test:coverage`、coverage config、baseline 記録から開始 | [`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md), [`HANDOFF.md`](./HANDOFF.md), [`../task-list.md`](../task-list.md), [`../arch/engineering.md`](../arch/engineering.md), [`../arch/api-sources.md`](../arch/api-sources.md) |
+| 1 | `PH1.5-B` | 意味のある Vitest coverage 増加。baseline から重要未テスト branch を選んで assertion を追加 | [`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md), [`HANDOFF.md`](./HANDOFF.md), [`../task-list.md`](../task-list.md), [`../arch/engineering.md`](../arch/engineering.md), 既存 `_tests_/` と対象 source |
 | 2 | Phase 2 計画 | Phase 1.5 完了後に Sim Profile 分離の計画書作成へ進む | [`HANDOFF.md`](./HANDOFF.md), [`../task-list.md`](../task-list.md), [`../arch/`](../arch/README.md), [`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) |
 
 ## 計画書を書く/更新する時のルール

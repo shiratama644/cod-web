@@ -181,7 +181,7 @@ AGENTS.md §6.3 により `.github/workflows/` は書き込み不可。CI を提
 | ID | コミット | テスト | 実測値・備考 |
 |---|---|---|---|
 | PLAT-1.5 | 本コミット | docs 整合 / link check | Phase 1 と Phase 2 の間に coverage / meaningful tests / Playwright E2E 品質ゲートを追加。Vitest / Playwright 公式 docs を確認し、Sandbox での E2E 実行制約を明記。link check broken 0、typecheck・lint・unit・build pass、git diff --check pass |
-| PH1.5-A | | | |
+| PH1.5-A | 本コミット | `bun run test:coverage` pass（14 files / 84 tests） | `@vitest/coverage-v8@4.1.11` と `test:coverage` を追加。Vitest v8 coverage baseline: Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009)。`coverage.include` は production source、exclude は package barrel / browser entrypoint / type-only transport / ambient d.ts に限定。threshold は PH1.5-B ratchet 前の 0% 明示。typecheck・lint・unit・build pass、git diff --check pass |
 | PH1.5-B | | | |
 | PH1.5-C | | | |
 | PH1.5-D | | | |

@@ -6,7 +6,7 @@
 > 仕様正本: [`docs/arch/`](../arch/README.md)
 > 計画の入口: [`docs/planning/README.md`](./README.md)
 > 調査の入口: [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md)
-> このファイルは計画の代替ではない。**DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E / PH1-F はローカル検証済み。PLAT-1.5 で Phase 1.5 計画を追加済み。次は `PH1.5-A`（Vitest coverage 測定導入）から進む。**
+> このファイルは計画の代替ではない。**DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E / PH1-F はローカル検証済み。PLAT-1.5 と PH1.5-A はローカル検証済み。次は `PH1.5-B`（意味のある Vitest coverage 増加）から進む。**
 
 ## 0. 最初にやること（これ以外から始めない）
 
@@ -14,8 +14,8 @@
 2. ブランチ名は **毎回コマンドで確認**する。文書に書いてある過去ブランチ名を fetch/push しない（AGENTS.md §4.4）
 3. `git log` が起点 1 件だけ / status が大量削除+未追跡 / `bun` なし / `node_modules` なし → Sandbox 再構築。`.agent/hooks/sandbox-rebuild-recovery.md` どおり `git fetch origin <現在ブランチ>` → `git reset --hard FETCH_HEAD` → `bash .agent/hooks/restore-sandbox-env.sh`
 4. 未コミット変更を勝手に捨てない（再構築復旧の `reset --hard FETCH_HEAD` だけ例外）
-5. **進行中は 1 件。** DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E / PH1-F はローカル検証済み。PLAT-1.5 は計画追加済み。次の 1 件は **PH1.5-A: Vitest coverage 測定導入**
-6. PH1.5-A 着手前に [`README.md`](./README.md)、[`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md)、[`../task-list.md`](../task-list.md)、[`../arch/engineering.md`](../arch/engineering.md)、[`../arch/api-sources.md`](../arch/api-sources.md) を再読する。公式・型・arch が食い違う場合は停止して人間に確認する
+5. **進行中は 1 件。** DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E / PH1-F / PLAT-1.5 / PH1.5-A はローカル検証済み。次の 1 件は **PH1.5-B: 意味のある Vitest coverage 増加**
+6. PH1.5-B 着手前に [`README.md`](./README.md)、[`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md)、[`../task-list.md`](../task-list.md)、coverage summary、既存 `_tests_/`、対象 source を再読する。重要経路の意味ある assertion にならない場合は停止して方針を見直す
 
 ## 1. いま決まっていること（覆さない）
 
@@ -58,58 +58,51 @@
 | DOC-8 | `4f1e2fc`。planning README と arch/research/docs の入口導線を追加整理。raw ファイル移動なし |
 | DOC-9 | 本コミット。完了済み plan を `docs/planning/complete/` へ移動し、現用リンクと API 根拠を最終確認 |
 | 現行ツリー | bun workspaces 化済み。Biome import/global 境界あり。高頻度 WS バイナリは Channel 1B + payload。`apps/web` の 3D は Babylon Engine 命令型シーン |
-| テスト | PH1-F: `bun run test:unit` 14 files / 84 tests passed。coverage / Playwright E2E は Phase 1.5 で導入予定 |
+| テスト | PH1.5-A: `bun run test:unit` 14 files / 84 tests passed。`bun run test:coverage` pass、baseline Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009)。Playwright E2E は PH1.5-C で導入予定 |
 
-フェーズ 1 は **PH1-F までローカル検証済み**。Phase 2（Sim Profile 分離）の前に、Phase 1.5（coverage / meaningful tests / E2E 品質ゲート）を実施する。
+フェーズ 1 は **PH1-F までローカル検証済み**。Phase 1.5 は PH1.5-A までローカル検証済み。次は coverage baseline を使って meaningful tests を増やす。
 
-## 3. PH1-F 完了後の次の 1 件: PH1.5-A（Vitest coverage 測定導入）
+## 3. 次の 1 件: PH1.5-B（意味のある Vitest coverage 増加）
 
 ### 目的
 
-Phase 2 の Sim Profile 分離へ進む前に、`docs/planning/PHASE01_5_PLAN.md` に沿って品質ゲートを追加する。最初の実装タスクは **PH1.5-A: Vitest coverage 測定導入**。`test:coverage`、coverage config、baseline report を作り、後続 PH1.5-B の meaningful tests に進める状態にする。
+PH1.5-A で Vitest coverage 測定を導入し、baseline を記録した。次は **PH1.5-B** として、単なる数字稼ぎではなく、ゲームが壊れると困る重要経路に assertion を追加して coverage を増やす。
+
+PH1.5-A baseline:
+
+| Metric | Baseline |
+|---|---:|
+| Statements | 66.82% (725/1085) |
+| Branches | 57.10% (225/394) |
+| Functions | 64.43% (125/194) |
+| Lines | 68.97% (696/1009) |
+
+### 優先候補
+
+- `apps/web/src/game/net/websocket.ts`: WebSocketTransport の Channel framing / binary handler / status transitions を mock WebSocket で検証
+- `apps/web/src/components/StartOverlay.tsx`: fullscreen / pointer lock が拒否されても no crash、開始 callback の境界
+- `apps/web/src/components/TouchControls.tsx`: touch joystick fallback / cleanup / input accumulation の DOM 境界
+- `apps/web/src/game/net/interpolation.ts`: clamp / stale remote / empty buffer など branch 境界
+- `apps/web/src/game/net/GameClient.ts`: welcome / malformed snapshot / dispose / status などの未カバー branch
+- `apps/gameserver/src/index.ts`: 直 import は Bun server 起動を伴うため、必要なら handler 抽出の最小設計を先に確認。PH1.5-B に混ぜすぎない
 
 ### やってはいけない
 
-- D1–D13 を覆す（覆したくなったら実装せず人間に聞く）
-- coverage のために protocol layout / Input 16B / Snapshot 現行 payload / Channel 1B を変える
 - import-only test / shallow snapshot test で数字だけを稼ぐ
-- coverage 対象から難しい production source を安易に除外する
-- Playwright browser 実行を Sandbox で実施済みと捏造する
-- `.github/workflows/` を作成する（CI 提案は `docs/ops/` へ）
-- PH1.5-A に PH1.5-B/C/D や Phase 2 実装を混ぜる
-- `.agent/logs/` の過去ログを書き換える
-- `.archive/` を正本にする
-- `git reset --hard`（再構築復旧以外）/ rebase / force push
-- セッション固定ブランチ以外へ push
+- private field を無理に触るために `any` を乱用する
+- coverage のために protocol layout / Input 16B / Snapshot payload / Channel 1B を変える
+- `apps/gameserver/src/index.ts` を coverage のためだけに危険に import して長寿命 server を起動する
+- PH1.5-C の Playwright E2E、Phase 2 実装を混ぜる
 
-### PH1.5-A の開始条件
+### PH1.5-B の完了条件
 
-- [ ] `git status` / `git branch --show-current` / `git log -5 --oneline`
-- [ ] `docs/task-list.md` で PLAT-1.5 完了、PH1.5-A 未着手を確認
-- [ ] `docs/planning/PHASE01_5_PLAN.md` §10.1 と `docs/arch/api-sources.md` の Vitest 根拠を再読
-- [ ] `package.json` / `vitest.config.ts` / 既存 `_tests_/` を全体確認
-- [ ] 未コミット変更があれば停止
-
-### PH1.5-A の範囲
-
-- `@vitest/coverage-v8` など公式 provider package を導入する（provider と runtime が合わない場合は停止）
-- root `package.json` に `test:coverage` 等の script を追加する
-- `vitest.config.ts` に coverage provider / include / exclude / reporters / reportsDirectory / 初期 threshold 方針を追加する
-- coverage artifacts は Git に入れない
-- 初回 baseline を `docs/task-list.md` または PHASE01_5_PLAN §12 に記録する
-- 作らない: Playwright E2E、meaningful tests の大量追加、Phase 2 実装
-
-### PH1.5-A の完了条件
-
-- [ ] `bun run test:coverage` が実行でき、baseline が記録される
-- [ ] coverage 対象と除外理由が config または docs にある
+- [ ] 追加 tests が重要経路の boundary / error / lifecycle / fallback assertion を含む
+- [ ] baseline から after coverage が記録される
+- [ ] threshold ratchet の候補値を docs に記録する（実際の threshold 引き上げは範囲に収まる場合のみ）
+- [ ] `bun run test:coverage` pass
 - [ ] `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` pass
 - [ ] `git diff --check` pass
 - [ ] Conventional Commit + セッションブランチへ push
-
-### Phase 1.5 後
-
-PH1.5-A → PH1.5-B → PH1.5-C → PH1.5-D の順で進める。Phase 1.5 完了後に Phase 2（Sim Profile 分離）の計画へ戻る。
 
 ## 4. 不一致（両方引用。どちらが正しいか決めない）
 
@@ -143,7 +136,7 @@ PH1.5-A → PH1.5-B → PH1.5-C → PH1.5-D の順で進める。Phase 1.5 完�
 
 ## 5. 強制されていない（やらない）
 
-voxel パッケージ、SimProfile 本実装、defineGameMode、Hello HMAC、Snapshot `0x11` 化、`vy` 削除、タッチ配線、ボイス、GPU 実測、Playwright 捏造、`.github/workflows/` 作成。PH1.5-A では Playwright 実装そのものもまだ行わない。
+voxel パッケージ、SimProfile 本実装、defineGameMode、Hello HMAC、Snapshot `0x11` 化、`vy` 削除、タッチ配線、ボイス、GPU 実測、Playwright 捏造、`.github/workflows/` 作成。PH1.5-B では Playwright 実装そのものもまだ行わない。
 
 ## 6. 読み順（次セッション）
 

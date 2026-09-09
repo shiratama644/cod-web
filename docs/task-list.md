@@ -44,7 +44,7 @@
 |---|---|---|
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
 | **1** | モノレポ + Babylon 移行 | PH1-F ローカル検証済み |
-| **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | 計画作成済み（次: PH1.5-A） |
+| **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-A ローカル検証済み（次: PH1.5-B） |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4** | ハブ + マッチメイカー + voxel 永続化方針 | 未着手 |
@@ -91,15 +91,15 @@
 ### Phase 1.5
 
 計画書: [`planning/PHASE01_5_PLAN.md`](./planning/PHASE01_5_PLAN.md)
-橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（次は **PH1.5-A: Vitest coverage 測定導入**）
+橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（次は **PH1.5-B: 意味のある Vitest coverage 増加**）
 
 目的: Phase 2 の Sim Profile 分離前に、Vitest coverage 測定、重要経路の意味ある coverage 増加、Playwright E2E の入口を追加する。Sandbox では Playwright browser 実行結果を捏造せず、CI / 実環境検証待ちとして扱う。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
 | PLAT-1.5 | Phase 1.5 計画追加（coverage / meaningful tests / E2E） | 完了 | 100% | PH1-F | `_TEMPLATE.md` 準拠。Vitest coverage と Playwright 公式 API 根拠、Sandbox 制約、意味ある coverage 増加方針が docs に反映される | 本コミット / [`planning/PHASE01_5_PLAN.md`](./planning/PHASE01_5_PLAN.md) / Vitest・Playwright 公式 docs 確認 / link check broken 0 / typecheck・lint・unit・build pass / git diff --check pass |
-| PH1.5-A | Vitest coverage 測定導入 | 未着手 | 0% | PLAT-1.5 | `test:coverage` と coverage config があり、baseline coverage が記録される | |
-| PH1.5-B | 意味のある Vitest coverage 増加 | 未着手 | 0% | PH1.5-A | protocol / input / prediction / interpolation / server 等の重要未テスト branch に assertion を追加し、before/after を記録する | |
+| PH1.5-A | Vitest coverage 測定導入 | ローカル検証済み | 100% | PLAT-1.5 | `test:coverage` と coverage config があり、baseline coverage が記録される | 本コミット / `@vitest/coverage-v8@4.1.11` / `bun run test:coverage` pass（14 files・84 tests）/ baseline: Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009) / coverage include/exclude/0%初期threshold設定 / typecheck・lint・unit・build pass / git diff --check pass |
+| PH1.5-B | 意味のある Vitest coverage 増加 | 未着手 | 0% | PH1.5-A | protocol / input / prediction / interpolation / server 等の重要未テスト branch に assertion を追加し、before/after を記録する | 次候補: `apps/web/src/game/net/websocket.ts`, `StartOverlay.tsx`, `TouchControls.tsx`, `interpolation.ts`, `GameClient.ts` の未カバー branch。`apps/gameserver/src/index.ts` は entrypoint直テストでなく抽出可能性を先に確認 |
 | PH1.5-C | Playwright E2E 実装 | 未着手 | 0% | PH1.5-B | `@playwright/test`、`playwright.config.ts`、E2E specs、Sandbox 未実行理由または CI 実行結果がある | |
 | PH1.5-D | Quality gate docs / CI 提案整理 | 未着手 | 0% | PH1.5-C | coverage threshold ratchet 方針、E2E 実行手順、次 Phase 2 handoff が docs に反映される | |
 
