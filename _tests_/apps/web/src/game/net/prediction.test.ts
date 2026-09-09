@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { createDefaultWorld } from '@cod/profile-fps/sim/collisionWorld'
-import type { PlayerInput, Snapshot } from '@cod/protocol/protocol/messages'
+import type { PlayerInput, Snapshot, SnapshotPlayer } from '@cod/protocol/protocol/messages'
 import { ClientPrediction } from '@/game/net/prediction'
 import { Interpolator } from '@/game/net/interpolation'
 
@@ -67,11 +67,24 @@ describe('ClientPrediction', () => {
 })
 
 describe('Interpolator', () => {
-  function snapshot(serverTick: number, players: Array<{ id: number; x: number; z: number }>): Snapshot {
+  function player(partial: Partial<SnapshotPlayer> & { id: number }): SnapshotPlayer {
+    return {
+      x: 0,
+      y: 0.02,
+      z: 0,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      yaw: 0,
+      ...partial,
+    }
+  }
+
+  function snapshot(serverTick: number, players: Array<Partial<SnapshotPlayer> & { id: number }>): Snapshot {
     return {
       serverTick,
       lastAckSeq: 0,
-      players: players.map((p) => ({ id: p.id, x: p.x, y: 0.02, z: p.z, vx: 0, vy: 0, vz: 0, yaw: 0 })),
+      players: players.map(player),
     }
   }
 
@@ -94,12 +107,59 @@ describe('Interpolator', () => {
 
   it('自プレイヤーは補間対象に含めない', () => {
     const interp = new Interpolator()
-    interp.push(snapshot(0, [
-      { id: 1, x: 1, z: 0 },
-      { id: 2, x: 2, z: 0 },
-    ]), 0)
+    interp.push(
+      snapshot(0, [
+        { id: 1, x: 1, z: 0 },
+        { id: 2, x: 2, z: 0 },
+      ]),
+      0,
+    )
     const out = interp.sample(5, 1)
     expect(out.has(1)).toBe(false)
     expect(out.has(2)).toBe(true)
+  })
+
+  it('latest sample velocity is used only for a short extrapolation window', () => {
+    const interp = new Interpolator()
+    interp.push(snapshot(0, [{ id: 2, x: 10, z: -1, vx: 20, vz: -40 }]), 0)
+
+    const withinCap = interp.sample(125, 1).get(2)
+    const beyondCap = interp.sample(250, 1).get(2)
+
+    expect(withinCap?.x).toBeCloseTo(10.5, 5)
+    expect(withinCap?.z).toBeCloseTo(-2, 5)
+    expect(beyondCap?.x).toBe(10)
+    expect(beyondCap?.z).toBe(-1)
+  })
+
+  it('keeps a departing remote at its last before-sample position for the current interpolation span', () => {
+    const interp = new Interpolator()
+    interp.push(snapshot(0, [{ id: 2, x: 1, z: 2 }]), 0)
+    interp.push(snapshot(1, [{ id: 3, x: 30, z: 40 }]), 100)
+
+    const out = interp.sample(150, 1)
+
+    expect(out.get(2)).toMatchObject({ id: 2, x: 1, z: 2 })
+    expect(out.has(3)).toBe(false)
+  })
+
+  it('interpolates yaw across the shortest wrap-around path', () => {
+    const interp = new Interpolator()
+    interp.push(snapshot(0, [{ id: 2, yaw: 170 * (Math.PI / 180) }]), 0)
+    interp.push(snapshot(1, [{ id: 2, yaw: -170 * (Math.PI / 180) }]), 100)
+
+    const out = interp.sample(150, 1).get(2)
+
+    expect(out?.yaw).toBeCloseTo(Math.PI, 5)
+  })
+
+  it('bounds retained sample history while keeping enough samples for interpolation', () => {
+    const interp = new Interpolator()
+    for (let i = 0; i < 10; i++) {
+      interp.push(snapshot(i, [{ id: 2, x: i }]), i * 100)
+    }
+
+    expect(interp.sampleCount).toBeLessThan(10)
+    expect(interp.sampleCount).toBeGreaterThanOrEqual(2)
   })
 })

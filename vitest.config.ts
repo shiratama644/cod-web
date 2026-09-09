@@ -50,12 +50,12 @@ export default defineConfig({
         'apps/web/src/vite-env.d.ts',
       ],
       thresholds: {
-        // PH1.5-A records the baseline without gating. PH1.5-B raises these
-        // after meaningful tests cover critical protocol/net/sim branches.
-        statements: 0,
-        branches: 0,
-        functions: 0,
-        lines: 0,
+        // PH1.5-B ratchet: set just below/at the measured meaningful-coverage
+        // floor so future changes cannot silently fall back to the PH1.5-A baseline.
+        statements: 79,
+        branches: 73,
+        functions: 79,
+        lines: 80,
       },
     },
   },

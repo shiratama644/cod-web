@@ -1,4 +1,4 @@
-# 次セッションへの橋渡し（Phase 1.5 品質ゲート前）
+# 次セッションへの橋渡し（Phase 1.5 品質ゲート中）
 
 > 対象: 新しいセッションの AI。人間ではない。
 > 進捗の正本: [`docs/task-list.md`](../task-list.md)
@@ -6,7 +6,7 @@
 > 仕様正本: [`docs/arch/`](../arch/README.md)
 > 計画の入口: [`docs/planning/README.md`](./README.md)
 > 調査の入口: [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md)
-> このファイルは計画の代替ではない。**DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E / PH1-F はローカル検証済み。PLAT-1.5 と PH1.5-A はローカル検証済み。次は `PH1.5-B`（意味のある Vitest coverage 増加）から進む。**
+> このファイルは計画の代替ではない。**DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E / PH1-F はローカル検証済み。PLAT-1.5 / PH1.5-A / PH1.5-B はローカル検証済み。次は `PH1.5-C`（Playwright E2E 実装）から進む。**
 
 ## 0. 最初にやること（これ以外から始めない）
 
@@ -14,8 +14,8 @@
 2. ブランチ名は **毎回コマンドで確認**する。文書に書いてある過去ブランチ名を fetch/push しない（AGENTS.md §4.4）
 3. `git log` が起点 1 件だけ / status が大量削除+未追跡 / `bun` なし / `node_modules` なし → Sandbox 再構築。`.agent/hooks/sandbox-rebuild-recovery.md` どおり `git fetch origin <現在ブランチ>` → `git reset --hard FETCH_HEAD` → `bash .agent/hooks/restore-sandbox-env.sh`
 4. 未コミット変更を勝手に捨てない（再構築復旧の `reset --hard FETCH_HEAD` だけ例外）
-5. **進行中は 1 件。** DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E / PH1-F / PLAT-1.5 / PH1.5-A はローカル検証済み。次の 1 件は **PH1.5-B: 意味のある Vitest coverage 増加**
-6. PH1.5-B 着手前に [`README.md`](./README.md)、[`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md)、[`../task-list.md`](../task-list.md)、coverage summary、既存 `_tests_/`、対象 source を再読する。重要経路の意味ある assertion にならない場合は停止して方針を見直す
+5. **進行中は 1 件。** DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E / PH1-F / PLAT-1.5 / PH1.5-A / PH1.5-B はローカル検証済み。次の 1 件は **PH1.5-C: Playwright E2E 実装**
+6. PH1.5-C 着手前に [`README.md`](./README.md)、[`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md)、[`../task-list.md`](../task-list.md)、[`../arch/api-sources.md`](../arch/api-sources.md)、Playwright 公式 docs、既存 Vite/start scripts を再読する。Sandbox で browser 実行不可なら捏造せず、設定・spec・未実行理由を記録する
 
 ## 1. いま決まっていること（覆さない）
 
@@ -58,49 +58,58 @@
 | DOC-8 | `4f1e2fc`。planning README と arch/research/docs の入口導線を追加整理。raw ファイル移動なし |
 | DOC-9 | 本コミット。完了済み plan を `docs/planning/complete/` へ移動し、現用リンクと API 根拠を最終確認 |
 | 現行ツリー | bun workspaces 化済み。Biome import/global 境界あり。高頻度 WS バイナリは Channel 1B + payload。`apps/web` の 3D は Babylon Engine 命令型シーン |
-| テスト | PH1.5-A: `bun run test:unit` 14 files / 84 tests passed。`bun run test:coverage` pass、baseline Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009)。Playwright E2E は PH1.5-C で導入予定 |
+| テスト | PH1.5-B: `bun run test:unit` 17 files / 107 tests passed。`bun run test:coverage` pass、after Statements 79.17% (859/1085), Branches 73.85% (291/394), Functions 79.38% (154/194), Lines 80.77% (815/1009)。Coverage thresholds は statements 79 / branches 73 / functions 79 / lines 80。Playwright E2E は PH1.5-C で導入予定 |
 
-フェーズ 1 は **PH1-F までローカル検証済み**。Phase 1.5 は PH1.5-A までローカル検証済み。次は coverage baseline を使って meaningful tests を増やす。
+フェーズ 1 は **PH1-F までローカル検証済み**。Phase 1.5 は PH1.5-B までローカル検証済み。次は Playwright E2E の入口を実装する。
 
-## 3. 次の 1 件: PH1.5-B（意味のある Vitest coverage 増加）
+## 3. 次の 1 件: PH1.5-C（Playwright E2E 実装）
+
+### 直近完了: PH1.5-B
+
+PH1.5-B では、数字稼ぎではなく重要経路の assertion を追加した。
+
+| Metric | PH1.5-A baseline | PH1.5-B after |
+|---|---:|---:|
+| Statements | 66.82% (725/1085) | 79.17% (859/1085) |
+| Branches | 57.10% (225/394) | 73.85% (291/394) |
+| Functions | 64.43% (125/194) | 79.38% (154/194) |
+| Lines | 68.97% (696/1009) | 80.77% (815/1009) |
+
+`vitest.config.ts` の coverage thresholds は statements 79 / branches 73 / functions 79 / lines 80 に ratchet 済み。追加テストは次の通り。
+
+- `WebSocketTransport`: Channel framing、text/binary 分岐、malformed binary 1002 close、no-copy send、fallback frame buffer、status/error
+- `GameClient`: welcome reject、status lifecycle、malformed snapshot ignore、non-snapshot channel ignore、dispose 後送信停止
+- `Interpolator`: extrapolate cap、hold、departure、yaw wrap、history bound
+- `StartOverlay`: Fullscreen 非対応/拒否/sync throw/change cleanup
+- `TouchControls`: non-touch fallback、joystick clamp、end/hidden/removed/unmount reset、jump
+
+`apps/gameserver/src/index.ts` は top-level `Bun.serve` と timer を持つため、PH1.5-B では coverage のために直 import しなかった。server seam が必要なら別タスク/後続で handler 抽出を検討する。
 
 ### 目的
 
-PH1.5-A で Vitest coverage 測定を導入し、baseline を記録した。次は **PH1.5-B** として、単なる数字稼ぎではなく、ゲームが壊れると困る重要経路に assertion を追加して coverage を増やす。
-
-PH1.5-A baseline:
-
-| Metric | Baseline |
-|---|---:|
-| Statements | 66.82% (725/1085) |
-| Branches | 57.10% (225/394) |
-| Functions | 64.43% (125/194) |
-| Lines | 68.97% (696/1009) |
+PH1.5-C では Playwright Test の設定と E2E specs を追加し、CI / 実環境で browser smoke を実行できる入口を作る。Sandbox で Chromium browser install / 実行が不可の場合は、実行済みと捏造せず「設定・型検証まで」「実環境検証待ち」を docs に残す。
 
 ### 優先候補
 
-- `apps/web/src/game/net/websocket.ts`: WebSocketTransport の Channel framing / binary handler / status transitions を mock WebSocket で検証
-- `apps/web/src/components/StartOverlay.tsx`: fullscreen / pointer lock が拒否されても no crash、開始 callback の境界
-- `apps/web/src/components/TouchControls.tsx`: touch joystick fallback / cleanup / input accumulation の DOM 境界
-- `apps/web/src/game/net/interpolation.ts`: clamp / stale remote / empty buffer など branch 境界
-- `apps/web/src/game/net/GameClient.ts`: welcome / malformed snapshot / dispose / status などの未カバー branch
-- `apps/gameserver/src/index.ts`: 直 import は Bun server 起動を伴うため、必要なら handler 抽出の最小設計を先に確認。PH1.5-B に混ぜすぎない
+- `@playwright/test` devDependency と `test:e2e` script
+- `playwright.config.ts` に `webServer`（root から `bun run start`）と `use.baseURL`
+- smoke spec: page load、canvas / renderer HUD / start overlay 表示
+- start spec: overlay click/tap 後に overlay が消える。Fullscreen / PointerLock 拒否でも no crash
+- network spec: 実環境で `/ws` が Vite proxy 経由で接続し、HUD が connected へ進むこと（flaky なら明示待ち）
 
 ### やってはいけない
 
-- import-only test / shallow snapshot test で数字だけを稼ぐ
-- private field を無理に触るために `any` を乱用する
-- coverage のために protocol layout / Input 16B / Snapshot payload / Channel 1B を変える
-- `apps/gameserver/src/index.ts` を coverage のためだけに危険に import して長寿命 server を起動する
-- PH1.5-C の Playwright E2E、Phase 2 実装を混ぜる
+- Sandbox で Playwright browser 実行できないのに pass と報告する
+- `.github/workflows/` を作る（CI 提案は `docs/ops/`）
+- E2E のために browser-facing code から backend `localhost` を直叩きする
+- Phase 2 / voxel / gamemode SDK / Hello HMAC / Snapshot 0x11 を混ぜる
 
-### PH1.5-B の完了条件
+### PH1.5-C の完了条件
 
-- [ ] 追加 tests が重要経路の boundary / error / lifecycle / fallback assertion を含む
-- [ ] baseline から after coverage が記録される
-- [ ] threshold ratchet の候補値を docs に記録する（実際の threshold 引き上げは範囲に収まる場合のみ）
-- [ ] `bun run test:coverage` pass
+- [ ] Playwright Test 設定と E2E specs が追加される
+- [ ] Sandbox で未実行の場合は理由と実環境検証条件が docs に残る
 - [ ] `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` pass
+- [ ] `bun run test:coverage` pass（PH1.5-B thresholds 維持）
 - [ ] `git diff --check` pass
 - [ ] Conventional Commit + セッションブランチへ push
 
@@ -136,7 +145,7 @@ PH1.5-A baseline:
 
 ## 5. 強制されていない（やらない）
 
-voxel パッケージ、SimProfile 本実装、defineGameMode、Hello HMAC、Snapshot `0x11` 化、`vy` 削除、タッチ配線、ボイス、GPU 実測、Playwright 捏造、`.github/workflows/` 作成。PH1.5-B では Playwright 実装そのものもまだ行わない。
+voxel パッケージ、SimProfile 本実装、defineGameMode、Hello HMAC、Snapshot `0x11` 化、`vy` 削除、ボイス、GPU 実測、Playwright 捏造、`.github/workflows/` 作成。PH1.5-C では Playwright 設定/spec 以外を混ぜない。
 
 ## 6. 読み順（次セッション）
 

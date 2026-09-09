@@ -58,9 +58,9 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 
 ### Coverage / Playwright（Phase 1.5）
 
-- coverage は **baseline → meaningful tests → threshold ratchet** の順。PH1.5-A baseline は Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009)。初回から高すぎる threshold を置かない。
+- coverage は **baseline → meaningful tests → threshold ratchet** の順。PH1.5-A baseline は Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009)。PH1.5-B after は Statements 79.17% (859/1085), Branches 73.85% (291/394), Functions 79.38% (154/194), Lines 80.77% (815/1009)。threshold は statements 79 / branches 73 / functions 79 / lines 80 へ ratchet 済み。
 - `coverage.include` は production source を明示する。PH1.5-A では package barrel、browser entrypoint、type-only transport、ambient d.ts だけを理由付き exclude。難しいファイルを除外して数字を作らない。
-- meaningful tests は protocol 境界、Input 16B / Channel 1B、prediction/reconcile、interpolation、server backpressure / rate-limit、GameClient transport 経路を優先する。
+- meaningful tests は protocol 境界、Input 16B / Channel 1B、prediction/reconcile、interpolation、server backpressure / rate-limit、GameClient transport 経路を優先する。PH1.5-B では `WebSocketTransport` の mock WebSocket、`GameClient` の mock transport、`StartOverlay` の mock screenfull、`TouchControls` の mock nipplejs が有効だった。
 - Playwright は `webServer` で `bun run start` を起動し、`baseURL` は Vite preview `http://127.0.0.1:4173` を基本にする。app code は `/ws` 相対 URL を維持し、browser-facing code が backend localhost を直叩きしない。
 - `.github/workflows/` は書けない。CI YAML が必要なら `docs/ops/` に提案を置く。
 
