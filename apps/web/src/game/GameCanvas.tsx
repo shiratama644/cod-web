@@ -9,20 +9,37 @@ import { useEffect, useRef } from 'react'
 import type { InputController } from './input/InputController'
 import { BabylonGame } from './babylon/BabylonGame'
 
-export function GameCanvas({ input }: { input: InputController }) {
+export interface GameRuntime {
+  start(): void
+  dispose(): void
+}
+
+export type GameRuntimeFactory = (canvas: HTMLCanvasElement, input: InputController) => GameRuntime
+
+function createBabylonRuntime(canvas: HTMLCanvasElement, input: InputController): GameRuntime {
+  return new BabylonGame(canvas, input)
+}
+
+export function GameCanvas({
+  input,
+  createGame = createBabylonRuntime,
+}: {
+  input: InputController
+  createGame?: GameRuntimeFactory
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const game = new BabylonGame(canvas, input)
+    const game = createGame(canvas, input)
     game.start()
 
     return () => {
       game.dispose()
     }
-  }, [input])
+  }, [input, createGame])
 
   return <canvas ref={canvasRef} className="game-canvas" tabIndex={-1} aria-label="Game view" />
 }

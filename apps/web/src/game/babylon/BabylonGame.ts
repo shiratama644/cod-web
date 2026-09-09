@@ -75,6 +75,7 @@ export class BabylonGame {
     this.client.setInput(this.input)
     this.client.onStatusChange = (status) => {
       console.log(`[net] ${status}`)
+      gameStoreApi.getState().setConnectionStatus(status)
     }
     this.client.connect()
     gameStoreApi.getState().setRenderer('babylon-webgl')
@@ -181,6 +182,7 @@ export class BabylonGame {
     this.engine.stopRenderLoop()
     this.input.dispose()
     this.client.dispose()
+    gameStoreApi.getState().setConnectionStatus('disconnected')
     this.scene.dispose()
     this.engine.dispose()
   }

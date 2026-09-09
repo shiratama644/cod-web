@@ -64,7 +64,8 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 
 ### 描画（破棄。新規に真似しない）
 
-- PH1-D で apps/web の R3F scene / renderer / loop は削除済み。`GameCanvas.tsx` は `<canvas>` を置き、`BabylonGame` が `new Engine(canvas, false, options, false)` で命令型に所有する。
+- PH1-D で apps/web の R3F scene / renderer / loop は削除済み。`GameCanvas.tsx` は `<canvas>` を置き、`BabylonGame` が `new Engine(canvas, false, options, false)` で命令型に所有する。PH1-F で `GameCanvas` は runtime factory seam を持ち、React lifecycle が imperative runtime の `start()` / `dispose()` を呼ぶだけであることを jsdom unit で検証できる。
+- PH1-F 以降、低頻度 HUD 値は Zustand（renderer / connectionStatus）に置けるが、座標・回転・リモート player map は React state に入れず `GameClient` / Babylon mesh が直接持つ。`GameClient` は mock transport unit で Channel.Unreliable Input 16B 送信と Snapshot→`remotes` 公開を検証する。
 - PH1-E で `InputController` は `requestPointerLock({ unadjustedMovement: true })` を first try し、Promise rejection の `NotSupportedError` 時だけ通常 `requestPointerLock()` へ fallback する。旧ブラウザが void を返す場合に備え、戻り値は Promise-like 判定して扱う。
 - PH1-E 以降、`pointermove` / PointerLock 中の mouse movement はイベント中に yaw/pitch を直接変えず、delta を蓄積して `BabylonGame` render loop 先頭の `input.consumeLookDelta()` で消費する。
 - `EngineOptions` は `@babylonjs/core@9.25.0` の installed `.d.ts` で `Engines/thinEngine.pure` から import できることを確認済み。`desynchronized` / `preserveDrawingBuffer` は PH1-D では渡していない。

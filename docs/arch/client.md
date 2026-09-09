@@ -2,7 +2,7 @@
 
 描画は **Babylon.js**（ADR-003）。3D に React を使わない。React はハブ・HUD・設定・メニュー（DOM）のみ。
 
-PH1-D で旧 R3F scene / renderer / loop は破棄済み。ネットコード（`apps/web/src/game/net/*`）は Babylon の描画ループから呼ぶ。
+PH1-D で旧 R3F scene / renderer / loop は破棄済み。PH1-F で React 側は `<canvas>` host / HUD / touch UI / start overlay に限定し、ネットコード（`apps/web/src/game/net/*`）は Babylon の描画ループから呼ぶ経路を unit test で固定した。
 
 ## バンドル
 

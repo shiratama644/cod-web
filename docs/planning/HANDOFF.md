@@ -1,4 +1,4 @@
-# 次セッションへの橋渡し（PH1-F 着手前）
+# 次セッションへの橋渡し（Phase 2 計画前）
 
 > 対象: 新しいセッションの AI。人間ではない。
 > 進捗の正本: [`docs/task-list.md`](../task-list.md)
@@ -6,7 +6,7 @@
 > 仕様正本: [`docs/arch/`](../arch/README.md)
 > 計画の入口: [`docs/planning/README.md`](./README.md)
 > 調査の入口: [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md)
-> このファイルは計画の代替ではない。**DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E は完了済み。次は `PHASE01_PLAN.md` を再読して PH1-F に進む。**
+> このファイルは計画の代替ではない。**DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E / PH1-F はローカル検証済み。次は `docs/task-list.md` と `docs/arch/` を再読し、Phase 2 計画から進む。**
 
 ## 0. 最初にやること（これ以外から始めない）
 
@@ -14,8 +14,8 @@
 2. ブランチ名は **毎回コマンドで確認**する。文書に書いてある過去ブランチ名を fetch/push しない（AGENTS.md §4.4）
 3. `git log` が起点 1 件だけ / status が大量削除+未追跡 / `bun` なし / `node_modules` なし → Sandbox 再構築。`.agent/hooks/sandbox-rebuild-recovery.md` どおり `git fetch origin <現在ブランチ>` → `git reset --hard FETCH_HEAD` → `bash .agent/hooks/restore-sandbox-env.sh`
 4. 未コミット変更を勝手に捨てない（再構築復旧の `reset --hard FETCH_HEAD` だけ例外）
-5. **進行中は 1 件。** DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E は完了済み。次の 1 件は **PH1-F**（React は HUD のみ + 位置同期経路）
-6. PH1-F 着手前に [`README.md`](./README.md)、`PHASE01_PLAN.md` §5 / §7 / §10.4 / §10.5、[`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) を再読する。公式・型・arch が食い違う場合は停止して人間に確認する
+5. **進行中は 1 件。** DR-5 / DOC-7 / DOC-8 / DOC-9 / PH1-A / PH1-B / PH1-C / PH1-D / PH1-E / PH1-F はローカル検証済み。次の 1 件は **Phase 2 計画**（Sim Profile 分離）からタスク ID を発行して進める
+6. Phase 2 着手前に [`README.md`](./README.md)、[`../task-list.md`](../task-list.md)、[`../arch/`](../arch/README.md)、[`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) を再読する。公式・型・arch が食い違う場合は停止して人間に確認する
 
 ## 1. いま決まっていること（覆さない）
 
@@ -60,13 +60,13 @@
 | 現行ツリー | bun workspaces 化済み。Biome import/global 境界あり。高頻度 WS バイナリは Channel 1B + payload。`apps/web` の 3D は Babylon Engine 命令型シーン |
 | テスト | PH1-E: `bun run test:unit` 13 files / 81 tests passed |
 
-フェーズ 1 は **PH1-E 完了済み**。次は PH1-F（React は HUD のみ + 位置同期経路）。
+フェーズ 1 は **PH1-F までローカル検証済み**。次は Phase 2（Sim Profile 分離）の計画から進む。
 
-## 3. PH1-E 完了後の次の 1 件: PH1-F
+## 3. PH1-F 完了後の次の 1 件: Phase 2 計画
 
 ### 目的
 
-`docs/planning/PHASE01_PLAN.md` の §10.5 は公式一次情報で確認済み。次は **PH1-F** として、計画に従い React が HUD / メニュー / オーバーレイに留まり、単一静的マップで既存ネットワーク経路が Babylon 上で動くことを最終整理する。
+`docs/planning/PHASE01_PLAN.md` の §10.5 は公式一次情報で確認済み。次は **Phase 2 計画**として、Sim Profile 分離の範囲・禁止事項・DoD・停止条件を `docs/planning/_TEMPLATE.md` に沿って作成する。PH1 の実装はローカル検証済みだが、実 2 タブ目視や raw pointer lock の実ブラウザ確認は実環境検証待ちとして扱う。
 
 ### やってはいけない
 
@@ -78,28 +78,27 @@
 - `git reset --hard`（再構築復旧以外）/ rebase / force push
 - セッション固定ブランチ以外へ push
 
-### PH1-F 開始条件
+### Phase 2 計画の開始条件
 
 - [ ] `git status` / `git branch --show-current` / `git log -5 --oneline`
-- [ ] `docs/task-list.md` で PH1-E ローカル検証済みを確認
-- [ ] `PHASE01_PLAN.md` §5（DoD）/ §7（停止条件）/ §9（サブタスク）/ §10.4（Babylon）/ §10.5（公式 API）を再読
+- [ ] `docs/task-list.md` で PH1-F ローカル検証済みを確認
+- [ ] `docs/arch/` と `docs/research/DEEP_RESEARCH_SYNTHESIS.md` を再読し、Phase 2 の範囲を確認
 - [ ] 未コミット変更があれば停止
 
-### PH1-F の範囲
+### Phase 2 計画の範囲
 
-- React は HUD / メニュー / オーバーレイのみで、3D JSX / R3F / Three 描画を戻さない
-- `GameClient` / prediction / interpolation / Input 16B + Channel 1B のネット経路が Babylon render loop から使われることを、既存コードとテストで確認・必要最小限に整理する
-- 単一静的マップで FFA 相当の位置同期経路を維持する
-- 実 2 タブ目視や raw pointer lock のブラウザ実検証は Sandbox で捏造しない。必要なら「実環境検証待ち」と明記する
-- 作らない: SimProfile 本実装、voxel パッケージ、WebTransport、Hello HMAC、gamemode SDK
+- Phase 2 の `PLAT-2` 相当タスクを `docs/task-list.md` に追加する（ID は再利用しない）
+- `docs/planning/PHASE02_PLAN.md` を `_TEMPLATE.md` 準拠で作る
+- Sim Profile 分離の境界を `docs/arch/architecture.md` / `sim-profiles.md` / `protocol.md` と矛盾なく定義する
+- 実装は計画作成後、ユーザーの Go を得てから行う
+- 作らない: voxel パッケージ、WebTransport、Hello HMAC、gamemode SDK（Phase 2 の範囲を超える場合）
 
-### PH1-F 完了条件
+### Phase 2 計画の完了条件
 
-- [ ] React は HUD / メニュー / オーバーレイのみで、3D を JSX で組まない
-- [ ] 単一静的マップで既存の位置同期（Input 16B + Snapshot 現行）が Babylon 上で動く経路がある
-- [ ] R3F / Three 描画コードを戻していない
-- [ ] `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run build` 全 pass
-- [ ] `docs/task-list.md` の PH1-F を証拠付きで更新
+- [ ] `docs/task-list.md` に Phase 2 計画タスクが追加される
+- [ ] `docs/planning/PHASE02_PLAN.md` が `_TEMPLATE.md` 準拠で作成される
+- [ ] arch / research / task-list と矛盾しない
+- [ ] docs-only ならリンク整合、コード変更ありなら 4 検証 pass
 - [ ] Conventional Commit + セッションブランチへ push
 
 

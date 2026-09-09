@@ -5,10 +5,10 @@
  *   - 接続時にプレイヤーを Room に参加させ playerId を払い出す。
  *   - 60Hz 固定シミュレーション（アキュムレータ）で shared の `stepPlayer` を権威実行。
  *   - 入力パケット（バイナリ・60Hz）を受信してシムへ渡す。
- *   - スナップショット送信（30Hz）は P1-E で接続する。
+ *   - スナップショット送信（30Hz）は SnapshotBroadcaster が Channel.Unreliable で行う。
  *
- * レンダラー（WebGPU/WebGL）/ React / DOM は一切使わない。衝突・移動は
- * shared の純粋ロジック（three core/math + three-mesh-bvh、CPU のみ）を使う。
+ * レンダラー（Babylon/WebGL）/ React / DOM は一切使わない。衝突・移動は
+ * profile-fps の純粋ロジック（three core/math + three-mesh-bvh、CPU のみ）を使う。
  */
 
 import { ProtocolError } from '@cod/protocol/protocol/binary'
