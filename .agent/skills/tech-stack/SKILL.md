@@ -34,8 +34,9 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 | :--- | :--- |
 | ビルド/Dev | Vite（`bun run dev` / `build` / `preview`） |
 | Lint | Biome（ESLint/Prettier 不使用） |
-| Unit | Vitest。`bun test` は使わない。配置は `_tests_/` ミラー |
-| E2E | Playwright は未導入なら書かない。Sandbox では実行しない |
+| Unit | Vitest。`bun test` は使わない。配置は `_tests_/` ミラー。Phase 1.5 では coverage を `vitest run --coverage` で導入する |
+| Coverage | Vitest coverage。まず `@vitest/coverage-v8` + `provider: 'v8'` を候補にするが、Bun runtime 制約に当たる場合は停止して fallback を判断する |
+| E2E | Playwright は Phase 1.5 で導入予定。Sandbox では browser 実行を捏造せず CI / 実環境検証待ちにする |
 | パッケージ | bun。Sandbox では npm 経由で導入（下記） |
 
 ## 移行元コードで確認済み（フェーズ 0 で直す穴・残す資産）
@@ -53,6 +54,15 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 - テストは `_tests_/` にソース構造をミラー。ソース横に `*.test.ts` を置かない。shared/server はファイル先頭 `// @vitest-environment node`。
 - jest-dom の型: `src/vite-env.d.ts` に `/// <reference types="@testing-library/jest-dom" />`、setup を tsconfig include に入れる。
 - `bun run start`（`scripts/execute.ts`）: `vite build` 成功後に server :8080 と preview :4173 を並列。クライアントは `/ws` を同一オリジンで叩き、Vite proxy が bun へ中継。ブラウザから localhost 直叩きをしない。
+
+
+### Coverage / Playwright（Phase 1.5）
+
+- coverage は **baseline → meaningful tests → threshold ratchet** の順。初回から高すぎる threshold を置かない。
+- `coverage.include` は production source を明示する。難しいファイルを除外して数字を作らない。除外は entrypoint / 型のみ / generated / artifact 等に限定し理由を残す。
+- meaningful tests は protocol 境界、Input 16B / Channel 1B、prediction/reconcile、interpolation、server backpressure / rate-limit、GameClient transport 経路を優先する。
+- Playwright は `webServer` で `bun run start` を起動し、`baseURL` は Vite preview `http://127.0.0.1:4173` を基本にする。app code は `/ws` 相対 URL を維持し、browser-facing code が backend localhost を直叩きしない。
+- `.github/workflows/` は書けない。CI YAML が必要なら `docs/ops/` に提案を置く。
 
 ### bun WebSocket（移植する）
 

@@ -25,6 +25,12 @@ workspaces、Biome `linter.rules.style.noRestrictedImports`、R3F シーン削�
 
 未決の確認: モバイル入力はこのフェーズでは入れない（後続）。FPS マップは CDN 前提でパスだけ決める。
 
+## フェーズ 1.5 — Coverage / Meaningful Tests / E2E 品質ゲート（2–4 日）
+
+Phase 2 へ入る前に、Vitest coverage 測定、重要経路の意味ある coverage 増加、Playwright E2E の入口を追加する。coverage は production source を明示 include し、除外理由を残す。E2E は CI / 実環境で実行可能な設定と spec を用意し、Sandbox で browser 実行不可の場合は未実行理由を明記する。
+
+**DoD:** baseline と改善後 coverage が記録され、protocol / input / prediction / interpolation / server / net transport 等の重要経路に assertion が増えている。`test:coverage` が動き、Playwright config と E2E specs がある。Sandbox で Playwright を実行できない場合は CI / 実環境検証待ちとして扱い、捏造しない。
+
 ## フェーズ 2 — Sim Profile 分離（2–3 週）
 
 SimProfile、FpsSimProfile（BVH）、VoxelSimProfile（voxel-physics-engine をサーバで）、TYPE_SPECS 量子化、同一 step、両プロファイルで予測。

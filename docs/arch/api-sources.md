@@ -1,6 +1,6 @@
 # 公式 API 確認メモ
 
-> 最終確認: 2026-09-06（Asia/Tokyo）  
+> 最終確認: 2026-09-09（Asia/Tokyo）
 > 目的: `docs/arch/` と `docs/planning/` に散らばる外部 API 名・設定キーを、公式ドキュメントまたは一次情報に寄せるための索引。  
 > 原則: この表に無い外部 API 名を実装時に足す場合は、公式ドキュメント・npm metadata・インストール済み `.d.ts` / schema で再確認する。
 
@@ -54,6 +54,16 @@
 | `nipplejs` cloned source | DR-4 で `yoannmoinet/nipplejs` を clone 確認。HEAD `ea425b3e81deaed14e384a2edcfbbd6a9a50f45b`、MIT。`mode: dynamic|semi|static`、`dataOnly`、`follow`、`baseDelta`、`reposition()`、`dynamicPage` の performance caveat、events / types を確認。 | モバイル仮想スティックは HUD layer で導入候補。初期は static left stick、必要なら right aim stick。layout 変更は `reposition()`、`dynamicPage` は最後の手段。 | [`DR-4`](../research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md) |
 | QuickJS cloned source | DR-4 で `sebastianwessel/quickjs` を clone 確認。HEAD `25e5ed6ab75c212fff21935599afc3eb41439e6d`、MIT。`executionTimeout`, `memoryLimit`, `maxStackSize`, `allowFs`, `allowFetch`, `env`, `dangerousSync`, timer limit を確認。 | UGC runtime は `allowFs:false`, `allowFetch:false`, `dangerousSync` 禁止、timer なし/最小、`ctx` だけ expose。timeout/OOM 後は context を破棄する。 | [`DR-4`](../research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md) |
 | glTF toolchain cloned source | DR-4 で `KhronosGroup/glTF-Validator` HEAD `434283be08a668a8fb4e437145630ddbf93b0686`（Apache-2.0, NOTICES あり）と `donmccurdy/glTF-Transform` HEAD `01cad7b8e516b334bb2ac3e7e662231ba017352b`（MIT）を確認。Validator は GLBv2/schema/buffer/accessor/image/extensions を report し error で non-zero、glTF Transform は Node/Web/Deno SDK と CLI optimization を提供。 | GLB upload gate は Validator report を保存し、error reject / warning moderation。transform chain は reproducible recipe と original/optimized hash を保存する。 | [`DR-4`](../research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md) |
+
+
+## Vitest / Playwright
+
+| 領域 | 公式確認した内容 | 本プロジェクトでの扱い | 出典 |
+|---|---|---|---|
+| Vitest coverage provider | Vitest は coverage provider として `v8` と `istanbul` をサポートする。default provider は `v8`。coverage 実行は `vitest run --coverage` または `test.coverage.enabled`。support package として `@vitest/coverage-v8` / `@vitest/coverage-istanbul` を導入できる。公式 docs は V8 coverage が Bun runtime では動かない点も明記している。 | Phase 1.5 ではまず `@vitest/coverage-v8` + `provider: 'v8'` を基本候補にする。ただし実際の Vitest 実行 runtime と provider 挙動を実測し、Bun runtime 制約に当たる場合は停止して `istanbul` fallback を判断する。`bun test` は使わず Vitest を使う。 | <https://vitest.dev/guide/coverage> |
+| Vitest coverage config | `test.coverage` には `provider`, `enabled`, `include`, `exclude`, `reportsDirectory`, `reporter`, `thresholds` を設定できる。`include` 未設定では test で import された file のみが対象。threshold は positive number が最低 percentage、negative number が最大 uncovered count。`perFile` や glob-pattern threshold もある。 | `coverage.include` は production source を明示し、entrypoint / 型のみ / generated / test / artifact などを理由付きで exclude する。初回は baseline を測り、PH1.5-B の meaningful tests 後に threshold を ratchet する。 | <https://vitest.dev/config/coverage> |
+| Playwright webServer | Playwright Test config の `webServer` は test 前に local dev server を起動できる。`command`, `url`, `reuseExistingServer`, `stdout`, `stderr`, `timeout`, `gracefulShutdown` などがある。`use.baseURL` と併用して相対 `page.goto('/')` が使える。 | Phase 1.5 では root `bun run start` を `webServer.command` の候補にし、Vite preview `http://127.0.0.1:4173` を `url` / `baseURL` の候補にする。browser-facing app は `/ws` の相対 URL を維持し、backend localhost 直叩きにしない。 | <https://playwright.dev/docs/test-webserver> |
+| Playwright config | `testDir`, `fullyParallel`, `forbidOnly`, `retries`, `workers`, `reporter`, `use.baseURL`, `projects`, `webServer` などを config で指定できる。CI では `forbidOnly`, retries/workers の設定が標準的。 | Phase 1.5 では Desktop Chromium 1 project から始め、CI / 実環境で `bun run test:e2e` できる形にする。Sandbox で Chromium binary install / 実行不可の場合は未実行理由を記録し、実行済みと主張しない。 | <https://playwright.dev/docs/test-configuration> |
 
 ## マッチメイキング参考
 

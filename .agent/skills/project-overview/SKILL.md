@@ -31,7 +31,7 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 | シム | `SimProfile.step`。L1 にタイプ分岐を書かない | shared の FPS 物理（three-mesh-bvh CC） |
 | ネットワーク | bun `Bun.serve` WS。手書きバイナリ。Input 16B | bun WS + 手書きバイナリ。レイアウトは理想へ更新 |
 | UI | React はハブ・HUD・設定のみ（ADR-003） | PH1-F で React は canvas host / HUD / TouchControls / StartOverlay に限定。3D は JSX で組まない |
-| Lint / Test | Biome、Vitest、テストは `_tests_/` | 同じ |
+| Lint / Test | Biome、Vitest、テストは `_tests_/`。Phase 1.5 で coverage と Playwright E2E を導入 | 同じ |
 
 詳細なハマりどころは [`tech-stack/SKILL.md`](../tech-stack/SKILL.md)。設計ルールは [`docs/arch/engineering.md`](../../../docs/arch/engineering.md) と [`docs/arch/adr.md`](../../../docs/arch/adr.md)。
 
@@ -42,7 +42,8 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 | Phase | 内容 | 状態 |
 | :--- | :--- | :--- |
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
-| **1** | モノレポ + Babylon 移行（fps 系のみ。Channel 1B） | PH1-F ローカル検証済み（次: Phase 2 計画） |
+| **1** | モノレポ + Babylon 移行（fps 系のみ。Channel 1B） | PH1-F ローカル検証済み |
+| **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | 計画作成済み（次: PH1.5-A） |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4–9** | ハブ / official/UGC 一覧 / モード追加 / API 再設計 / チャンク / エディタ・UGC / WT | 未着手 |

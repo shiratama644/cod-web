@@ -30,6 +30,20 @@
 | 負荷 | 32 人 × 4 ルームがティック予算内 |
 | seq 欠落 | モックでパケットドロップ |
 
+
+## Coverage / E2E 品質ゲート（Phase 1.5）
+
+Phase 2 以降の大きな分離に入る前に、Vitest coverage と Playwright E2E を品質ゲートとして追加する。
+
+| 項目 | 方針 |
+|---|---|
+| Coverage runner | Vitest coverage。provider は公式 docs と installed version を確認し、まず `v8` を基本にする。Bun runtime で動かない場合は停止して fallback を判断する |
+| 測定対象 | production source を明示 include。protocol / engine-core / profile-fps / web / gameserver を対象候補にし、entrypoint・型のみ・生成物などは理由付きで exclude |
+| Baseline | 初回 baseline を記録してから meaningful tests を追加する。threshold は baseline 後に ratchet し、数字だけの過剰設定を避ける |
+| Meaningful tests | protocol 境界、固定長/例外、input accumulation、prediction/reconcile、interpolation、server rate-limit/backpressure/lifecycle、net transport を優先 |
+| 禁止 | import-only test、実装詳細だけの shallow test、難しい production file の安易な exclude、coverage のための assertion 弱体化 |
+| E2E | Playwright Test。`webServer` で local server を起動し `baseURL` から user-visible state を検証する。Sandbox で browser 実行不可なら CI / 実環境検証待ちと明記する |
+
 ## サーバ予算
 
 | 項目 | 予算 |
