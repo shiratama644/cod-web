@@ -3,26 +3,31 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Browser-based cross-platform online FPS inspired by Krunker.io (WebGPU-first, WebGL2 fallback, 60+ FPS on every device).",
+  "description": "Browser-based multi-type game platform prototype using Bun, React, and Babylon.js.",
   "packageManager": "bun@1.4.0",
   "engines": {
     "bun": ">=1.4.0"
   },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "cd apps/web && bun run dev",
+    "build": "bun run build:packages && bun run build:apps",
+    "build:packages": "cd packages/protocol && bun run build && cd ../profile-fps && bun run build && cd ../engine-core && bun run build",
+    "build:apps": "cd apps/gameserver && bun run build && cd ../web && bun run build",
+    "preview": "cd apps/web && bun run preview",
     "start": "bun run scripts/execute.ts",
-    "server": "bun run server/index.ts",
-    "server:dev": "bun --watch server/index.ts",
+    "server": "cd apps/gameserver && bun run start",
+    "server:dev": "cd apps/gameserver && bun run dev",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.8",
-    "@react-three/fiber": "^9.7.0",
     "nipplejs": "^1.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -42,6 +47,7 @@
     "@types/react-dom": "^19.2.5",
     "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^4.1.11",
     "bun": "1.4.0",
     "jsdom": "^30.0.1",
     "typescript": "^7.0.2",

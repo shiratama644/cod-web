@@ -72,7 +72,7 @@ Reject reason: 1 バージョン、2 チケット、3 ルームなし、4 満員
 
 検証: 長さ≠16 で切断。moveX/Z 範囲外で切断。`dtMs > 500` は clamp（切断しない）。
 
-**未決:** `dtMs` の単位が「ミリ秒」か「ミリ秒×10」か、ソース仕様書 v2 に両方の記述がある。実装着手時に人間へ確認する。現行 packer は type 込み 13 バイト（本体 12B）。理想は 16B 固定。
+**決定（OPEN-A 解決済み）:** `dtMs` の単位は **ミリ秒**。60Hz 入力では通常 16〜17ms を入れる。0.1ms 単位（×10）にはしない。`500` は 500ms clamp を意味する。
 
 ## Snapshot (0x11)
 
@@ -88,11 +88,12 @@ Reject reason: 1 バージョン、2 チケット、3 ルームなし、4 満員
 
 単体で復元できるか、baseline seq を明示する。「直前スナップショットが必ず届いている」前提を置かない。
 
-### fps エンティティ 17B
+### fps エンティティ
 
-`playerId u16`, `flags u8`（alive/crouch/sprint/onGround/reloading）, `x,y,z i16`（1cm 絶対）, `vx,vz i16`（1cm/s）, `yaw u16`, `pitch i8`, `health u8`。
+**決定:** fps Snapshot には `vy` を含める。補間・デバッグ・現行実装からの移行単純さを優先する。
 
-`vy` は送らない（重力は決定論、onGround と位置から補間）。実装単純さのため追加してよいが、MTU 予算を守ること。
+- PH1 の現行 Snapshot レイアウトは **1人 16B**（`playerId u16`, `x,y,z i16`, `vx,vy,vz i16`, `yaw u16`）を維持し、PH1-C では Channel 頭 1B 以外を変えない。
+- 将来 Snapshot `0x11` ヘッダへ更新する時も `vy` を含める。`flags u8`（alive/crouch/sprint/onGround/reloading）, `pitch i8`, `health u8` 等を足す場合は、entity bytes と MTU 予算を再計算する。
 
 ### voxel エンティティ 15B（AOI 相対）
 
@@ -149,11 +150,11 @@ bodyPart、shotId、victimId、damage、killed。
 
 `Bun.serve` + ネイティブ WebSocket のみ。議論や再実装で UDP 系に逃げない。TCP の HOL はアプリ層で緩和する（断片化、送信優先度、`perMessageDeflate: false`、`send()` 戻り値、`cork()`、補間遅延）。
 
-公式: [`send()` は -1 バックプレッシャ（キュー済み）、0 破棄、1+ 送信バイト](https://bun.com/docs/runtime/http/websockets)。`drain` で再開。`bufferedAmount` に頼らない。
+公式: [`send()` は -1 バックプレッシャ（キュー済み）、0 破棄、1+ 送信バイト](https://bun.com/docs/runtime/http/websockets#backpressure)。`drain` で再開。Bun server 側に portable な `bufferedAmount` 前提を置かない。
 
 ### 将来 WT のための備え（今から守る）
 
-`NetTransport` 抽象。ゲームコードは `WebSocket` に直接触れない。
+`NetTransport` 抽象。ゲームコードは `WebSocket` に直接触れない。ブラウザ `WebSocket.bufferedAmount` は存在するが、Bun server 側の背圧は `send()` 戻り値で扱うため、共通 `NetTransport` API には `bufferedAmount` を必須にしない。
 
 ```ts
 export const enum Channel {
@@ -168,7 +169,6 @@ export interface NetTransport {
   onMessage(cb: (channel: Channel, data: DataView) => void): void;
   onClose(cb: (code: number, reason: string) => void): void;
   close(code?: number, reason?: string): void;
-  readonly bufferedAmount: number;
   readonly kind: 'websocket' | 'webtransport';
 }
 ```

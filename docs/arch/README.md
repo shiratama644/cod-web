@@ -1,8 +1,8 @@
 # docs/arch — 仕様書（理想形）
 
-ここは **どう作るか** の正本です。計画は [`../planning/`](../planning/)、進捗は [`../task-list.md`](../task-list.md)。
+ここは **どう作るか** の正本です。計画は [`../planning/README.md`](../planning/README.md)、進捗は [`../task-list.md`](../task-list.md)。
 
-現行コード（単一ルーム FPS）と食い違う場合、**本ディレクトリが目標**です。実装の現状は task-list の「移行元」を見る。
+現行コード（単一ルーム FPS）と食い違う場合、**本ディレクトリが目標**です。実装の現状は task-list の「移行元」を見る。競合・外部技術調査は [`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) を入口にし、仕様へ採用する場合は本ディレクトリへ反映してから実装します。
 
 ## 実装時に守ること
 
@@ -12,6 +12,15 @@
 4. **ADR に無い未決は勝手に決めない。** 該当箇所に到達したら質問する。
 5. **決定論を壊さない。** [`engineering.md`](./engineering.md) の規則に反するコードは、テストが通っても不正解。
 6. **トランスポートは現時点で WebSocket のみ。** UDP / WebRTC DataChannel / geckos.io / WebTransport は今は実装しない。将来 WT 移行のため `NetTransport` と Channel 区分は維持する（[`protocol.md`](./protocol.md) §トランスポート）。
+
+## 読み方
+
+| 状況 | 最初に読むもの | 次に読むもの |
+|---|---|---|
+| 実装を始める | [`../task-list.md`](../task-list.md) → [`../planning/README.md`](../planning/README.md) | 対象フェーズの計画書 → 本 README の仕様書一覧 |
+| 外部 API を使う | [`api-sources.md`](./api-sources.md) | 公式ドキュメント / installed `.d.ts` / schema |
+| DR の結論を仕様へ取り込む | [`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) | 個別 DR → 採用先の `arch/*.md` |
+| ADR に反しそう | [`adr.md`](./adr.md) | 実装せずユーザーへ確認 |
 
 ## 仕様書一覧
 
@@ -24,11 +33,13 @@
 | [server.md](./server.md) | Room / TickScheduler / 入力キュー / レート制限 |
 | [matchmaker.md](./matchmaker.md) | HTTP API・チケット・Redis |
 | [client.md](./client.md) | バンドル分割・Babylon・入力・予測 |
+| [editor.md](./editor.md) | 公式/UGC 階層、FPS/voxel エディタ、GLB 読み込み方針 |
 | [sim-profiles.md](./sim-profiles.md) | voxel / fps のワールド・物理 |
 | [engineering.md](./engineering.md) | 決定論・テスト・予算・脅威モデル |
 | [ugc.md](./ugc.md) | QuickJS サンドボックス |
 | [adr.md](./adr.md) | 意思決定ログ |
 | [milestones.md](./milestones.md) | フェーズ 0–9 |
 | [legal.md](./legal.md) | ライセンス・OSS・一次情報 |
+| [api-sources.md](./api-sources.md) | 公式 API 確認メモ（Bun / Biome / Babylon / Noa 等） |
 
 新しい設計領域が固まったら `kebab-case.md` を追加し、本一覧と [`../README.md`](../README.md) を更新する。

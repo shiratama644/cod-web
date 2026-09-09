@@ -1,0 +1,19 @@
+{
+  "name": "@cod/engine-core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./net/*": "./src/net/*.ts",
+    "./room/*": "./src/room/*.ts",
+    "./sim/*": "./src/sim/*.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cod/protocol": "workspace:*"
+  }
+}

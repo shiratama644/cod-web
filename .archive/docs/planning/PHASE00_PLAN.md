@@ -7,7 +7,7 @@
 
 - 現在のブランチ / HEAD / `git status` を確認する（未コミット変更があれば停止）
 - `docs/task-list.md` で依存タスクの完了を確認する
-- 関連仕様（[`../arch/tech-stack.md`](../arch/tech-stack.md) / [`../../AGENTS.md`](../../AGENTS.md) §6 / [`.agent/skills/`](../../.agent/skills)）を読む
+- 関連仕様（[`../arch/tech-stack.md`](../arch/tech-stack.md) / [`../../../AGENTS.md`](../../../AGENTS.md) §6 / [`.agent/skills/`](../../../.agent/skills)）を読む
 - 本計画書の §5（完了条件）と §7（停止条件）を再読する
 
 ## 2. 目的 (Why)

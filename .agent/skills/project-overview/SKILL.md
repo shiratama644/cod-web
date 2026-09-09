@@ -13,12 +13,12 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 
 **cod-web** はブラウザ向け **マルチタイプ・ゲームプラットフォーム**。
 
-- タイプ: `voxel`（ブロック世界）と `fps`（静的アリーナの射撃戦）
+- タイプ: `voxel`（ブロック世界）と `fps`（静的/編集可能アリーナの射撃戦）。`official` / `ugc` は type ではなく各 type 内の Content Source
 - プラットフォーム層（L0/L1）を共有し、Sim Profile（L2）だけ差し替える
-- 描画は **Babylon.js**。voxel クライアントは **noa-engine**
+- 描画は **Babylon.js**。FPS/voxel エディタも Babylon.js。FPS エディタは GLB 読み込み対応。voxel クライアントは **noa-engine**
 - トランスポートは **今 WebSocket のみ**（将来 WT のため `NetTransport` は維持。今は実装しない）
 - ライセンス **MIT**。初期は匿名（表示名＋一時 uid）。認証・ランキングは後続
-- モバイルは両タイプ対象（タッチ実装は後続）。ボイスは理想に含むがゲーム同期には WebRTC を使わない
+- モバイルは両タイプ対象（タッチ実装は後続、nipplejs 候補）。ボイスは理想に含むがゲーム同期には WebRTC を使わない
 
 現行コードは単一ルーム FPS の原型（**移行元**）。理想フェーズ番号（0–9）とは別物。破棄/移植は product.md の表。
 
@@ -27,11 +27,11 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 | 層 | 理想 | 現行コード（移行元） |
 | :--- | :--- | :--- |
 | ビルド | Vite + React + TypeScript（strict）、bun | 同じ（単一パッケージ） |
-| 3D | Babylon.js。voxel は noa | Three.js / R3F / WebGPU→WebGL2。**破棄予定** |
+| 3D | Babylon.js。voxel は noa | PH1-D で apps/web の R3F scene は破棄済み。server/profile-fps の three-mesh-bvh は衝突用に残す |
 | シム | `SimProfile.step`。L1 にタイプ分岐を書かない | shared の FPS 物理（three-mesh-bvh CC） |
 | ネットワーク | bun `Bun.serve` WS。手書きバイナリ。Input 16B | bun WS + 手書きバイナリ。レイアウトは理想へ更新 |
-| UI | React はハブ・HUD・設定のみ（ADR-003） | R3F Canvas + HUD |
-| Lint / Test | Biome、Vitest、テストは `_tests_/` | 同じ |
+| UI | React はハブ・HUD・設定のみ（ADR-003） | PH1-F で React は canvas host / HUD / TouchControls / StartOverlay に限定。3D は JSX で組まない |
+| Lint / Test | Biome、Vitest、テストは `_tests_/`。Phase 1.5 で coverage と Playwright E2E を導入 | 同じ |
 
 詳細なハマりどころは [`tech-stack/SKILL.md`](../tech-stack/SKILL.md)。設計ルールは [`docs/arch/engineering.md`](../../../docs/arch/engineering.md) と [`docs/arch/adr.md`](../../../docs/arch/adr.md)。
 
@@ -42,16 +42,17 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 | Phase | 内容 | 状態 |
 | :--- | :--- | :--- |
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
-| **1** | モノレポ + Babylon 移行（fps 系のみ。Channel 1B） | 計画済み（`PLAT-1`） |
+| **1** | モノレポ + Babylon 移行（fps 系のみ。Channel 1B） | PH1-F ローカル検証済み |
+| **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-B ローカル検証済み（次: PH1.5-C） |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
-| **4–9** | ハブ / モード追加 / API 再設計 / チャンク / UGC / WT | 未着手 |
+| **4–9** | ハブ / official/UGC 一覧 / モード追加 / API 再設計 / チャンク / エディタ・UGC / WT | 未着手 |
 
 旧 P0/P1 タスク ID は `.archive/docs/task-list.md`。再利用しない。
 
 ## 規模
 
-bun 単一パッケージ。`src/`（クライアント）・`shared/`・`server/`・`_tests_/`。モノレポ化はフェーズ 1。
+bun workspaces。`packages/protocol` / `packages/engine-core` / `packages/profile-fps` と `apps/gameserver` / `apps/web` に分割済み。テストは `_tests_/` にワークスペース構造をミラーする。
 
 ## 関連
 

@@ -1,35 +1,17 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-
-    "moduleResolution": "bundler",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@shared/*": ["./shared/*"],
-      "@server/*": ["./server/*"]
-    },
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "jsx": "react-jsx",
-
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "jsx": "react-jsx"
   },
   "include": [
-    "src",
-    "shared",
-    "_tests_/src",
-    "_tests_/shared",
-    "vite.config.ts",
+    "packages/protocol/src",
+    "packages/profile-fps/src",
+    "apps/web/src",
+    "_tests_/apps/web",
+    "_tests_/packages/protocol",
+    "_tests_/packages/profile-fps",
+    "apps/web/vite.config.ts",
     "vitest.config.ts",
     "vitest.setup.ts"
   ]

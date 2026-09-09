@@ -2,13 +2,20 @@
 
 ## VoxelProfile
 
+Voxel は `official` / `ugc` の両方を持つ。`official` は Minecraft 風の地形生成（ノイズ、バイオーム、洞窟、鉱石、構造物など）を独自実装し、`ugc` は投稿/編集されたワールドを扱う。いずれも Game Type は `voxel` のままで、`official` / `ugc` を type にしない。
+
+
 | ライブラリ | ライセンス | 用途 |
 |---|---|---|
-| `noa-engine` | MIT | クライアント描画・チャンク。Babylon が peer |
+| `noa-engine` | MIT | クライアント描画・チャンク。npm latest 0.33.0 は `@babylonjs/core` を peer（`^6.1.0`）として要求 |
 | `voxel-physics-engine` | MIT | 衝突・移動。**Babylon 非依存。サーバでも動かす** |
 | `@babylonjs/core` | Apache-2.0 | 描画 |
+| `ent-comp` | MIT | 軽量 ECS。Noa 系の構成に合わせて採用候補 |
+| `micro-game-shell` | ISC | tick/render loop と pointerLock/fullscreen/resize 管理。Noa 依存として挙動を確認 |
+| `game-inputs` | ISC | key/mouse event 抽象。プロジェクトの入力累積方針と競合しない範囲で採用候補 |
+| `nipplejs` | MIT | モバイル仮想スティック候補。タッチ対応フェーズで採用検討 |
 
-Noa の `tickRate` は **ticks per second**（ms/tick ではない）。[noa changelog](https://github.com/fenomas/noa)
+Noa の `tickRate` は v0.30.0 以降 **ticks per second**（ms/tick ではない）。`manuallyControlChunkLoading` は v0.29.0 で追加。導入時は latest history と `.d.ts` を再確認する（[api-sources.md](./api-sources.md)、[noa history](https://raw.githubusercontent.com/fenomas/noa/master/docs/history.md)）。
 
 ```ts
 const noa = new NoaEngine({
@@ -30,9 +37,9 @@ Noa にネットワーク機能はない。ネットコードは自前。
 [voxel-physics-engine](https://github.com/fenomas/voxel-physics-engine):
 
 ```ts
-import { Physics } from 'voxel-physics-engine';
+import Physics from 'voxel-physics-engine';
 const phys = new Physics({ gravity: [0, -22, 0] }, voxelIsSolid, voxelIsLiquid);
-phys.tick(dtMs); // 引数はミリ秒
+phys.tick(dtMs); // 引数の単位は導入時に `dist/src/index.d.ts` / 公式 README で再確認
 body.autoStep = true;
 ```
 
@@ -46,7 +53,7 @@ body.autoStep = true;
 
 ## FpsProfile
 
-静的マップ。ランタイム編集なし。
+FPS は `official` / `ugc` の両方を持つ。Krunker.io のようなエディタで誰でもマップを作れることを目標にする。マップは静的アリーナだが、エディタ上では `.glb` 読み込みと spawn / zone / killVolume 編集をサポートする。
 
 ```
 render.glb / collision.glb（三角形 1/10 以下）/ meta.json
@@ -62,4 +69,4 @@ walk 8 m/s、sprint 1.45、crouch 0.5、accel 60、airAccel 12、friction 8、gr
 
 ヒットスキャン: rewind 0–250ms → マップレイ → プレイヤー（頭・胴・四肢 AABB）→ restore → `onHit`。
 
-マップアセットは **CDN** 配信。
+マップアセットは **CDN** 配信。階層は `/fps/official/pvp`, `/fps/official/zombie`, `/fps/ugc/athletic` 等（[editor.md](./editor.md)）。
