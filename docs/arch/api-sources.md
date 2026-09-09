@@ -1,6 +1,6 @@
 # 公式 API 確認メモ
 
-> 最終確認: 2026-09-09（Asia/Tokyo）
+> 最終確認: 2026-09-09（Asia/Tokyo、PH1.5-C Playwright 設定）
 > 目的: `docs/arch/` と `docs/planning/` に散らばる外部 API 名・設定キーを、公式ドキュメントまたは一次情報に寄せるための索引。  
 > 原則: この表に無い外部 API 名を実装時に足す場合は、公式ドキュメント・npm metadata・インストール済み `.d.ts` / schema で再確認する。
 
@@ -63,7 +63,7 @@
 | Vitest coverage provider | Vitest は coverage provider として `v8` と `istanbul` をサポートする。default provider は `v8`。coverage 実行は `vitest run --coverage` または `test.coverage.enabled`。support package として `@vitest/coverage-v8` / `@vitest/coverage-istanbul` を導入できる。公式 docs は V8 coverage が Bun runtime では動かない点も明記している。 | Phase 1.5 ではまず `@vitest/coverage-v8` + `provider: 'v8'` を基本候補にする。ただし実際の Vitest 実行 runtime と provider 挙動を実測し、Bun runtime 制約に当たる場合は停止して `istanbul` fallback を判断する。`bun test` は使わず Vitest を使う。 | <https://vitest.dev/guide/coverage> |
 | Vitest coverage config | `test.coverage` には `provider`, `enabled`, `include`, `exclude`, `reportsDirectory`, `reporter`, `thresholds` を設定できる。`include` 未設定では test で import された file のみが対象。threshold は positive number が最低 percentage、negative number が最大 uncovered count。`perFile` や glob-pattern threshold もある。 | `coverage.include` は production source を明示し、entrypoint / 型のみ / generated / test / artifact などを理由付きで exclude する。初回は baseline を測り、PH1.5-B の meaningful tests 後に threshold を ratchet する。 | <https://vitest.dev/config/coverage> |
 | Playwright webServer | Playwright Test config の `webServer` は test 前に local dev server を起動できる。`command`, `url`, `reuseExistingServer`, `stdout`, `stderr`, `timeout`, `gracefulShutdown` などがある。`use.baseURL` と併用して相対 `page.goto('/')` が使える。 | Phase 1.5 では root `bun run start` を `webServer.command` の候補にし、Vite preview `http://127.0.0.1:4173` を `url` / `baseURL` の候補にする。browser-facing app は `/ws` の相対 URL を維持し、backend localhost 直叩きにしない。 | <https://playwright.dev/docs/test-webserver> |
-| Playwright config | `testDir`, `fullyParallel`, `forbidOnly`, `retries`, `workers`, `reporter`, `use.baseURL`, `projects`, `webServer` などを config で指定できる。CI では `forbidOnly`, retries/workers の設定が標準的。 | Phase 1.5 では Desktop Chromium 1 project から始め、CI / 実環境で `bun run test:e2e` できる形にする。Sandbox で Chromium binary install / 実行不可の場合は未実行理由を記録し、実行済みと主張しない。 | <https://playwright.dev/docs/test-configuration> |
+| Playwright config | `testDir`, `fullyParallel`, `forbidOnly`, `retries`, `workers`, `reporter`, `use.baseURL`, `projects`, `webServer` などを config で指定できる。CI では `forbidOnly`, retries/workers の設定が標準的。 | Phase 1.5 では `@playwright/test@1.63.0` を導入し、Desktop Chrome 1 project から始める。local は `webServer.command: bun run start` + `baseURL: http://127.0.0.1:4173`、preview/CI は `PLAYWRIGHT_BASE_URL` を指定して webServer を起動しない。Sandbox で Chromium binary install / 実行不可の場合は未実行理由を記録し、実行済みと主張しない。 | <https://playwright.dev/docs/test-configuration> |
 
 ## マッチメイキング参考
 

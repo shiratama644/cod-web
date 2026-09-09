@@ -44,7 +44,7 @@
 |---|---|---|
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
 | **1** | モノレポ + Babylon 移行 | PH1-F ローカル検証済み |
-| **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-B ローカル検証済み（次: PH1.5-C） |
+| **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-C 実環境検証待ち（次: PH1.5-D） |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4** | ハブ + マッチメイカー + voxel 永続化方針 | 未着手 |
@@ -91,7 +91,7 @@
 ### Phase 1.5
 
 計画書: [`planning/PHASE01_5_PLAN.md`](./planning/PHASE01_5_PLAN.md)
-橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（次は **PH1.5-C: Playwright E2E 実装**）
+橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（次は **PH1.5-D: Quality gate docs / CI提案整理**）
 
 目的: Phase 2 の Sim Profile 分離前に、Vitest coverage 測定、重要経路の意味ある coverage 増加、Playwright E2E の入口を追加する。Sandbox では Playwright browser 実行結果を捏造せず、CI / 実環境検証待ちとして扱う。
 
@@ -100,7 +100,7 @@
 | PLAT-1.5 | Phase 1.5 計画追加（coverage / meaningful tests / E2E） | 完了 | 100% | PH1-F | `_TEMPLATE.md` 準拠。Vitest coverage と Playwright 公式 API 根拠、Sandbox 制約、意味ある coverage 増加方針が docs に反映される | 本コミット / [`planning/PHASE01_5_PLAN.md`](./planning/PHASE01_5_PLAN.md) / Vitest・Playwright 公式 docs 確認 / link check broken 0 / typecheck・lint・unit・build pass / git diff --check pass |
 | PH1.5-A | Vitest coverage 測定導入 | ローカル検証済み | 100% | PLAT-1.5 | `test:coverage` と coverage config があり、baseline coverage が記録される | 本コミット / `@vitest/coverage-v8@4.1.11` / `bun run test:coverage` pass（14 files・84 tests）/ baseline: Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009) / coverage include/exclude/0%初期threshold設定 / typecheck・lint・unit・build pass / git diff --check pass |
 | PH1.5-B | 意味のある Vitest coverage 増加 | ローカル検証済み | 100% | PH1.5-A | protocol / input / prediction / interpolation / UI seam 等の重要未テスト branch に assertion を追加し、before/after を記録する | 本コミット / 17 files・107 tests / WebSocketTransport Channel framing・malformed frame 1002・no-copy/fallback send・status、GameClient welcome reject・malformed snapshot・dispose/status、Interpolator extrapolate/hold/departure/yaw wrap/history、StartOverlay fullscreen rejection/fallback、TouchControls joystick clamp/reset/jump / after: Statements 79.17% (859/1085), Branches 73.85% (291/394), Functions 79.38% (154/194), Lines 80.77% (815/1009) / thresholds ratchet: statements 79, branches 73, functions 79, lines 80 |
-| PH1.5-C | Playwright E2E 実装 | 未着手 | 0% | PH1.5-B | `@playwright/test`、`playwright.config.ts`、E2E specs、Sandbox 未実行理由または CI 実行結果がある | |
+| PH1.5-C | Playwright E2E 実装 | 実環境検証待ち | 100% | PH1.5-B | `@playwright/test`、`playwright.config.ts`、E2E specs、Sandbox 未実行理由または CI 実行結果がある | 本コミット / `@playwright/test@1.63.0` / `test:e2e` script / `playwright.config.ts`（Desktop Chrome、`webServer.command: bun run start`、`baseURL: http://127.0.0.1:4173`、`PLAYWRIGHT_BASE_URL` override）/ `e2e/game-shell.spec.ts` 3 specs（shell smoke、fullscreen unavailable start、same-origin `/ws` proxy connection）/ `bun run test:e2e -- --list` pass（3 tests discovered）/ browser実行は Sandbox Chromium 制約により未実行・実環境検証待ち / typecheck・lint・unit・coverage・build・link check・git diff --check pass |
 | PH1.5-D | Quality gate docs / CI 提案整理 | 未着手 | 0% | PH1.5-C | coverage threshold ratchet 方針、E2E 実行手順、次 Phase 2 handoff が docs に反映される | |
 
 ### ドキュメント・規約

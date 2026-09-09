@@ -43,7 +43,7 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 | :--- | :--- | :--- |
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
 | **1** | モノレポ + Babylon 移行（fps 系のみ。Channel 1B） | PH1-F ローカル検証済み |
-| **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-B ローカル検証済み（次: PH1.5-C） |
+| **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-C 実環境検証待ち（次: PH1.5-D） |
 | **2** | Sim Profile 分離 | 未着手 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4–9** | ハブ / official/UGC 一覧 / モード追加 / API 再設計 / チャンク / エディタ・UGC / WT | 未着手 |

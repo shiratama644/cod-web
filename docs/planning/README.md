@@ -20,14 +20,14 @@
 | [`HANDOFF.md`](./HANDOFF.md) | — | 現用 | 次セッションへの橋渡し。計画の代替ではない |
 | [`PHASE00_PLAN.md`](./complete/PHASE00_PLAN.md) | `PLAT-0`, `PH0-A`〜`PH0-F` | 完了 | 現行コードの穴埋め（Input 16B、fuzz、backpressure、subarray、lagcomp record） |
 | [`PHASE01_PLAN.md`](./PHASE01_PLAN.md) | `PLAT-1`, `PH1-A`〜`PH1-F` | ローカル検証済み | bun workspaces + fps 系移動 + Babylon 移行 |
-| [`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md) | `PLAT-1.5`, `PH1.5-A`〜`PH1.5-D` | PH1.5-B ローカル検証済み | Vitest coverage 測定、意味ある coverage 増加、Playwright E2E 品質ゲート |
+| [`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md) | `PLAT-1.5`, `PH1.5-A`〜`PH1.5-D` | PH1.5-C 実環境検証待ち | Vitest coverage 測定、意味ある coverage 増加、Playwright E2E 品質ゲート |
 | [`DEEP_RESEARCH_PLAN.md`](./complete/DEEP_RESEARCH_PLAN.md) | `DOC-6`, `DR-1`〜`DR-5` | 完了 | Krunker.io / bloxd.io / engine / UGC / Perplexity 差分調査の手順と禁止事項 |
 
 ## 次に着手可能なタスク
 
 | 優先 | ID | 内容 | 事前に読むもの |
 |---:|---|---|---|
-| 1 | `PH1.5-C` | Playwright E2E 実装。Sandbox 実行可否を捏造せず、設定・spec・未実行理由または実環境結果を記録 | [`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md), [`HANDOFF.md`](./HANDOFF.md), [`../task-list.md`](../task-list.md), [`../arch/api-sources.md`](../arch/api-sources.md), Playwright 公式 docs |
+| 1 | `PH1.5-D` | Quality gate docs / CI 提案整理。coverage threshold・E2E 実行手順・CI配置案・Phase 2 handoff を整理 | [`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md), [`HANDOFF.md`](./HANDOFF.md), [`../task-list.md`](../task-list.md), [`../arch/api-sources.md`](../arch/api-sources.md), `docs/ops/` 方針 |
 | 2 | Phase 2 計画 | Phase 1.5 完了後に Sim Profile 分離の計画書作成へ進む | [`HANDOFF.md`](./HANDOFF.md), [`../task-list.md`](../task-list.md), [`../arch/`](../arch/README.md), [`../research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md) |
 
 ## 計画書を書く/更新する時のルール

@@ -42,7 +42,7 @@ Phase 2 以降の大きな分離に入る前に、Vitest coverage と Playwright
 | Baseline | 初回 baseline を記録してから meaningful tests を追加する。threshold は baseline 後に ratchet し、数字だけの過剰設定を避ける |
 | Meaningful tests | protocol 境界、固定長/例外、input accumulation、prediction/reconcile、interpolation、server rate-limit/backpressure/lifecycle、net transport を優先 |
 | 禁止 | import-only test、実装詳細だけの shallow test、難しい production file の安易な exclude、coverage のための assertion 弱体化 |
-| E2E | Playwright Test。`webServer` で local server を起動し `baseURL` から user-visible state を検証する。Sandbox で browser 実行不可なら CI / 実環境検証待ちと明記する |
+| E2E | Playwright Test。PH1.5-C では `@playwright/test@1.63.0`、`webServer`（local `bun run start`）、`use.baseURL`（local `http://127.0.0.1:4173` / preview は `PLAYWRIGHT_BASE_URL`）を追加。user-visible state（canvas / HUD / start overlay / WS status）を検証する。Sandbox で browser 実行不可なら CI / 実環境検証待ちと明記する |
 
 ## サーバ予算
 
