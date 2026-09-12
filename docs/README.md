@@ -36,11 +36,15 @@ docs/
 │   ├── _TEMPLATE.md
 │   ├── HANDOFF.md       # 次セッションへの橋渡し（先に読む）
 │   ├── PHASE01_PLAN.md  # フェーズ 1（fps モノレポ + Babylon。ローカル検証済み）
-│   ├── PHASE01_5_PLAN.md # フェーズ 1.5（coverage + E2E 品質ゲート。次に使用）
+│   ├── PHASE01_5_PLAN.md # フェーズ 1.5（coverage + E2E 品質ゲート）
 │   └── complete/        # 完了済み計画
 │       ├── README.md
 │       ├── PHASE00_PLAN.md
 │       └── DEEP_RESEARCH_PLAN.md
+├── ops/                 # CI / quality gate 提案（.github/workflows へは直接置かない）
+│   ├── README.md
+│   ├── quality-gates.md
+│   └── github-actions-proposal.yml
 └── research/            # 競合・関連技術の調査結果
     ├── README.md
     ├── DEEP_RESEARCH_SYNTHESIS.md
@@ -51,7 +55,7 @@ docs/
     └── DR-5_PERPLEXITY_DIFF_RESEARCH.md
 ```
 
-仕様書（`arch/`）= どう作るかの正本。計画書（`planning/`）= 何をどの順で。進捗（`task-list.md`）= 状態と証拠。調査（`research/`）= 根拠と採用判断の補助。raw 入力（`Perplexity-AI.md`）= 検証前の材料。
+仕様書（`arch/`）= どう作るかの正本。計画書（`planning/`）= 何をどの順で。進捗（`task-list.md`）= 状態と証拠。運用提案（`ops/`）= CI / quality gate の配置案。調査（`research/`）= 根拠と採用判断の補助。raw 入力（`Perplexity-AI.md`）= 検証前の材料。
 
 ---
 

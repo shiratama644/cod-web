@@ -21,9 +21,9 @@
 
 | スキル | できるようになること（Agent の能力） | 最終更新 |
 | :--- | :--- | :--- |
-| [project-overview/SKILL.md](./project-overview/SKILL.md) | プロダクト目標・現行コード（移行元）と理想フェーズを素早く把握する | 2026-09-09（PH1.5-C E2E入口） |
-| [tech-stack/SKILL.md](./tech-stack/SKILL.md) | 理想スタックと移行元コードのハマりどころを区別して実装できる | 2026-09-09（PH1.5-C E2E入口） |
-| [sandbox-constraints/SKILL.md](./sandbox-constraints/SKILL.md) | Sandbox / ネットワーク / GitHub App の制約を迂回して検証できる | 2026-09-09（Playwright制約再確認） |
+| [project-overview/SKILL.md](./project-overview/SKILL.md) | プロダクト目標・現行コード（移行元）と理想フェーズを素早く把握する | 2026-09-12（PH1.5-D quality gate） |
+| [tech-stack/SKILL.md](./tech-stack/SKILL.md) | 理想スタックと移行元コードのハマりどころを区別して実装できる | 2026-09-12（PH1.5-D quality gate） |
+| [sandbox-constraints/SKILL.md](./sandbox-constraints/SKILL.md) | Sandbox / ネットワーク / GitHub App の制約を迂回して検証できる | 2026-09-12（PH1.5-D quality gate） |
 
 ## 設計仕様の正本（スキルではなく docs/arch/）
 

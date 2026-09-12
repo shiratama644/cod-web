@@ -1,6 +1,6 @@
 # 公式 API 確認メモ
 
-> 最終確認: 2026-09-09（Asia/Tokyo、PH1.5-C Playwright 設定）
+> 最終確認: 2026-09-12（Asia/Tokyo、PH1.5-D Quality gate / CI 提案）
 > 目的: `docs/arch/` と `docs/planning/` に散らばる外部 API 名・設定キーを、公式ドキュメントまたは一次情報に寄せるための索引。  
 > 原則: この表に無い外部 API 名を実装時に足す場合は、公式ドキュメント・npm metadata・インストール済み `.d.ts` / schema で再確認する。
 
@@ -64,6 +64,9 @@
 | Vitest coverage config | `test.coverage` には `provider`, `enabled`, `include`, `exclude`, `reportsDirectory`, `reporter`, `thresholds` を設定できる。`include` 未設定では test で import された file のみが対象。threshold は positive number が最低 percentage、negative number が最大 uncovered count。`perFile` や glob-pattern threshold もある。 | `coverage.include` は production source を明示し、entrypoint / 型のみ / generated / test / artifact などを理由付きで exclude する。初回は baseline を測り、PH1.5-B の meaningful tests 後に threshold を ratchet する。 | <https://vitest.dev/config/coverage> |
 | Playwright webServer | Playwright Test config の `webServer` は test 前に local dev server を起動できる。`command`, `url`, `reuseExistingServer`, `stdout`, `stderr`, `timeout`, `gracefulShutdown` などがある。`use.baseURL` と併用して相対 `page.goto('/')` が使える。 | Phase 1.5 では root `bun run start` を `webServer.command` の候補にし、Vite preview `http://127.0.0.1:4173` を `url` / `baseURL` の候補にする。browser-facing app は `/ws` の相対 URL を維持し、backend localhost 直叩きにしない。 | <https://playwright.dev/docs/test-webserver> |
 | Playwright config | `testDir`, `fullyParallel`, `forbidOnly`, `retries`, `workers`, `reporter`, `use.baseURL`, `projects`, `webServer` などを config で指定できる。CI では `forbidOnly`, retries/workers の設定が標準的。 | Phase 1.5 では `@playwright/test@1.63.0` を導入し、Desktop Chrome 1 project から始める。local は `webServer.command: bun run start` + `baseURL: http://127.0.0.1:4173`、preview/CI は `PLAYWRIGHT_BASE_URL` を指定して webServer を起動しない。Sandbox で Chromium binary install / 実行不可の場合は未実行理由を記録し、実行済みと主張しない。 | <https://playwright.dev/docs/test-configuration> |
+| Playwright CI | CI で Playwright browser を動かすには、browser と OS dependencies を install する。公式 GitHub Actions 例は checkout → setup-node → dependency install → `npx playwright install --with-deps` → `npx playwright test` → report artifact upload。CI では workers=1 が安定性優先として推奨される。 | PH1.5-D の CI 提案では Bun project 用に `oven-sh/setup-bun@v2` + `bun ci` を使い、E2E job で `bunx playwright install --with-deps chromium` → `bun run test:e2e` を実行する案を `docs/ops/github-actions-proposal.yml` に置く。 | <https://playwright.dev/docs/ci> |
+| GitHub Actions workflow | workflow は YAML で、公式配置先は `.github/workflows`。`on` / `jobs` / `runs-on` / `steps` / `uses` / `run` 等で構成する。 | AGENTS.md §6.3 の制約により Agent は `.github/workflows/` を作らない。配置用 YAML は `docs/ops/` に提案として置き、人間が `.github/workflows/quality-gates.yml` へコピーする。 | <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax> |
+| setup-bun GitHub Action | `oven-sh/setup-bun@v2` で GitHub Actions runner に Bun をセットアップでき、`bun-version` を指定できる。 | CI 提案では `bun-version: 1.4.0` を指定し、root lockfile に対して `bun ci` を使う。 | <https://github.com/oven-sh/setup-bun> |
 
 ## マッチメイキング参考
 

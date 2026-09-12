@@ -14,7 +14,7 @@ description: Sandbox / ブラウザ・ネットワーク / GitHub App の恒常�
 | **Chromium バイナリの install 不可** | Playwright がローカルで実行できない | Phase 1.5 では config/spec は実装できるが、Sandbox で browser 実行済みと主張しない。CI / 実環境のみ |
 | **外部ネットワークの一部到達不可** | bun ゲームサーバーへの実 WS 結合が限定的 | パック/アンパック・入力キュー・`SimProfile.step` を純粋関数で Vitest。実結合は「**実環境検証待ち**」 |
 | **3D のヘッドレス差** | Babylon / noa の目視が Sandbox では限定的 | ライブプレビューで確認。シムは DOM/GPU 非依存でテスト |
-| **`.github/workflows/` 書き込み不可** | CI をリポジトリに直接置けない | YAML は `docs/ops/` に保管し、ユーザーが配置（AGENTS.md §6.3） |
+| **`.github/workflows/` 書き込み不可** | CI をリポジトリに直接置けない | YAML は `docs/ops/` に保管し、ユーザーが配置（AGENTS.md §6.3）。PH1.5-D では `docs/ops/github-actions-proposal.yml` を提案として追加済み |
 
 ## ゲーム開発での具体的な迂回パターン
 
