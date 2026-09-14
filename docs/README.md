@@ -37,6 +37,7 @@ docs/
 │   ├── HANDOFF.md       # 次セッションへの橋渡し（先に読む）
 │   ├── PHASE01_PLAN.md  # フェーズ 1（fps モノレポ + Babylon。ローカル検証済み）
 │   ├── PHASE01_5_PLAN.md # フェーズ 1.5（coverage + E2E 品質ゲート）
+│   ├── PHASE02_PLAN.md  # フェーズ 2（Sim Profile 分離。fps 先行＋voxel は契約だけ）
 │   └── complete/        # 完了済み計画
 │       ├── README.md
 │       ├── PHASE00_PLAN.md
@@ -65,7 +66,7 @@ docs/
 
 | 順 | 文書 | 内容 |
 |---:|---|---|
-| 0 | [`planning/HANDOFF.md`](planning/HANDOFF.md) | 次セッション: PH1-F 後の Phase 1.5（coverage + E2E 品質ゲート）着手メモ |
+| 0 | [`planning/HANDOFF.md`](planning/HANDOFF.md) | 次セッション: PH2-A（SimProfile contract + TYPE_SPECS）着手メモ |
 | 1 | [`../README.md`](../README.md) | プロダクト概要・セットアップ（現行コード） |
 | 2 | [`task-list.md`](task-list.md) | 進捗の唯一の正本。次に着手するタスク |
 | 3 | [`planning/README.md`](planning/README.md) → 対象フェーズの `planning/*_PLAN.md` | 計画書の入口と、そのタスクで何をどの順で実施するか |

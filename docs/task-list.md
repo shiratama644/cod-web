@@ -45,7 +45,7 @@
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
 | **1** | モノレポ + Babylon 移行 | PH1-F ローカル検証済み |
 | **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-D ローカル検証済み（Phase 1.5 実装完了、E2E browser は実環境検証待ち） |
-| **2** | Sim Profile 分離 | 未着手 |
+| **2** | Sim Profile 分離 | PLAT-2 ローカル検証済み。次は PH2-A |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4** | ハブ + マッチメイカー + voxel 永続化方針 | 未着手 |
 | **5** | voxel-creative / bedwars / fps-tdm | 未着手 |
@@ -70,7 +70,7 @@
 
 ### Phase 1
 
-計画書: [`planning/PHASE01_PLAN.md`](./planning/PHASE01_PLAN.md)  
+計画書: [`planning/PHASE01_PLAN.md`](./planning/PHASE01_PLAN.md)
 橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（PH1-F 完了後。次は **Phase 1.5 品質ゲート**）
 
 合意: fps 系パッケージのみ。Channel 頭 1B。GPU 予算は本フェーズ DoD 外。`dtMs` はミリ秒。fps Snapshot は `vy` を含める。workspace package name は `@cod/*`。Babylon options は型にあるものだけ使う。
@@ -102,6 +102,23 @@
 | PH1.5-B | 意味のある Vitest coverage 増加 | ローカル検証済み | 100% | PH1.5-A | protocol / input / prediction / interpolation / UI seam 等の重要未テスト branch に assertion を追加し、before/after を記録する | 本コミット / 17 files・107 tests / WebSocketTransport Channel framing・malformed frame 1002・no-copy/fallback send・status、GameClient welcome reject・malformed snapshot・dispose/status、Interpolator extrapolate/hold/departure/yaw wrap/history、StartOverlay fullscreen rejection/fallback、TouchControls joystick clamp/reset/jump / after: Statements 79.17% (859/1085), Branches 73.85% (291/394), Functions 79.38% (154/194), Lines 80.77% (815/1009) / thresholds ratchet: statements 79, branches 73, functions 79, lines 80 |
 | PH1.5-C | Playwright E2E 実装 | 実環境検証待ち | 100% | PH1.5-B | `@playwright/test`、`playwright.config.ts`、E2E specs、Sandbox 未実行理由または CI 実行結果がある | 本コミット / `@playwright/test@1.63.0` / `test:e2e` script / `playwright.config.ts`（Desktop Chrome、`webServer.command: bun run start`、`baseURL: http://127.0.0.1:4173`、`PLAYWRIGHT_BASE_URL` override）/ `e2e/game-shell.spec.ts` 3 specs（shell smoke、fullscreen unavailable start、same-origin `/ws` proxy connection）/ `bun run test:e2e -- --list` pass（3 tests discovered）/ browser実行は Sandbox Chromium 制約により未実行・実環境検証待ち / typecheck・lint・unit・coverage・build・link check・git diff --check pass |
 | PH1.5-D | Quality gate docs / CI 提案整理 | ローカル検証済み | 100% | PH1.5-C | coverage threshold ratchet 方針、E2E 実行手順、次 Phase 2 handoff が docs に反映される | 本コミット / `docs/ops/README.md`, `docs/ops/quality-gates.md`, `docs/ops/github-actions-proposal.yml` 追加 / `.github/workflows/` は作成せず配置提案のみ / Playwright CI・webServer、Bun `bun ci`、GitHub Actions workflow syntax、setup-bun 公式情報を再確認 / Phase 2 handoff 更新 / typecheck・lint・unit・coverage・build・E2E discovery・link check・git diff --check pass |
+
+
+### Phase 2
+
+計画書: [`planning/PHASE02_PLAN.md`](./planning/PHASE02_PLAN.md)
+橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（次は **PH2-A: `SimProfile` contract + `TYPE_SPECS`**）
+
+目的: `engine-core` を type 非依存の L1 として保ち、`profile-fps` を L2 の `FpsSimProfile` 実装として注入できる形に分離する。2026-09-15 の人間確認により、Phase 2 は **fps 先行＋voxel は契約だけ** とする。`profile-voxel` package、voxel terrain、voxel physics 本実装は含めない。
+
+| ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
+|---|---|---|---:|---|---|---|
+| PLAT-2 | Phase 2 計画作成（Sim Profile 分離） | ローカル検証済み | 100% | PH1.5-D | `_TEMPLATE.md` 準拠。`PLAT-2` と PH2-* が task-list に追加され、fps先行＋voxel契約のみの範囲が明記される | 本コミット / [`planning/PHASE02_PLAN.md`](./planning/PHASE02_PLAN.md) / 人間回答: `fps先行＋voxelは契約だけ` / docs link check・`git diff --check` pass |
+| PH2-A | `SimProfile` contract + `TYPE_SPECS` | 未着手 | 0% | PLAT-2 | `engine-core` に type 非依存 contract、`protocol` に fps/voxel rate spec があり、既存 fps constants と矛盾しない | |
+| PH2-B | `FpsSimProfile` 実装 | 未着手 | 0% | PH2-A | `profile-fps` が world / player spawn / step / snapshot writer を profile として提供し、現行 fps 挙動を維持する | |
+| PH2-C | gameserver への profile 注入 | 未着手 | 0% | PH2-B | `apps/gameserver` が profile factory を注入し、`engine-core` は `@cod/profile-*` を import しない | |
+| PH2-D | web `GameClient` / prediction への profile 注入 | 未着手 | 0% | PH2-B | `GameClient` / `ClientPrediction` が profile contract で動き、default fps 経路が既存 E2E discovery と unit tests を維持する | |
+| PH2-E | client/server same input + 決定論 + docs 整理 | 未着手 | 0% | PH2-C, PH2-D | fps determinism と client/server 同一入力テストがあり、Phase 2 の証拠・handoff が更新される | |
 
 ### ドキュメント・規約
 

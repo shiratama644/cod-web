@@ -36,7 +36,7 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 | Lint | Biome（ESLint/Prettier 不使用） |
 | Unit | Vitest。`bun test` は使わない。配置は `_tests_/` ミラー。Phase 1.5 では coverage を `vitest run --coverage` で導入する |
 | Coverage | Vitest coverage。まず `@vitest/coverage-v8` + `provider: 'v8'` を候補にするが、Bun runtime 制約に当たる場合は停止して fallback を判断する |
-| E2E | Playwright は Phase 1.5 で導入予定。Sandbox では browser 実行を捏造せず CI / 実環境検証待ちにする |
+| E2E | Playwright は Phase 1.5 で導入済み。Sandbox では browser 実行を捏造せず CI / 実環境検証待ちにする |
 | パッケージ | bun。Sandbox では npm 経由で導入（下記） |
 
 ## 移行元コードで確認済み（フェーズ 0 で直す穴・残す資産）
@@ -55,6 +55,14 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 - jest-dom の型: `src/vite-env.d.ts` に `/// <reference types="@testing-library/jest-dom" />`、setup を tsconfig include に入れる。
 - `bun run start`（`scripts/execute.ts`）: `vite build` 成功後に server :8080 と preview :4173 を並列。クライアントは `/ws` を同一オリジンで叩き、Vite proxy が bun へ中継。ブラウザから localhost 直叩きをしない。
 
+
+### Sim Profile 分離（Phase 2）
+
+- PLAT-2 で Phase 2 計画を追加済み。範囲は人間確認により **fps 先行＋voxel は契約だけ**。`profile-voxel` package / voxel terrain / voxel physics 本実装は Phase 2 では作らない。
+- 次は PH2-A: `SimProfile` contract + `TYPE_SPECS`。`engine-core` は L1 なので `@cod/profile-fps` / `@cod/profile-voxel` import と `if (type === 'fps' | 'voxel')` を入れない。
+- 現行コードでは `Simulation<TWorld>` が `SimulationStep<TWorld>` 注入済みだが、`Room` / `SnapshotBroadcaster` / `GameClient` / `ClientPrediction` / `apps/gameserver` に fps 固有結合が残る。Phase 2 はこれを小さい subtask で profile 注入へ寄せる。
+- `TYPE_SPECS`: fps は sim 60 / input 60 / snapshot 30 を実使用、voxel は sim 30 / input 30 / snapshot 15 の将来 spec のみ。既存 constants は互換 export として壊さず移行する。
+- PH2-E で client/server same input と決定論テストを追加する。PH1.5 quality gate（coverage thresholds と E2E discovery）を各 subtask で維持する。
 
 ### Coverage / Playwright（Phase 1.5）
 
