@@ -1,7 +1,7 @@
 /**
  * クライアント予測＋調停（Reconciliation）。
  *
- * - 入力のたびに shared の純粋 `stepPlayer` でローカル状態を即座に進める（予測）。
+ * - 入力のたびに profile の純粋 `stepPlayer` でローカル状態を即座に進める（予測）。
  * - 送信済み入力を seq 付きで pending 配列に保持する。
  * - サーバー確定スナップショット（自 playerId の位置と lastAckSeq）が届いたら、
  *   自状態をサーバー確定位置に補正し、まだ ack されていない入力
@@ -11,11 +11,21 @@
  * ズレは裏で修正される（ラバーバンドを防ぐ）。
  */
 
-import { SIM_DT } from '@cod/protocol/protocol/constants'
 import type { PlayerInput } from '@cod/protocol/protocol/messages'
-import { stepPlayer } from '@cod/profile-fps/sim/movement'
-import type { CollisionWorld } from '@cod/profile-fps/sim/collisionWorld'
-import { createPlayerState, type PlayerState } from '@cod/protocol/types'
+import type { TypeSpec } from '@cod/protocol/protocol/type-specs'
+import type { PlayerState } from '@cod/protocol/types'
+
+/**
+ * web client が使う profile-like seam。
+ *
+ * `@cod/web` は `@cod/engine-core` へ直接依存しないため、engine-core の SimProfile 型は
+ * import せず、ClientPrediction に必要な最小 shape だけを受け取る。
+ */
+export interface ClientPredictionProfile<TWorld> {
+  readonly typeSpec: Pick<TypeSpec, 'simHz'>
+  createPlayerState(playerId: number): PlayerState
+  stepPlayer(player: PlayerState, input: PlayerInput, dtSec: number, world: TWorld): PlayerState
+}
 
 /**
  * 調停時にローカル予測を許容する最大位置誤差（m）。
@@ -30,13 +40,14 @@ interface PendingInput {
   input: PlayerInput
 }
 
-export class ClientPrediction {
+export class ClientPrediction<TWorld> {
   state: PlayerState
   private pending: PendingInput[] = []
   private nextSeq = 1
+  private readonly stepSeconds: number
   /**
    * 最新シム状態が対応する「描画時刻」（performance.now()）。
-   * 60Hz 固定ステップを消化した直後、アキュムレータに残った端数時間を
+   * 固定ステップを消化した直後、アキュムレータに残った端数時間を
    * 「未来側」に加えた時刻をセットする（状態はその時刻のもの、という意味）。
    * これにより可変フレームレートでも外挿が連続し、タイマー遅れでの複数ステップ
    * 一気消化時にも 1 ティック分のワープ（カクつき）が出ない。
@@ -44,13 +55,12 @@ export class ClientPrediction {
   private renderAnchorMs = 0
 
   constructor(
-    private readonly world: CollisionWorld,
+    private readonly profile: ClientPredictionProfile<TWorld>,
+    private readonly world: TWorld,
     playerId: number,
-    spawnX = 0,
-    spawnY = 5,
-    spawnZ = 0,
   ) {
-    this.state = createPlayerState(playerId, spawnX, spawnY, spawnZ)
+    this.state = profile.createPlayerState(playerId)
+    this.stepSeconds = 1 / profile.typeSpec.simHz
   }
 
   /** 自プレイヤー ID。 */
@@ -65,8 +75,8 @@ export class ClientPrediction {
   applyInput(input: Omit<PlayerInput, 'seq'>): PlayerInput {
     const seq = this.nextSeq++
     const full: PlayerInput = { ...input, seq }
-    // ローカル予測: 固定ステップで即座に進める。
-    stepPlayer(this.state, full, SIM_DT, this.world)
+    // ローカル予測: profile の固定ステップで即座に進める。
+    this.profile.stepPlayer(this.state, full, this.stepSeconds, this.world)
     this.pending.push({ seq, input: full })
     return full
   }
@@ -84,7 +94,7 @@ export class ClientPrediction {
   /**
    * 描画フレーム（120Hz 等の可変レート）向けの一人称カメラ状態を返す。
    *
-   * シムは 60Hz 固定ステップなので、そのままカメラに映すと 120Hz ディスプレイで
+   * シムは固定ステップなので、そのままカメラに映すと 120Hz ディスプレイで
    * 「同じ位置を2フレーム→ワープ」の階段状になりガタガタする。そこで最新シム状態から
    * **速度で描画時刻へ最大1ティック分だけ外挿**し、可変フレームレートでも滑らかに
    * 追従させる（リモート補間と同じ発想を自プレイヤーにも適用。遅延は実質ゼロ）。
@@ -93,14 +103,14 @@ export class ClientPrediction {
   renderCamera(nowMs: number): { x: number; y: number; z: number; yaw: number; pitch: number } {
     // アンカー（最新シム状態の対応時刻）からの経過を 0..1 ティックにクランプ。
     // アンカーはフレーム冒頭で「現在＋アキュムレータ端数（未来側）」に張るので、
-    // dt は通常 0〜SIM_DT になり、フレーム間で連続した外挿位置が得られる。
+    // dt は通常 0〜stepSeconds になり、フレーム間で連続した外挿位置が得られる。
     const dt = this.renderAnchorMs === 0 ? 0 : (nowMs - this.renderAnchorMs) / 1000
-    const a = Math.max(0, Math.min(dt / SIM_DT, 1))
+    const a = Math.max(0, Math.min(dt / this.stepSeconds, 1))
     const s = this.state
     return {
-      x: s.x + s.vx * SIM_DT * a,
-      y: s.y + s.vy * SIM_DT * a,
-      z: s.z + s.vz * SIM_DT * a,
+      x: s.x + s.vx * this.stepSeconds * a,
+      y: s.y + s.vy * this.stepSeconds * a,
+      z: s.z + s.vz * this.stepSeconds * a,
       yaw: s.yaw,
       pitch: s.pitch,
     }
@@ -132,7 +142,10 @@ export class ClientPrediction {
     this.pending = this.pending.filter((p) => p.seq > lastAckSeq)
 
     // 作業用に、サーバー確定状態を起点としたプレイヤー状態を構築。
-    const corrected = createPlayerState(local.id, serverState.x, serverState.y, serverState.z)
+    const corrected = this.profile.createPlayerState(local.id)
+    corrected.x = serverState.x
+    corrected.y = serverState.y
+    corrected.z = serverState.z
     corrected.vx = serverState.vx
     corrected.vy = serverState.vy
     corrected.vz = serverState.vz
@@ -140,7 +153,7 @@ export class ClientPrediction {
     corrected.pitch = local.pitch
     // 未 ack 入力を先頭から replay して「サーバー基準の現在位置」を再現する。
     for (const p of this.pending) {
-      stepPlayer(corrected, p.input, SIM_DT, this.world)
+      this.profile.stepPlayer(corrected, p.input, this.stepSeconds, this.world)
     }
 
     const dx = corrected.x - predicted.x

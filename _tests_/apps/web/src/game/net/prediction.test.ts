@@ -1,8 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { createDefaultWorld } from '@cod/profile-fps/sim/collisionWorld'
+import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
 import type { PlayerInput, Snapshot, SnapshotPlayer } from '@cod/protocol/protocol/messages'
-import { ClientPrediction } from '@/game/net/prediction'
+import { TYPE_SPECS } from '@cod/protocol/protocol/type-specs'
+import { createPlayerState, type PlayerState } from '@cod/protocol/types'
+import { ClientPrediction, type ClientPredictionProfile } from '@/game/net/prediction'
 import { Interpolator } from '@/game/net/interpolation'
 
 function moveInput(partial: Partial<PlayerInput> = {}) {
@@ -17,9 +19,14 @@ function moveInput(partial: Partial<PlayerInput> = {}) {
   }
 }
 
+function createFpsPrediction(playerId = 1): ClientPrediction<ReturnType<ReturnType<typeof createFpsSimProfile>['createWorld']>> {
+  const profile = createFpsSimProfile()
+  return new ClientPrediction(profile, profile.createWorld(), playerId)
+}
+
 describe('ClientPrediction', () => {
   it('入力を適用するとローカル状態が進み、seq 付き入力を返す', () => {
-    const pred = new ClientPrediction(createDefaultWorld(), 1)
+    const pred = createFpsPrediction(1)
     const in1 = pred.applyInput(moveInput({ moveZ: 1 }))
     expect(in1.seq).toBe(1)
     const in2 = pred.applyInput(moveInput({ moveZ: 1 }))
@@ -28,13 +35,44 @@ describe('ClientPrediction', () => {
     expect(pred.state.z).toBeLessThan(0)
   })
 
+  it('injected profile の step / spawn / simHz を使う', () => {
+    interface MockWorld {
+      readonly scale: number
+    }
+    const calls: Array<{ dtSec: number; world: MockWorld }> = []
+    const profile: ClientPredictionProfile<MockWorld> = {
+      typeSpec: { simHz: 10 },
+      createPlayerState(playerId: number): PlayerState {
+        return createPlayerState(playerId, 2, 3, 4)
+      },
+      stepPlayer(player, input, dtSec, world) {
+        calls.push({ dtSec, world })
+        player.x += input.moveX * world.scale * dtSec
+        player.z += input.moveZ * world.scale * dtSec
+        if (input.seq > player.lastInputSeq) player.lastInputSeq = input.seq
+        return player
+      },
+    }
+
+    const world = { scale: 20 }
+    const pred = new ClientPrediction(profile, world, 7)
+    expect(pred.state).toMatchObject({ id: 7, x: 2, y: 3, z: 4 })
+
+    const sent = pred.applyInput(moveInput({ moveX: 1, moveZ: 1 }))
+
+    expect(sent.seq).toBe(1)
+    expect(calls).toEqual([{ dtSec: 0.1, world }])
+    expect(pred.state.x).toBeCloseTo(4)
+    expect(pred.state.z).toBeCloseTo(6)
+  })
+
   // reconcile に渡すサーバー状態を組み立てる（速度は任意）。
   function srv(p: { x: number; y: number; z: number }, seq: number) {
     return { state: { ...p, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0 }, seq }
   }
 
   it('ack 済み入力は pending から消える', () => {
-    const pred = new ClientPrediction(createDefaultWorld(), 1)
+    const pred = createFpsPrediction(1)
     for (let i = 0; i < 5; i++) pred.applyInput(moveInput())
     expect(pred.pendingCount).toBe(5)
     const { state, seq } = srv({ x: pred.state.x, y: pred.state.y, z: pred.state.z }, 3)
@@ -43,10 +81,10 @@ describe('ClientPrediction', () => {
   })
 
   it('誤差が大きければサーバー位置へ補正し、未 ack 入力が replay される', () => {
-    const pred = new ClientPrediction(createDefaultWorld(), 1)
+    const pred = createFpsPrediction(1)
     // 着地させる
-    for (let i = 0; i < 60; i++) pred.applyInput(moveInput())
-    const { state, seq } = srv({ x: 0, y: pred.state.y, z: 0 }, 60)
+    for (let i = 0; i < TYPE_SPECS.fps.simHz; i++) pred.applyInput(moveInput())
+    const { state, seq } = srv({ x: 0, y: pred.state.y, z: 0 }, TYPE_SPECS.fps.simHz)
     pred.reconcile(state, seq)
     // サーバー位置（x=0,z=0）に補正済み（誤差が閾値を超えるためスナップ）。
     expect(pred.state.x).toBeCloseTo(0, 5)
@@ -54,8 +92,8 @@ describe('ClientPrediction', () => {
   })
 
   it('誤差が小さいときはローカル予測を維持してスナップしない（滑らかさ優先）', () => {
-    const pred = new ClientPrediction(createDefaultWorld(), 1)
-    for (let i = 0; i < 60; i++) pred.applyInput(moveInput({ moveZ: 1 }))
+    const pred = createFpsPrediction(1)
+    for (let i = 0; i < TYPE_SPECS.fps.simHz; i++) pred.applyInput(moveInput({ moveZ: 1 }))
     const before = { x: pred.state.x, y: pred.state.y, z: pred.state.z }
     // サーバーから 5cm だけズレた値が届く（閾値 0.25m 未満）。
     const { state, seq } = srv({ x: before.x + 0.05, y: before.y, z: before.z - 0.05 }, pred.pendingCount)

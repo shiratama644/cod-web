@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { Channel, INPUT_PACKET_BYTES, SIM_DT, type ChannelId } from '@cod/protocol/protocol/constants'
 import { decodeInput, encodeSnapshot } from '@cod/protocol/protocol/packer'
 import type { Snapshot } from '@cod/protocol/protocol/messages'
-import { GameClient, type ConnectionStatus } from '@/game/net/GameClient'
+import { createPlayerState, type PlayerState } from '@cod/protocol/types'
+import { GameClient, type ClientSimProfile, type ConnectionStatus } from '@/game/net/GameClient'
 import type { BinaryMessageHandler, NetTransport, TransportStatus } from '@/game/net/transport'
 import type { InputController } from '@/game/input/InputController'
 
@@ -76,6 +77,28 @@ function snapshotView(snapshot: Snapshot): DataView {
   return new DataView(buffer, 0, len)
 }
 
+interface MockWorld {
+  readonly scale: number
+}
+
+function mockProfile(): ClientSimProfile<MockWorld> {
+  return {
+    typeSpec: { simHz: 10, inputHz: 20 },
+    createWorld: () => ({ scale: 5 }),
+    createPlayerState(playerId: number): PlayerState {
+      return createPlayerState(playerId, 10, 20, 30)
+    },
+    stepPlayer(player, input, dtSec, world) {
+      player.x += input.moveX * world.scale * dtSec
+      player.z += input.moveZ * world.scale * dtSec
+      player.yaw = input.yaw
+      player.pitch = input.pitch
+      if (input.seq > player.lastInputSeq) player.lastInputSeq = input.seq
+      return player
+    },
+  }
+}
+
 describe('GameClient network path', () => {
   it('samples input through the Babylon-facing frame boundary and sends Channel.Unreliable Input payloads', () => {
     const transport = new MockTransport()
@@ -99,6 +122,27 @@ describe('GameClient network path', () => {
     const input = decodeInput(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength))
     expect(input.seq).toBe(1)
     expect(input.moveZ).toBeGreaterThan(0)
+  })
+
+  it('uses injected client profile for world, spawn, step, and input cadence', () => {
+    const transport = new MockTransport()
+    const client = new GameClient(transport, mockProfile())
+    client.setInput(inputStub())
+
+    client.connect('ws://example.test/ws')
+    transport.emitOpen()
+    transport.emitText(JSON.stringify({ kind: 'welcome', playerId: 7 }))
+    client.frame(0.1)
+
+    expect(client.world).toEqual({ scale: 5 })
+    expect(client.self).toMatchObject({ id: 7, x: 10, y: 20, z: 30.5 })
+    const [, payload] = transport.send.mock.calls[0]
+    const bytes =
+      payload instanceof ArrayBuffer
+        ? new Uint8Array(payload)
+        : new Uint8Array(payload.buffer, payload.byteOffset, payload.byteLength)
+    const input = decodeInput(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength))
+    expect(input.dtMs).toBe(50)
   })
 
   it('accepts Channel.Unreliable snapshots and exposes remote players for the Babylon renderer', () => {

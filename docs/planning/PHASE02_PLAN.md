@@ -277,5 +277,5 @@ const snapshots = new SnapshotBroadcaster({ profile })
 | `PH2-A` | 本コミット | typecheck / lint / unit / coverage / build / E2E discovery | `SimProfile` contract + `TYPE_SPECS`。19 files / 112 tests、coverage thresholds pass |
 | `PH2-B` | 本コミット | typecheck / lint / unit / coverage / build / E2E discovery | `FpsSimProfile` factory。20 files / 116 tests、coverage thresholds pass |
 | `PH2-C` | 本コミット | typecheck / lint / unit / coverage / build / E2E discovery | gameserver runtime が `createFpsSimProfile()` を組み立て、`Room` / `Simulation` / `SnapshotBroadcaster` へ profile 注入。21 files / 120 tests、coverage thresholds pass。`engine-core` boundary audit 0 violations |
-| `PH2-D` | 未実装 | 未実行 | GameClient / prediction injection |
+| `PH2-D` | 本コミット | typecheck / lint / unit / coverage / build / E2E discovery | web `GameClient` / `ClientPrediction` が profile-like seam で動作。default fps 経路は `createFpsSimProfile()`、mock profile injection tests 追加。21 files / 122 tests、coverage thresholds pass |
 | `PH2-E` | 未実装 | 未実行 | determinism / same input / docs handoff |

@@ -6,10 +6,10 @@
  * 描画側が mesh を直接更新する（黄金ルール4/5）。
  *
  * - **入力サンプリング・ローカル予測・サーバーへの送信は wall-clock の固定
- *   タイマー（60Hz）で駆動する**。requestAnimationFrame はタブがバックグラウンド/
- *   非表示（側ペインや最小化）になると間引かれたり停止したりするため、ネット/予測を
- *   rAF で回すと見えない側のプレイヤーが数秒遅れて動く「ラグ」になる。タイマー駆動なら
- *   表示状態に依らず入力は 60Hz でサーバーへ届く。
+ *   タイマー（profile の inputHz / simHz）で駆動する**。requestAnimationFrame はタブが
+ *   バックグラウンド/非表示（側ペインや最小化）になると間引かれたり停止したりするため、
+ *   ネット/予測を rAF で回すと見えない側のプレイヤーが数秒遅れて動く「ラグ」になる。
+ *   タイマー駆動なら表示状態に依らず入力は profile の inputHz でサーバーへ届く。
  * - 毎レンダーフレーム（rAF）は描画のためだけにリモート補間結果をサンプリングする。
  * - 受信したスナップショットは WebSocket コールバックで Interpolator へ（リモート補間）
  *   と自プレイヤーの調停に使う（受信自体は rAF 非依存）。
@@ -19,20 +19,32 @@ import {
   CHANNEL_BYTES,
   Channel,
   INPUT_PACKET_BYTES,
-  INPUT_SEND_HZ,
   MAX_STEPS_PER_FRAME,
-  SIM_DT,
 } from '@cod/protocol/protocol/constants'
-import { encodeInput, decodeInput, decodeSnapshot } from '@cod/protocol/protocol/packer'
 import type { PlayerInput } from '@cod/protocol/protocol/messages'
-import { createDefaultWorld, type CollisionWorld } from '@cod/profile-fps/sim/collisionWorld'
+import { decodeInput, decodeSnapshot, encodeInput } from '@cod/protocol/protocol/packer'
+import type { TypeSpec } from '@cod/protocol/protocol/type-specs'
+import type { PlayerState } from '@cod/protocol/types'
+import { createFpsSimProfile, type FpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
 import type { InputController } from '../input/InputController'
+import { Interpolator, type InterpolatedPlayer } from './interpolation'
+import { ClientPrediction } from './prediction'
 import type { NetTransport } from './transport'
 import { WebSocketTransport } from './websocket'
-import { ClientPrediction } from './prediction'
-import { Interpolator, type InterpolatedPlayer } from './interpolation'
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
+
+export interface ClientSimProfile<TWorld> {
+  readonly typeSpec: Pick<TypeSpec, 'simHz' | 'inputHz'>
+  createWorld(): TWorld
+  createPlayerState(playerId: number): PlayerState
+  stepPlayer(player: PlayerState, input: PlayerInput, dtSec: number, world: TWorld): PlayerState
+}
+
+/** 当面の default client profile。PH2-D では fps 経路を維持する。 */
+export function createDefaultClientProfile(): ClientSimProfile<ReturnType<FpsSimProfile['createWorld']>> {
+  return createFpsSimProfile()
+}
 
 /**
  * 接続先は常に同一オリジンの `/ws`。
@@ -43,10 +55,12 @@ export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'er
  */
 const DEFAULT_WS_URL = `${location.origin.replace(/^http/, 'ws')}/ws`
 
-export class GameClient {
+export class GameClient<TWorld = ReturnType<FpsSimProfile['createWorld']>> {
   readonly transport: NetTransport
-  readonly world: CollisionWorld
-  private prediction: ClientPrediction | null = null
+  readonly world: TWorld
+  private readonly profile: ClientSimProfile<TWorld>
+  private readonly stepSeconds: number
+  private prediction: ClientPrediction<TWorld> | null = null
   private readonly interpolator = new Interpolator()
   private input: InputController | null = null
 
@@ -54,8 +68,8 @@ export class GameClient {
   private disposed = false
   /**
    * 実時間アキュムレータ（秒）。レンダーフレーム（rAF）ごとに経過時間を積み、
-   * 固定 60Hz ステップ（SIM_DT）に分解してシム・送信を進める。
-   * rAF（120Hz 等）は 1 フレームが SIM_DT 未満なのでステップの「まとめ消化」が
+   * profile の固定ステップに分解してシム・送信を進める。
+   * rAF（120Hz 等）は 1 フレームが固定ステップ未満なのでステップの「まとめ消化」が
    * 起きず、カメラ外挿が 1 ティック分ワープするカクつきが消える。
    */
   private simAccumulator = 0
@@ -71,9 +85,14 @@ export class GameClient {
   /** 現在の部屋にいるリモートプレイヤー補間結果（フレームごとに更新）。 */
   remotes: Map<number, InterpolatedPlayer> = new Map()
 
-  constructor(transport: NetTransport = new WebSocketTransport()) {
+  constructor(
+    transport: NetTransport = new WebSocketTransport(),
+    profile: ClientSimProfile<TWorld> = createDefaultClientProfile() as ClientSimProfile<TWorld>,
+  ) {
     this.transport = transport
-    this.world = createDefaultWorld()
+    this.profile = profile
+    this.world = profile.createWorld()
+    this.stepSeconds = 1 / profile.typeSpec.simHz
   }
 
   connect(url: string = DEFAULT_WS_URL): void {
@@ -130,7 +149,7 @@ export class GameClient {
       const msg = JSON.parse(text)
       if (msg.kind === 'welcome' && typeof msg.playerId === 'number') {
         this.selfId = msg.playerId
-        this.prediction = new ClientPrediction(this.world, msg.playerId)
+        this.prediction = new ClientPrediction(this.profile, this.world, msg.playerId)
       }
     } catch {
       // 無視
@@ -172,12 +191,12 @@ export class GameClient {
   }
 
   /**
-   * 毎レンダーフレーム（rAF）呼ぶ。実時間を固定 60Hz ステップ（SIM_DT）に分解して
+   * 毎レンダーフレーム（rAF）呼ぶ。実時間を profile の固定ステップに分解して
    * 入力送信・ローカル予測を進め、ついでにリモート補間結果も最新化する。
    *
-   * rAF は 120Hz 等で回るため 1 フレームが SIM_DT 未満で、ステップの「まとめ消化」が
-   * 起きず、カメラ外挿が 1 ティック分ワープするカクつきが出ない。サーバーも同じ 60Hz
-   * 固定ステップなので、入力は毎秒 60 件届いて step 数が一致する（調停が破綻しない）。
+   * rAF は 120Hz 等で回るため 1 フレームが固定ステップ未満で、ステップの「まとめ消化」が
+   * 起きず、カメラ外挿が 1 ティック分ワープするカクつきが出ない。サーバーも同じ profile
+   * 固定ステップなので、入力は profile inputHz で届いて step 数が一致する（調停が破綻しない）。
    * バックグラウンドで rAF が間引かれても、復帰時に経過時間から正しい step 数へ追いつく。
    */
   frame(dtSec: number): void {
@@ -190,8 +209,8 @@ export class GameClient {
       this.simAccumulator += frameSec
 
       let steps = 0
-      while (this.simAccumulator >= SIM_DT && steps < MAX_STEPS_PER_FRAME) {
-        this.simAccumulator -= SIM_DT
+      while (this.simAccumulator >= this.stepSeconds && steps < MAX_STEPS_PER_FRAME) {
+        this.simAccumulator -= this.stepSeconds
         this.simStep()
         steps++
       }
@@ -211,7 +230,7 @@ export class GameClient {
   }
 
   /**
-   * 自プレイヤーの描画用カメラ状態。60Hz シムを速度で描画時刻へ外挿し、
+   * 自プレイヤーの描画用カメラ状態。固定ステップシムを速度で描画時刻へ外挿し、
    * 120Hz 等の可変フレームレートでも滑らかに映す（ガタつき解消）。
    */
   renderSelf(nowMs: number) {
@@ -220,8 +239,8 @@ export class GameClient {
 
   /** 入力コントローラから 1 入力を取り出す（ジャンプはワンショット消費）。 */
   private sampleInput(): Omit<PlayerInput, 'seq'> {
-    // 固定 60Hz タイマー駆動なので、入力の dt は常に 1 ティック分で確定する。
-    const dtMs = Math.round((1000 / INPUT_SEND_HZ))
+    // 固定タイマー駆動なので、入力の dt は profile の inputHz から 1 ティック分で確定する。
+    const dtMs = Math.round(1000 / this.profile.typeSpec.inputHz)
     const c = this.input
     if (!c) return { moveX: 0, moveZ: 0, yaw: 0, pitch: 0, flags: 0, dtMs }
     // seq は prediction が採番するので、ここでは仮 seq でサンプルし適用時に上書きされる

@@ -1,4 +1,4 @@
-# 次セッションへの橋渡し（Phase 2 PH2-D 実装前）
+# 次セッションへの橋渡し（Phase 2 PH2-E 実装前）
 
 > 対象: 新しいセッションの AI。人間ではない。
 > 進捗の正本: [`docs/task-list.md`](../task-list.md)
@@ -8,7 +8,7 @@
 > Quality gate: [`docs/ops/quality-gates.md`](../ops/quality-gates.md)
 > 調査の入口: [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md)
 
-このファイルは計画の代替ではない。**PH1.5-D までローカル検証済み。PH1.5-C の Playwright E2E browser 実行のみ Sandbox Chromium 制約により実環境検証待ち。PLAT-2 で Phase 2 計画を作成済み。PH2-A / PH2-B / PH2-C はローカル検証済み。次は PH2-D（web `GameClient` / prediction への profile 注入）から進む。**
+このファイルは計画の代替ではない。**PH1.5-D までローカル検証済み。PH1.5-C の Playwright E2E browser 実行のみ Sandbox Chromium 制約により実環境検証待ち。PLAT-2 で Phase 2 計画を作成済み。PH2-A / PH2-B / PH2-C / PH2-D はローカル検証済み。次は PH2-E（client/server same input + 決定論 + docs 整理）から進む。**
 
 ## 0. 最初にやること（これ以外から始めない）
 
@@ -16,8 +16,8 @@
 2. ブランチ名は **毎回コマンドで確認**する。文書に書いてある過去ブランチ名を fetch/push しない（AGENTS.md §4.4）。
 3. `git log` が起点 1 件だけ / status が大量削除+未追跡 / `bun` なし / `node_modules` なし → Sandbox 再構築。`.agent/hooks/sandbox-rebuild-recovery.md` どおり `git fetch origin <現在ブランチ>` → `git reset --hard FETCH_HEAD` → `bash .agent/hooks/restore-sandbox-env.sh`。
 4. 未コミット変更を勝手に捨てない（再構築復旧の `reset --hard FETCH_HEAD` だけ例外）。
-5. **進行中は 1 件。** 次の 1 件は `PH2-D`。
-6. PH2-D 着手前に [`../task-list.md`](../task-list.md)、[`./PHASE02_PLAN.md`](./PHASE02_PLAN.md)、[`../arch/architecture.md`](../arch/architecture.md)、[`../arch/sim-profiles.md`](../arch/sim-profiles.md)、[`../arch/engineering.md`](../arch/engineering.md)、[`../arch/protocol.md`](../arch/protocol.md)、[`../ops/quality-gates.md`](../ops/quality-gates.md) を再読する。
+5. **進行中は 1 件。** 次の 1 件は `PH2-E`。
+6. PH2-E 着手前に [`../task-list.md`](../task-list.md)、[`./PHASE02_PLAN.md`](./PHASE02_PLAN.md)、[`../arch/architecture.md`](../arch/architecture.md)、[`../arch/sim-profiles.md`](../arch/sim-profiles.md)、[`../arch/engineering.md`](../arch/engineering.md)、[`../arch/protocol.md`](../arch/protocol.md)、[`../ops/quality-gates.md`](../ops/quality-gates.md) を再読する。
 
 ## 1. いま決まっていること（覆さない）
 
@@ -25,7 +25,7 @@
 |---|---|---|
 | D1 | Phase 2 は **fps 先行＋voxel は契約だけ** | 2026-09-15 の人間回答。`profile-voxel` package / voxel terrain / voxel physics 本実装は Phase 2 に含めない |
 | D2 | `engine-core` は L1、type 非依存 | `@cod/profile-fps` / `@cod/profile-voxel` import 禁止。`if (type === 'fps' | 'voxel')` 禁止 |
-| D3 | `profile-fps` は L2 実装 | PH2-B で `FpsSimProfile` factory を追加済み。PH2-C で gameserver runtime から注入済み |
+| D3 | `profile-fps` は L2 実装 | PH2-B で `FpsSimProfile` factory を追加済み。PH2-C で gameserver runtime、PH2-D で web default client から注入済み |
 | D4 | `TYPE_SPECS` は fps 実使用 + voxel 将来枠 | PH2-A で実装済み。fps: sim 60 / input 60 / snapshot 30。voxel: sim 30 / input 30 / snapshot 15 は spec のみ |
 | D5 | 現行 Input は payload 16B / socket frame 17B | Channel 1B + Input 16B を維持。Snapshot `0x11` 化はしない |
 | D6 | fps Snapshot は現行 layout を維持し `vy` を含める | Phase 2 は profile 分離であり wire format 改定ではない |
@@ -43,28 +43,28 @@ Phase 2 計画書は [`PHASE02_PLAN.md`](./PHASE02_PLAN.md)。必ず計画書を
 | `PH2-A` | `SimProfile` contract + `TYPE_SPECS` | ローカル検証済み。`engine-core` の profile contract、`protocol` の rate specs、contract tests |
 | `PH2-B` | `FpsSimProfile` 実装 | ローカル検証済み。`profile-fps` の factory、world / step / snapshot writer 集約 |
 | `PH2-C` | gameserver profile 注入 | ローカル検証済み。`createDefaultServerRuntime()` が fps profile を注入し、L1 は L2 を知らない |
-| `PH2-D` | web GameClient / prediction profile 注入 | client が fps 固定 import から profile 注入へ寄る |
+| `PH2-D` | web GameClient / prediction profile 注入 | ローカル検証済み。`GameClient` / `ClientPrediction` が profile-like seam で動く |
 | `PH2-E` | same input + determinism + docs | client/server 同一入力、決定論、import boundary、handoff 更新 |
 
-## 3. 次の 1 件: PH2-D
+## 3. 次の 1 件: PH2-E
 
 ### 目的
 
-`apps/web` の `GameClient` / `ClientPrediction` が fps 固有 step/world を直接固定しない形へ寄せ、当面の default fps 経路は維持する。
+fps profile の client/server 同一入力と決定論テストを追加し、Phase 2 の証拠・handoff を整理する。
 
-### PH2-D でやること
+### PH2-E でやること
 
-- `GameClient` / `ClientPrediction` の fps 固有 import を確認し、profile contract または profile-like seam で注入できる形へ寄せる。
-- default fps 経路は既存 unit / E2E discovery と互換に保つ。
-- `engine-core` は引き続き `@cod/profile-*` import と type 分岐なしを維持する。
-- web 側の unit tests を追加または拡張し、prediction / snapshot 受信経路の既存挙動を壊さない。
+- server `Simulation` と web `ClientPrediction` が同じ profile / quantized input stream で近い結果を出す regression test を追加する。
+- fps profile の determinism test を追加する。目標は 1,000 tick × 100 scenario だが、Sandbox 時間が厳しい場合は軽量 smoke と重い dedicated script の分離方針を記録して停止判断する。
+- import boundary audit を維持し、`engine-core` が `@cod/profile-*` を import しないことを再確認する。
+- Phase 2 の docs / handoff / skills / log を、次フェーズまたは残課題に向けて整理する。
 
-### PH2-D でやらないこと
+### PH2-E でやらないこと
 
-- gameserver 注入の再設計（PH2-C で完了済み）
-- determinism / same input 本格テスト（PH2-E）
 - `profile-voxel` 作成
+- voxel terrain / voxel physics 本実装
 - Snapshot `0x11` 化 / AOI / delta snapshot
+- gamemode SDK / matchmaker / Hello HMAC
 
 ## 4. Quality gate の現状
 
@@ -83,9 +83,9 @@ Playwright browser 実行は CI / 実環境で行う。Sandbox では `bun run t
 
 | Gate | 現状 | 証拠 |
 |---|---|---|
-| Unit | 21 files / 120 tests | PH2-C 時点 pass |
+| Unit | 21 files / 122 tests | PH2-D 時点 pass |
 | Coverage | thresholds 有効 | statements 79 / branches 73 / functions 79 / lines 80 |
-| E2E discovery | 3 tests discovered | PH2-C 時点 `bun run test:e2e -- --list` pass |
+| E2E discovery | 3 tests discovered | PH2-D 時点 `bun run test:e2e -- --list` pass |
 | Browser E2E | 実環境検証待ち | Sandbox Chromium 制約 |
 | CI 提案 | docs/ops に配置済み | [`github-actions-proposal.yml`](../ops/github-actions-proposal.yml) |
 
