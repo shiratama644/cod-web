@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./net/*": "./src/net/*.ts",
+    "./profile/*": "./src/profile/*.ts",
     "./room/*": "./src/room/*.ts",
     "./sim/*": "./src/sim/*.ts"
   },

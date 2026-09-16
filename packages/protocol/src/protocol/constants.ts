@@ -6,20 +6,24 @@
  * 設計正本: docs/arch/protocol.md。
  */
 
+import { TYPE_SPECS, snapshotEveryTicks, typeStepSeconds } from './type-specs'
+
 // ─────────────────────────────────────────────────────────────────────────
 // レート構成（シム tick と送信レートを分離する）
 // ─────────────────────────────────────────────────────────────────────────
 
-/** サーバー権威シミュレーションの固定 tick レート（Hz）。 */
-export const SIM_TICK_HZ = 60
-/** シムの固定ステップ秒数（dt = 1/60s ≈ 16.7ms）。 */
-export const SIM_DT = 1 / SIM_TICK_HZ
-/** クライアント→サーバーの入力送信レート（Hz）。シム tick と 1:1。 */
-export const INPUT_SEND_HZ = 60
-/** サーバー→クライアントのスナップショット送信レート（Hz）。 */
-export const SNAPSHOT_SEND_HZ = 30
-/** スナップショットを何 tick おきに送るか（60/30 = 2 tick に 1 回）。 */
-export const SNAPSHOT_SEND_EVERY_TICKS = SIM_TICK_HZ / SNAPSHOT_SEND_HZ
+/** Phase 2 移行中の既定 type。現行 executable は fps だけを起動する。 */
+export const DEFAULT_GAME_TYPE = TYPE_SPECS.fps.type
+/** サーバー権威シミュレーションの固定 tick レート（Hz）。fps 互換 export。 */
+export const SIM_TICK_HZ = TYPE_SPECS.fps.simHz
+/** シムの固定ステップ秒数（dt = 1/60s ≈ 16.7ms）。fps 互換 export。 */
+export const SIM_DT = typeStepSeconds(TYPE_SPECS.fps)
+/** クライアント→サーバーの入力送信レート（Hz）。fps 互換 export。 */
+export const INPUT_SEND_HZ = TYPE_SPECS.fps.inputHz
+/** サーバー→クライアントのスナップショット送信レート（Hz）。fps 互換 export。 */
+export const SNAPSHOT_SEND_HZ = TYPE_SPECS.fps.snapshotHz
+/** スナップショットを何 tick おきに送るか（60/30 = 2 tick に 1 回）。fps 互換 export。 */
+export const SNAPSHOT_SEND_EVERY_TICKS = snapshotEveryTicks(TYPE_SPECS.fps)
 /** 1 フレームで処理する固定ステップの最大数（spiral of death 防止）。 */
 export const MAX_STEPS_PER_FRAME = 5
 
@@ -28,8 +32,8 @@ export const INTERP_DELAY_MS = 100
 /** ラグ補償の位置履歴保持時間（ms）。巻き戻し窓は 500ms。判定は後続。 */
 export const LAGCOMP_HISTORY_MS = 500
 
-/** 1 ルームの最大人数。 */
-export const MAX_PLAYERS = 20
+/** 1 ルームの最大人数。fps 互換 export。 */
+export const MAX_PLAYERS = TYPE_SPECS.fps.maxPlayers
 
 // ─────────────────────────────────────────────────────────────────────────
 // Channel framing（PH1-C: 全バイナリフレームの先頭 1B）
