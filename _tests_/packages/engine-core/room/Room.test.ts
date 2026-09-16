@@ -78,4 +78,31 @@ describe('Room — 参加/離退', () => {
     expect(players[0]?.id).toBe(id)
     expect(room.getPlayer(id)?.id).toBe(id)
   })
+
+  it('profile から maxPlayers と createPlayerState を注入できる', () => {
+    const room = new Room({
+      profile: {
+        typeSpec: { type: 'fps', simHz: 60, inputHz: 60, snapshotHz: 30, maxPlayers: 1 },
+        createPlayerState: (id) => ({
+          id,
+          x: 10,
+          y: 20,
+          z: 30,
+          vx: 0,
+          vy: 0,
+          vz: 0,
+          yaw: 0,
+          pitch: 0,
+          grounded: true,
+          lastInputSeq: 0,
+        }),
+      },
+    })
+    const id = room.join(makePeer()) as number
+    const player = room.getPlayer(id)
+    expect(room.maxPlayers).toBe(1)
+    expect(player).toMatchObject({ id, x: 10, y: 20, z: 30, grounded: true })
+    expect(room.join(makePeer())).toBeNull()
+  })
+
 })

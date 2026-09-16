@@ -3,22 +3,18 @@
  *
  * Phase 1: bun ネイティブ WebSocket（uWS コア）で単一デフォルトルームを運用する。
  *   - 接続時にプレイヤーを Room に参加させ playerId を払い出す。
- *   - 60Hz 固定シミュレーション（アキュムレータ）で shared の `stepPlayer` を権威実行。
+ *   - 固定シミュレーション（アキュムレータ）で profile の `stepPlayer` を権威実行。
  *   - 入力パケット（バイナリ・60Hz）を受信してシムへ渡す。
- *   - スナップショット送信（30Hz）は SnapshotBroadcaster が Channel.Unreliable で行う。
+ *   - スナップショット送信は SnapshotBroadcaster が Channel.Unreliable で行う。
  *
  * レンダラー（Babylon/WebGL）/ React / DOM は一切使わない。衝突・移動は
  * profile-fps の純粋ロジック（three core/math + three-mesh-bvh、CPU のみ）を使う。
  */
 
-import { ProtocolError } from '@cod/protocol/protocol/binary'
-import { Room, type Peer } from '@cod/engine-core/room/Room'
-import { Simulation } from '@cod/engine-core/sim/Simulation'
-import { SnapshotBroadcaster } from '@cod/engine-core/net/snapshot'
-import { InputRateLimiter } from '@cod/engine-core/net/rate-limit'
 import { ingestInput } from '@cod/engine-core/net/ingest'
-import { buildServerWorld } from '@cod/profile-fps/physics/world'
-import { stepPlayer } from '@cod/profile-fps/sim/movement'
+import { ProtocolError } from '@cod/protocol/protocol/binary'
+import { createDefaultServerRuntime } from './runtime'
+import type { Peer } from '@cod/engine-core/room/Room'
 
 const PORT = Number(process.env.PORT ?? 8080)
 const HOST = '0.0.0.0'
@@ -28,11 +24,7 @@ interface SocketData {
   playerId: number
 }
 
-const room = new Room()
-const world = buildServerWorld()
-const sim = new Simulation(room, world, stepPlayer)
-const snapshots = new SnapshotBroadcaster()
-const inputRate = new InputRateLimiter()
+const { profile, room, sim, snapshots, inputRate } = createDefaultServerRuntime()
 
 const server = Bun.serve<SocketData>({
   port: PORT,
@@ -115,11 +107,10 @@ const server = Bun.serve<SocketData>({
   },
 })
 
-// ── 60Hz 固定シミュレーションループ ──
-// Simulation がアキュムレータで固定 1/60 ステップに分解し、ステップを進める。
-// 各シム tick でスナップショット送信を試み、broadcaster が 1 tick おき（30Hz）に
-// ブロードキャストする。
-const TICK_HZ = 60
+// ── profile の simHz に基づく固定シミュレーションループ ──
+// Simulation がアキュムレータで固定ステップに分解し、ステップを進める。
+// 各シム tick でスナップショット送信を試み、broadcaster が profile の snapshotHz
+// に基づいてブロードキャストする。
 setInterval(() => {
   const before = sim.currentTick()
   sim.update(performance.now())
@@ -128,7 +119,7 @@ setInterval(() => {
   for (let t = before + 1; t <= after; t++) {
     snapshots.maybeSend(room, t)
   }
-}, 1000 / TICK_HZ)
+}, 1000 / profile.typeSpec.simHz)
 
 console.log(`[server] cod-web game server listening on ws://${HOST}:${server.port}`)
 

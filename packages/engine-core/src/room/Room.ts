@@ -10,6 +10,7 @@
 
 import { MAX_PLAYERS } from '@cod/protocol/protocol/constants'
 import { createPlayerState, type PlayerState } from '@cod/protocol/types'
+import type { SimProfile } from '../profile/SimProfile'
 
 /** 参加者 1 人あたりのコネクション情報（ソケット実装への参照を疎結合に保持）。 */
 export interface Peer {
@@ -25,14 +26,29 @@ export interface Peer {
   disconnect?: (code: number, reason: string) => void
 }
 
+export interface RoomOptions {
+  /** L2 profile から player spawn と maxPlayers を注入する。 */
+  readonly profile?: Pick<SimProfile<unknown, PlayerState, unknown>, 'typeSpec' | 'createPlayerState'>
+  /** テスト / adapter 用の直接差し替え。profile 指定時もこちらを優先する。 */
+  readonly createPlayerState?: (playerId: number) => PlayerState
+  /** テスト / adapter 用の直接差し替え。profile 指定時もこちらを優先する。 */
+  readonly maxPlayers?: number
+}
+
 export class Room {
   /** playerId → PlayerState。 */
   private readonly players = new Map<number, PlayerState>()
   /** playerId → Peer（コネクション）。 */
   private readonly peers = new Map<number, Peer>()
   private nextPlayerId = 1
+  private readonly createPlayer: (playerId: number) => PlayerState
 
-  readonly maxPlayers = MAX_PLAYERS
+  readonly maxPlayers: number
+
+  constructor(options: RoomOptions = {}) {
+    this.maxPlayers = options.maxPlayers ?? options.profile?.typeSpec.maxPlayers ?? MAX_PLAYERS
+    this.createPlayer = options.createPlayerState ?? options.profile?.createPlayerState ?? createPlayerState
+  }
 
   /** 現在の参加人数。 */
   get playerCount(): number {
@@ -60,7 +76,7 @@ export class Room {
   join(peer: Peer): number | null {
     if (this.players.size >= this.maxPlayers) return null
     const id = this.nextPlayerId++
-    const state = createPlayerState(id)
+    const state = this.createPlayer(id)
     this.players.set(id, state)
     this.peers.set(id, peer)
 

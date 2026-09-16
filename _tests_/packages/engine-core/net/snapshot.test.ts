@@ -8,6 +8,7 @@ import {
 } from '@cod/protocol/protocol/constants'
 import { decodeFrame } from '@cod/protocol/protocol/framing'
 import { decodeSnapshot, readMessageType } from '@cod/protocol/protocol/packer'
+import { TYPE_SPECS } from '@cod/protocol/protocol/type-specs'
 import { Room, type Peer } from '@cod/engine-core/room/Room'
 import { SNAPSHOT_MAX_BYTES } from '@cod/protocol/protocol/packer'
 import {
@@ -178,4 +179,32 @@ describe('SnapshotBroadcaster', () => {
     expect(sent.buffer.byteLength).toBe(SNAPSHOT_MAX_FRAME_BYTES)
     expect(SNAPSHOT_MAX_FRAME_BYTES).toBe(CHANNEL_BYTES + SNAPSHOT_MAX_BYTES)
   })
+
+  it('profile writer を注入すると snapshot payload 生成を委譲する', () => {
+    const room = roomWith(1)
+    const first = room.getPlayers()[0]
+    if (!first) throw new Error('no player')
+    first.lastInputSeq = 55
+    const bc = new SnapshotBroadcaster({
+      profile: {
+        typeSpec: TYPE_SPECS.fps,
+        writeSnapshot: ({ view, serverTick, lastAckSeq, players }) => {
+          view.setUint8(0, 0xab)
+          view.setUint32(1, serverTick, true)
+          view.setUint32(5, lastAckSeq, true)
+          view.setUint8(9, players.length)
+          return 10
+        },
+      },
+    })
+
+    expect(bc.maybeSend(room, 0)).toBe(10)
+    const sent = firstPacket(peer(room, 0))
+    const payload = payloadOfFrame(sent)
+    expect(payload.getUint8(0)).toBe(0xab)
+    expect(payload.getUint32(1, true)).toBe(0)
+    expect(payload.getUint32(5, true)).toBe(55)
+    expect(payload.getUint8(9)).toBe(1)
+  })
+
 })

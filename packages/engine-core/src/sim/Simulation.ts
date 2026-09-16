@@ -1,7 +1,7 @@
 /**
  * 権威シミュレーション（サーバー）。
  *
- * 60Hz 固定ステップ（SIM_DT）で shared の純粋移動関数 `stepPlayer` を全プレイヤーに
+ * 固定ステップで profile の純粋移動関数 `stepPlayer` を全プレイヤーに
  * 適用する。アキュムレータで可変フレームから固定ステップへディスパッチし、
  * 1 フレームの最大ステップ数をクランプして spiral of death を防ぐ。
  *
@@ -11,7 +11,7 @@
  * 欠落してクライアント予測とズレ、調停でプレイヤーが後ろへ引き戻される** 原因に
  * なる。WebSocket（TCP）は順序・到達を保証するので、届いた入力を seq 順に並べ、
  * tick ごとに 1 つずつ確実に消費することで入力を取りこぼさない。
- *  - 入力キューが空の tick は「入力なし（重力のみ・視点は維持）」で進む。
+ *  - 入力キューが空の tick は profile の idle input で進む。
  *  - seq が巻き戻る/重複する古い入力は破棄する（順序ガード）。
  */
 
@@ -19,6 +19,7 @@ import { MAX_STEPS_PER_FRAME, SIM_DT, SIM_TICK_HZ } from '@cod/protocol/protocol
 import type { PlayerInput } from '@cod/protocol/protocol/messages'
 import type { PlayerState } from '@cod/protocol/types'
 import { LagCompStore } from '../net/lagcomp-store'
+import type { SimProfile } from '../profile/SimProfile'
 import type { Room } from '../room/Room'
 
 export type SimulationStep<TWorld> = (
@@ -27,6 +28,11 @@ export type SimulationStep<TWorld> = (
   dt: number,
   world: TWorld,
 ) => PlayerState
+
+export type SimulationProfile<TWorld> = Pick<
+  SimProfile<TWorld, PlayerState, PlayerInput>,
+  'typeSpec' | 'stepPlayer' | 'createIdleInput'
+>
 
 /** 1 プレイヤーあたりの入力キュー最大長（超えたら古いものから破棄して遅延を防ぐ）。 */
 const MAX_QUEUED_INPUTS = 120
@@ -41,12 +47,28 @@ export class Simulation<TWorld> {
   private readonly latestSeq = new Map<number, number>()
   private accumulator = 0
   private lastTimeMs: number | null = null
+  private readonly stepSeconds: number
+  private readonly tickHz: number
+  private readonly stepPlayer: SimulationStep<TWorld>
+  private readonly createIdleInput: (player: PlayerState, dtMs: number) => PlayerInput
 
   constructor(
     private readonly room: Room,
     private readonly world: TWorld,
-    private readonly stepPlayer: SimulationStep<TWorld>,
-  ) {}
+    stepOrProfile: SimulationStep<TWorld> | SimulationProfile<TWorld>,
+  ) {
+    if (typeof stepOrProfile === 'function') {
+      this.stepPlayer = stepOrProfile
+      this.createIdleInput = createCompatIdleInput
+      this.stepSeconds = SIM_DT
+      this.tickHz = SIM_TICK_HZ
+    } else {
+      this.stepPlayer = stepOrProfile.stepPlayer
+      this.createIdleInput = stepOrProfile.createIdleInput
+      this.stepSeconds = 1 / stepOrProfile.typeSpec.simHz
+      this.tickHz = stepOrProfile.typeSpec.simHz
+    }
+  }
 
   /** 現在のシム tick 番号。 */
   currentTick(): number {
@@ -74,19 +96,19 @@ export class Simulation<TWorld> {
 
   /**
    * 1 固定ステップ進める。各プレイヤーについてキュー先頭の入力を 1 つ消費して
-   * stepPlayer を適用。キューが空なら「入力なし」で進める。
+   * stepPlayer を適用。キューが空なら profile の idle input で進める。
    */
   step(): number {
     const tick = this.tickNumber + 1
-    const timeMs = (tick * 1000) / SIM_TICK_HZ
+    const timeMs = (tick * 1000) / this.tickHz
+    const dtMs = Math.round(this.stepSeconds * 1000)
     for (const player of this.room.getPlayers()) {
       const q = this.inputQueues.get(player.id)
       const queued = q && q.length > 0 ? q.shift() : undefined
       if (queued) {
-        this.stepPlayer(player, queued, SIM_DT, this.world)
+        this.stepPlayer(player, queued, this.stepSeconds, this.world)
       } else {
-        // 入力が無い tick: 重力は進めるが、水平移動 0・視点は現在値を維持する。
-        this.stepPlayer(player, idleInput(player.yaw, player.pitch), SIM_DT, this.world)
+        this.stepPlayer(player, this.createIdleInput(player, dtMs), this.stepSeconds, this.world)
       }
       this.lagComp.record(tick, timeMs, player.id, player.x, player.y, player.z, player.yaw)
     }
@@ -111,10 +133,9 @@ export class Simulation<TWorld> {
     this.accumulator += frameMs / 1000
 
     let steps = 0
-    const stepSeconds = SIM_DT
-    while (this.accumulator >= stepSeconds && steps < MAX_STEPS_PER_FRAME) {
+    while (this.accumulator >= this.stepSeconds && steps < MAX_STEPS_PER_FRAME) {
       this.step()
-      this.accumulator -= stepSeconds
+      this.accumulator -= this.stepSeconds
       steps += 1
     }
     // ステップ上限で余った時間は破棄（spiral of death 防止）。
@@ -124,17 +145,17 @@ export class Simulation<TWorld> {
 }
 
 /**
- * 入力が無い tick 用の入力。水平移動 0・ジャンプ無し。視点（yaw/pitch）は
+ * 互換 constructor 用の idle input。水平移動 0・ジャンプ無し。視点（yaw/pitch）は
  * そのプレイヤーの現在値を渡すことで、入力待ちのたびに向きが yaw=0 に戻るのを防ぐ。
  */
-function idleInput(yaw: number, pitch: number): PlayerInput {
+function createCompatIdleInput(player: PlayerState, dtMs: number): PlayerInput {
   return {
     seq: 0,
     moveX: 0,
     moveZ: 0,
-    yaw,
-    pitch,
+    yaw: player.yaw,
+    pitch: player.pitch,
     flags: 0,
-    dtMs: Math.round(SIM_DT * 1000),
+    dtMs,
   }
 }
