@@ -6,13 +6,15 @@
   "exports": {
     ".": "./src/index.ts",
     "./sim/*": "./src/sim/*.ts",
-    "./physics/*": "./src/physics/*.ts"
+    "./physics/*": "./src/physics/*.ts",
+    "./profile/*": "./src/profile/*.ts"
   },
   "scripts": {
     "build": "tsc --noEmit -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@cod/engine-core": "workspace:*",
     "@cod/protocol": "workspace:*",
     "three": "^0.185.1",
     "three-mesh-bvh": "^0.9.14"

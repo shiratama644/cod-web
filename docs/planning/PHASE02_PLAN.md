@@ -275,7 +275,7 @@ const snapshots = new SnapshotBroadcaster({ profile })
 |---|---|---|---|
 | `PLAT-2` | 本コミット | docs-only link check / `git diff --check` | Phase 2 計画。`fps 先行＋voxel は契約だけ` を採用 |
 | `PH2-A` | 本コミット | typecheck / lint / unit / coverage / build / E2E discovery | `SimProfile` contract + `TYPE_SPECS`。19 files / 112 tests、coverage thresholds pass |
-| `PH2-B` | 未実装 | 未実行 | `FpsSimProfile` |
+| `PH2-B` | 本コミット | typecheck / lint / unit / coverage / build / E2E discovery | `FpsSimProfile` factory。20 files / 116 tests、coverage thresholds pass |
 | `PH2-C` | 未実装 | 未実行 | gameserver injection |
 | `PH2-D` | 未実装 | 未実行 | GameClient / prediction injection |
 | `PH2-E` | 未実装 | 未実行 | determinism / same input / docs handoff |

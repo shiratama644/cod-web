@@ -59,9 +59,9 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 ### Sim Profile 分離（Phase 2）
 
 - PLAT-2 で Phase 2 計画を追加済み。範囲は人間確認により **fps 先行＋voxel は契約だけ**。`profile-voxel` package / voxel terrain / voxel physics 本実装は Phase 2 では作らない。
-- PH2-A で `SimProfile` contract + `TYPE_SPECS` を追加済み。`engine-core` は L1 なので `@cod/profile-fps` / `@cod/profile-voxel` import と `if (type === 'fps' | 'voxel')` を入れない。次は PH2-B: `FpsSimProfile` 実装。
+- PH2-A で `SimProfile` contract + `TYPE_SPECS`、PH2-B で `profile-fps` の `createFpsSimProfile()` を追加済み。`engine-core` は L1 なので `@cod/profile-fps` / `@cod/profile-voxel` import と `if (type === 'fps' | 'voxel')` を入れない。次は PH2-C: gameserver profile 注入。
 - 現行コードでは `Simulation<TWorld>` が `SimulationStep<TWorld>` 注入済みだが、`Room` / `SnapshotBroadcaster` / `GameClient` / `ClientPrediction` / `apps/gameserver` に fps 固有結合が残る。Phase 2 はこれを小さい subtask で profile 注入へ寄せる。
-- `TYPE_SPECS`: fps は sim 60 / input 60 / snapshot 30 を実使用、voxel は sim 30 / input 30 / snapshot 15 の将来 spec のみ。PH2-A では既存 constants を `TYPE_SPECS.fps` 由来の互換 export として維持した。
+- `TYPE_SPECS`: fps は sim 60 / input 60 / snapshot 30 を実使用、voxel は sim 30 / input 30 / snapshot 15 の将来 spec のみ。PH2-A では既存 constants を `TYPE_SPECS.fps` 由来の互換 export として維持した。PH2-B の fps snapshot writer は現行 `encodeSnapshot` と byte-for-byte 一致をテストで固定した。
 - PH2-E で client/server same input と決定論テストを追加する。PH1.5 quality gate（coverage thresholds と E2E discovery）を各 subtask で維持する。
 
 ### Coverage / Playwright（Phase 1.5）

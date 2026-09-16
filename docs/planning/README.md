@@ -21,14 +21,14 @@
 | [`PHASE00_PLAN.md`](./complete/PHASE00_PLAN.md) | `PLAT-0`, `PH0-A`〜`PH0-F` | 完了 | 現行コードの穴埋め（Input 16B、fuzz、backpressure、subarray、lagcomp record） |
 | [`PHASE01_PLAN.md`](./PHASE01_PLAN.md) | `PLAT-1`, `PH1-A`〜`PH1-F` | ローカル検証済み | bun workspaces + fps 系移動 + Babylon 移行 |
 | [`PHASE01_5_PLAN.md`](./PHASE01_5_PLAN.md) | `PLAT-1.5`, `PH1.5-A`〜`PH1.5-D` | PH1.5-D ローカル検証済み（E2E browser は実環境検証待ち） | Vitest coverage 測定、意味ある coverage 増加、Playwright E2E 品質ゲート |
-| [`PHASE02_PLAN.md`](./PHASE02_PLAN.md) | `PLAT-2`, `PH2-A`〜`PH2-E` | PH2-A ローカル検証済み。次は PH2-B | Sim Profile 分離。fps 先行＋voxel は契約だけ |
+| [`PHASE02_PLAN.md`](./PHASE02_PLAN.md) | `PLAT-2`, `PH2-A`〜`PH2-E` | PH2-B ローカル検証済み。次は PH2-C | Sim Profile 分離。fps 先行＋voxel は契約だけ |
 | [`DEEP_RESEARCH_PLAN.md`](./complete/DEEP_RESEARCH_PLAN.md) | `DOC-6`, `DR-1`〜`DR-5` | 完了 | Krunker.io / bloxd.io / engine / UGC / Perplexity 差分調査の手順と禁止事項 |
 
 ## 次に着手可能なタスク
 
 | 優先 | ID | 内容 | 事前に読むもの |
 |---:|---|---|---|
-| 1 | PH2-B | `FpsSimProfile` 実装へ進む。Phase 2 は fps 先行＋voxel は契約だけ。PH1.5 quality gate は維持する | [`HANDOFF.md`](./HANDOFF.md), [`PHASE02_PLAN.md`](./PHASE02_PLAN.md), [`../task-list.md`](../task-list.md), [`../arch/`](../arch/README.md), [`../ops/quality-gates.md`](../ops/quality-gates.md) |
+| 1 | PH2-C | gameserver への profile 注入へ進む。Phase 2 は fps 先行＋voxel は契約だけ。PH1.5 quality gate は維持する | [`HANDOFF.md`](./HANDOFF.md), [`PHASE02_PLAN.md`](./PHASE02_PLAN.md), [`../task-list.md`](../task-list.md), [`../arch/`](../arch/README.md), [`../ops/quality-gates.md`](../ops/quality-gates.md) |
 
 ## 計画書を書く/更新する時のルール
 
