@@ -1,9 +1,11 @@
 # cod-web
 
-ブラウザ向け **マルチタイプ・ゲームプラットフォーム**（`voxel` / `fps`）。ハブからルームに参加し、タイプごとのシミュレーションだけを差し替える。
+ブラウザ向け **マルチタイプ・ゲームプラットフォーム**（`voxel` / `fps`）。ハブからルームに参加し、タイプごとのシミュレーションだけを差し替える。各タイプ内に `official` / `ugc` のコンテンツソースを持ち、Krunker.io のように誰でもマップ/ワールドを作れるエディタを目指します。
 
-**理想形の仕様正本:** [`docs/arch/`](./docs/arch/README.md)  
-**進捗正本:** [`docs/task-list.md`](./docs/task-list.md)  
+**理想形の仕様正本:** [`docs/arch/`](./docs/arch/README.md)
+**進捗正本:** [`docs/task-list.md`](./docs/task-list.md)
+**計画書入口:** [`docs/planning/`](./docs/planning/README.md)
+**調査入口:** [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](./docs/research/DEEP_RESEARCH_SYNTHESIS.md)
 **作業規約:** [`AGENTS.md`](./AGENTS.md)
 
 現行コードは単一ルーム FPS の原型（移行元）。描画の目標は Babylon.js。トランスポートの目標は当面 **WebSocket のみ**（WebTransport は条件付きの後続）。ライセンスは **MIT**（[`LICENSE`](./LICENSE)）。
@@ -39,4 +41,4 @@ bun run build
 | L2 | VoxelProfile / FpsProfile のみ分岐 |
 | L3 | `defineGameMode`（bedwars / FFA / TDM 等） |
 
-詳細は [`docs/README.md`](./docs/README.md)。
+公式/UGC 階層とエディタ方針は [`docs/arch/editor.md`](./docs/arch/editor.md)。詳細は [`docs/README.md`](./docs/README.md)。

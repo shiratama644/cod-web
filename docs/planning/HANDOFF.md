@@ -1,147 +1,118 @@
-# 次セッションへの橋渡し（フェーズ 1 計画の直前）
+# 次セッションへの橋渡し（Phase 2 PH2-E 実装前）
 
 > 対象: 新しいセッションの AI。人間ではない。
 > 進捗の正本: [`docs/task-list.md`](../task-list.md)
 > 作業規約: [`AGENTS.md`](../../AGENTS.md)
 > 仕様正本: [`docs/arch/`](../arch/README.md)
-> このファイルは計画の代替ではない。**最初にこれを読み、次に Web 検索で `PHASE01_PLAN.md` を書き直す。**
+> Phase 2 計画: [`docs/planning/PHASE02_PLAN.md`](./PHASE02_PLAN.md)
+> Quality gate: [`docs/ops/quality-gates.md`](../ops/quality-gates.md)
+> 調査の入口: [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md)
+
+このファイルは計画の代替ではない。**PH1.5-D までローカル検証済み。PH1.5-C の Playwright E2E browser 実行のみ Sandbox Chromium 制約により実環境検証待ち。PLAT-2 で Phase 2 計画を作成済み。PH2-A / PH2-B / PH2-C / PH2-D はローカル検証済み。次は PH2-E（client/server same input + 決定論 + docs 整理）から進む。**
 
 ## 0. 最初にやること（これ以外から始めない）
 
 1. `git status` / `git branch --show-current` / `git log -5 --oneline`
-2. ブランチ名は **毎回コマンドで確認**する。文書に書いてある過去ブランチ名を fetch/push しない（AGENTS.md §4.4）
-3. `git log` が起点 1 件だけ / status が大量削除+未追跡 / `bun` なし / `node_modules` なし → Sandbox 再構築。`.agent/hooks/sandbox-rebuild-recovery.md` どおり `git fetch origin <現在ブランチ>` → `git reset --hard FETCH_HEAD` → `bash .agent/hooks/restore-sandbox-env.sh`
-4. 未コミット変更を勝手に捨てない（再構築復旧の `reset --hard FETCH_HEAD` だけ例外）
-5. **進行中は 1 件。** 次の 1 件は **PLAT-1R**（本ファイル末尾）。PH1-A（workspaces 実装）は計画の書き直しが終わるまで禁止
-6. **Web 検索は必須**（AGENTS.md §7.5）。このセッションでは検索ツールが失敗したため、計画の API 表は arch の二次情報だけ。公式一次情報で書き直せ
+2. ブランチ名は **毎回コマンドで確認**する。文書に書いてある過去ブランチ名を fetch/push しない（AGENTS.md §4.4）。
+3. `git log` が起点 1 件だけ / status が大量削除+未追跡 / `bun` なし / `node_modules` なし → Sandbox 再構築。`.agent/hooks/sandbox-rebuild-recovery.md` どおり `git fetch origin <現在ブランチ>` → `git reset --hard FETCH_HEAD` → `bash .agent/hooks/restore-sandbox-env.sh`。
+4. 未コミット変更を勝手に捨てない（再構築復旧の `reset --hard FETCH_HEAD` だけ例外）。
+5. **進行中は 1 件。** 次の 1 件は `PH2-E`。
+6. PH2-E 着手前に [`../task-list.md`](../task-list.md)、[`./PHASE02_PLAN.md`](./PHASE02_PLAN.md)、[`../arch/architecture.md`](../arch/architecture.md)、[`../arch/sim-profiles.md`](../arch/sim-profiles.md)、[`../arch/engineering.md`](../arch/engineering.md)、[`../arch/protocol.md`](../arch/protocol.md)、[`../ops/quality-gates.md`](../ops/quality-gates.md) を再読する。
 
 ## 1. いま決まっていること（覆さない）
 
-人間が 2026-09-05 に選んだ。計画の範囲切り。ADR を覆すものではない。
-
 | ID | 決定 | 意味 |
 |---|---|---|
-| D1 | モノレポは **fps 系だけ** | 作る: `packages/protocol`, `engine-core`, `profile-fps`, `apps/gameserver`, `apps/web`。作らない: profile-voxel, gamemode-sdk, matchmaker, gamemodes/*, client-voxel |
-| D2 | ワイヤは **Channel 頭 1B だけ** | Input **本体 16B** と Snapshot **現行 type=2 レイアウト**は変えない。ソケット上の Input は 17B。Hello HMAC は入れない（フェーズ 4） |
-| D3 | GPU 数値 DoD は **フェーズ 1 完了条件から外す** | engineering.md の「ドローコール &lt; 100」「中位機 &lt; 8ms」は残す。本フェーズをそれで 100% にしない |
-| D4 | lagcomp は **残して毎ティック record**。窓 500ms | 削除しない（PH0-E 済み） |
-| D5 | OPEN-A（`dtMs` が ms か ×10 か）は **触らない** | 決めたと書かない |
-| D6 | トランスポートは **WebSocket のみ** | WT / geckos / 生 UDP / WebRTC DataChannel を実装しない |
-| D7 | `bufferedAmount` は **使わない** | bun `ws.send` の -1 / 0 / 1+。protocol.md の型例に `bufferedAmount` があっても載せない |
-| D8 | ホットパス送信は **`subarray`** | `slice` でバイトコピーしない |
-| D9 | ライセンス MIT。初期は匿名。モバイル両タイプだが **タッチは後続**。ボイスは理想、ゲーム同期に WebRTC は使わない |
-| D10 | プレーヤー同士はすり抜け。FPS マップは CDN 前提で **パスだけ**。チャンクは当面メモリ。初期リージョン 1 拠点 |
+| D1 | Phase 2 は **fps 先行＋voxel は契約だけ** | 2026-09-15 の人間回答。`profile-voxel` package / voxel terrain / voxel physics 本実装は Phase 2 に含めない |
+| D2 | `engine-core` は L1、type 非依存 | `@cod/profile-fps` / `@cod/profile-voxel` import 禁止。`if (type === 'fps' | 'voxel')` 禁止 |
+| D3 | `profile-fps` は L2 実装 | PH2-B で `FpsSimProfile` factory を追加済み。PH2-C で gameserver runtime、PH2-D で web default client から注入済み |
+| D4 | `TYPE_SPECS` は fps 実使用 + voxel 将来枠 | PH2-A で実装済み。fps: sim 60 / input 60 / snapshot 30。voxel: sim 30 / input 30 / snapshot 15 は spec のみ |
+| D5 | 現行 Input は payload 16B / socket frame 17B | Channel 1B + Input 16B を維持。Snapshot `0x11` 化はしない |
+| D6 | fps Snapshot は現行 layout を維持し `vy` を含める | Phase 2 は profile 分離であり wire format 改定ではない |
+| D7 | トランスポートは WebSocket のみ | WT / geckos / 生 UDP / WebRTC DataChannel は実装しない |
+| D8 | PH1.5 quality gate を維持 | typecheck / lint / unit / coverage / build / E2E discovery を維持。browser E2E は実環境検証待ち |
+| D9 | `.github/workflows/` は Agent が作らない | CI 提案は `docs/ops/` のまま。人間が配置する |
+| D10 | Game Type と Content Source を混同しない | `fps` / `voxel` が type。`official` / `ugc` は type ではない |
 
-## 2. コードの現状（事実）
+## 2. Phase 2 計画の要点
 
-| 項目 | 値 |
-|---|---|
-| フェーズ 0 | **完了** PH0-A〜F |
-| PH0-F | `69e9ce2`。ingest 1e6 fuzz、Input ±1 は 1002。72 tests |
-| PH0-E | `042e26d`。`Simulation.step` から `lagComp.record`。`LAGCOMP_HISTORY_MS = 500` |
-| PH0-D | `a241b8b`。ring `subarray`、受信は offset DataView |
-| PH0-C | `70e44cb`。`send` -1 スキップ / drain 再開 / 0 切断 |
-| PH0-B | `5afb369`。入力 90/s 超で切断 |
-| PH0-A | `e57d747`。Input 16B、type `0x10` |
-| PLAT-1 初版 | `663f815`。`PHASE01_PLAN.md` |
-| PLAT-1 API 表 | `87e0294`。§10.5 は **arch 二次情報のみ**（検索なし） |
-| 現行ツリー | 単一 `package.json`。`src/` `shared/` `server/` `_tests_/`。R3F シーンはまだある |
-| テスト | `bun run test:unit` 72 passed（PH0-F 時点） |
+Phase 2 計画書は [`PHASE02_PLAN.md`](./PHASE02_PLAN.md)。必ず計画書を正本として読む。
 
-フェーズ 1 の **実装（PH1-A〜F）は未着手**。
+| Subtask | 目的 | 主な成果物 |
+|---|---|---|
+| `PH2-A` | `SimProfile` contract + `TYPE_SPECS` | ローカル検証済み。`engine-core` の profile contract、`protocol` の rate specs、contract tests |
+| `PH2-B` | `FpsSimProfile` 実装 | ローカル検証済み。`profile-fps` の factory、world / step / snapshot writer 集約 |
+| `PH2-C` | gameserver profile 注入 | ローカル検証済み。`createDefaultServerRuntime()` が fps profile を注入し、L1 は L2 を知らない |
+| `PH2-D` | web GameClient / prediction profile 注入 | ローカル検証済み。`GameClient` / `ClientPrediction` が profile-like seam で動く |
+| `PH2-E` | same input + determinism + docs | client/server 同一入力、決定論、import boundary、handoff 更新 |
 
-## 3. 次の 1 件: PLAT-1R（計画の書き直し）
+## 3. 次の 1 件: PH2-E
 
 ### 目的
 
-`docs/planning/PHASE01_PLAN.md` を、**公式ドキュメントの Web 検索結果**で書き直す（または §10.5 を一次情報に差し替える）。合意 D1–D10 は変えない。
+fps profile の client/server 同一入力と決定論テストを追加し、Phase 2 の証拠・handoff を整理する。
 
-### やってはいけない
+### PH2-E でやること
 
-- 検索せずに API 名を invent する
-- D1–D10 を覆す（覆したくなったら実装せず人間に聞く）
-- 不一致を「こちらが正しい」と決める（§4 を読め）
-- PH1-A のコード移動をこのタスクに混ぜる
-- `.agent/logs/` の過去ログを書き換える
-- `.archive/` を正本にする
-- `git reset --hard`（再構築復旧以外）/ rebase / force push
-- セッション固定ブランチ以外へ push
+- server `Simulation` と web `ClientPrediction` が同じ profile / quantized input stream で近い結果を出す regression test を追加する。
+- fps profile の determinism test を追加する。目標は 1,000 tick × 100 scenario だが、Sandbox 時間が厳しい場合は軽量 smoke と重い dedicated script の分離方針を記録して停止判断する。
+- import boundary audit を維持し、`engine-core` が `@cod/profile-*` を import しないことを再確認する。
+- Phase 2 の docs / handoff / skills / log を、次フェーズまたは残課題に向けて整理する。
 
-### 検索クエリ（公式を優先。引用は AGENTS.md どおり `[id](url)`）
+### PH2-E でやらないこと
 
-`docs/arch/legal.md` の一次情報 URL から入る。少なくとも次を確認して計画に **シグネチャと出典**を書く。
+- `profile-voxel` 作成
+- voxel terrain / voxel physics 本実装
+- Snapshot `0x11` 化 / AOI / delta snapshot
+- gamemode SDK / matchmaker / Hello HMAC
 
-| 調べること | 手がかり（legal.md / arch） |
-|---|---|
-| Babylon `Engine` コンストラクタ / `EngineOptions` に `desynchronized` `preserveDrawingBuffer` があるか | doc.babylonjs.com、client.md |
-| `setHardwareScalingLevel` / `freezeActiveMeshes` / thin instances | doc.babylonjs.com |
-| Pointer Lock `unadjustedMovement` | https://w3c.github.io/pointerlock/ |
-| Canvas `desynchronized` | https://developer.chrome.com/blog/desynchronized |
-| bun `package.json` workspaces の書き方（1.4.x） | bun.sh。 invent した catalog キーは使わない |
-| bun `ws.send` 戻り値 | https://bun.sh/docs/runtime/http/websockets |
-| Biome 2.5.x の import 制限ルールの **実際のキー名** | biomejs.dev schema。architecture.md の `noRestrictedImports` は意図であり ID ではない |
-| 現行 `@babylonjs/core` の入れ方（peer の有無） | npm / 公式。バージョンは実装時に人間へ確認してよい |
+## 4. Quality gate の現状
 
-検索ツールが失敗したら: 停止して報告する。arch の二次情報だけで「公式確認済み」と書かない。`node_modules` の `.d.ts` と schema は検索の代替になり得る（インストール後）。
+品質ゲート手順の正本は [`docs/ops/quality-gates.md`](../ops/quality-gates.md)。Phase 2 の各実装タスクで以下を維持する。
 
-### 完了条件
+```bash
+bun run typecheck
+bunx biome lint .
+bun run test:unit
+bun run test:coverage
+bun run build
+bun run test:e2e -- --list
+```
 
-- [ ] 公式ソースを計画 §10.5（または相当）に URL 付きで書いた
-- [ ] D1–D10 が計画本文と一致する
-- [ ] 型/公式に無い名前を計画から消した
-- [ ] `docs/task-list.md` の PLAT-1R を証拠付きで完了にした
-- [ ] ドキュメント整合（リンク切れなし）
-- [ ] Conventional Commit（例: `docs(PLAT-1R): …`）+ セッションブランチへ push
+Playwright browser 実行は CI / 実環境で行う。Sandbox では `bun run test:e2e -- --list` まで。
 
-その後、人間の Go を待って **PH1-A**。勝手に実装しない（AGENTS.md §5 / §2.7）。
+| Gate | 現状 | 証拠 |
+|---|---|---|
+| Unit | 21 files / 122 tests | PH2-D 時点 pass |
+| Coverage | thresholds 有効 | statements 79 / branches 73 / functions 79 / lines 80 |
+| E2E discovery | 3 tests discovered | PH2-D 時点 `bun run test:e2e -- --list` pass |
+| Browser E2E | 実環境検証待ち | Sandbox Chromium 制約 |
+| CI 提案 | docs/ops に配置済み | [`github-actions-proposal.yml`](../ops/github-actions-proposal.yml) |
 
-## 4. 不一致（両方引用。どちらが正しいか決めない）
+## 5. やってはいけない
 
-実装で衝突したら **停止して人間に聞く**。
-
-**bufferedAmount**
-
-- protocol.md: `readonly bufferedAmount: number;`（NetTransport 型例）
-- AGENTS.md / server.md / フェーズ 0: 存在しない `bufferedAmount` に頼らない。`send()` の -1 / 0 / 1+
-
-合意 D7 は「載せない」。protocol.md は本タスクで書き換えない（範囲外）。計画に「型例と bun が食い違う。実装は send 戻り値」と残す。
-
-**Input 長さ**
-
-- protocol.md: 「現行 packer は type 込み 13 バイト」
-- コード / PH0-A: `INPUT_PACKET_BYTES === 16`、type `0x10`
-
-**lagcomp**
-
-- product.md: 「`record()` が呼ばれていないならデッドコード」
-- コード / PH0-E: 毎ティック `record`、窓 500ms
-
-**Hello / Channel「最初から」**
-
-- ADR-005: Channel・Hello 認証は最初から
-- milestones フェーズ 1: モノレポ + Babylon。Hello はフェーズ 4（マッチメイカー）
-- 合意 D2: Channel だけ今やる
-
-**milestones GPU DoD vs 合意 D3**
-
-- milestones フェーズ 1 DoD: ドローコール &lt; 100、中位機フレーム &lt; 8ms
-- 合意 D3: 本フェーズ完了条件から外す
-
-## 5. 強制されていない（やらない）
-
-voxel パッケージ、SimProfile 本実装、defineGameMode、Hello HMAC、Snapshot `0x11` 化、`vy` 削除、タッチ配線、ボイス、OPEN-A の決定、GPU 実測、Playwright 捏造、`.github/workflows/` 作成。
+- Phase 2 計画を読まずに実装を開始する。
+- `engine-core` に `if (type === 'fps' | 'voxel')` を入れる。
+- `engine-core` から `@cod/profile-fps` / `@cod/profile-voxel` を import する。
+- `profile-voxel` package / voxel terrain / voxel physics 本実装を混ぜる。
+- gamemode SDK / matchmaker / Hello HMAC / Snapshot `0x11` / AOI / delta snapshot を混ぜる。
+- Playwright browser 実行を Sandbox で pass と主張する。
+- `.github/workflows/` を作る。
+- `bun test` を使う。
 
 ## 6. 読み順（次セッション）
 
 1. 本ファイル
 2. `AGENTS.md`
-3. `docs/task-list.md`
-4. `docs/planning/PHASE01_PLAN.md`（現行。検索後に書き直す）
-5. `docs/arch/product.md` `architecture.md` `adr.md` `client.md` `protocol.md` `milestones.md` `legal.md`
-6. `.agent/hooks/pre-task.md` → 必要なスキルだけ（`skills/index.md`）
+3. `.agent/skills/index.md` → 必要なスキルだけ
+4. `docs/task-list.md`
+5. `docs/planning/PHASE02_PLAN.md`
+6. `docs/ops/quality-gates.md`
+7. `docs/arch/architecture.md` / `sim-profiles.md` / `engineering.md` / `protocol.md` / `client.md` / `server.md` / `adr.md`
+8. 必要に応じて `docs/research/DEEP_RESEARCH_SYNTHESIS.md`
 
 旧仕様は `.archive/docs/`。正本にしない。
 
 ## 7. 人間への話し方
 
-日本語。敬体。絵文字は報告の最小限。表で状態を出す。Go 待ちで止める。推測と事実を分ける。
+日本語。敬体。絵文字は報告の最小限。表で状態を出す。タスク完了後は Go 待ちで止める。推測と事実を分ける。

@@ -1,0 +1,23 @@
+{
+  "name": "@cod/gameserver",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "build": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cod/engine-core": "workspace:*",
+    "@cod/profile-fps": "workspace:*",
+    "@cod/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.0"
+  }
+}

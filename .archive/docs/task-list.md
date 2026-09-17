@@ -22,7 +22,7 @@
 ## プロジェクト概要
 
 [Krunker.io](https://krunker.io) にインスパイアされたブラウザ向け**クロスプラットフォーム・オンラインFPS**（Krunker の完全上位互換が目標）。**最重要目標は「どの端末でも安定 60FPS 以上」**。技術スタック・設計ルールの大本は
-[`arch/tech-stack.md`](./arch/tech-stack.md)。開発規約は [`../AGENTS.md`](../AGENTS.md)。
+[`arch/tech-stack.md`](./arch/tech-stack.md)。開発規約は [`../../AGENTS.md`](../../AGENTS.md)。
 
 > レンダラーは **WebGPU 最優先 + WebGL2 自動フォールバック**（WebGL2 を全端末 60FPS の基準）。
 > **描画 FPS は可変**（rAF = 60〜120Hz+。60 は全端末の下限フロアであり上限ではない）で、シミュレーション tick 60Hz（送信30Hz）とは独立・delta time ベース。

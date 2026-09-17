@@ -1,6 +1,6 @@
 # ゲームノード（Bun WebSocket）
 
-シグネチャは [Bun WebSockets 公式](https://bun.com/docs/runtime/http/websockets) で確認済み。推測で書かない。
+シグネチャは [Bun WebSockets 公式](https://bun.com/docs/runtime/http/websockets) と [`api-sources.md`](./api-sources.md) で確認済み。推測で書かない。最新 docs では `ws.data` の型付けは serve call の generic 型引数 ではなく、`websocket.data` property に型を置く形が示されている。
 
 ## Bun.serve
 
@@ -14,6 +14,7 @@ Bun.serve({
     return new Response('Upgrade failed', { status: 400 });
   },
   websocket: {
+    data: {} as SocketData,
     message(ws, message) {},
     open(ws) {},
     close(ws, code, reason) {},

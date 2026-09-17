@@ -10,7 +10,7 @@
 
 - 現在のブランチ / HEAD / `git status` を確認する（未コミット変更があれば停止）。ブランチは `arena/01a062ac-cod-web`。
 - `docs/task-list.md` で **Phase 0（P0-A〜P0-H）が全て完了**していることを確認する。
-- 関連仕様を読む: [`../arch/server-authority.md`](../arch/server-authority.md) 全文（本フェーズの直接の仕様）、[`../arch/modules.md`](../arch/modules.md) §3-§7（ディレクトリ・依存方向）、[`../arch/tech-stack.md`](../arch/tech-stack.md) §2/§5/§13 と黄金ルール、[`../../AGENTS.md`](../../AGENTS.md) §3/§6、[`.agent/skills/`](../../.agent/skills)（tech-stack / sandbox-constraints）。
+- 関連仕様を読む: [`../arch/server-authority.md`](../arch/server-authority.md) 全文（本フェーズの直接の仕様）、[`../arch/modules.md`](../arch/modules.md) §3-§7（ディレクトリ・依存方向）、[`../arch/tech-stack.md`](../arch/tech-stack.md) §2/§5/§13 と黄金ルール、[`../../../AGENTS.md`](../../../AGENTS.md) §3/§6、[`.agent/skills/`](../../../.agent/skills)（tech-stack / sandbox-constraints）。
 - 本計画書の **§5（完了条件）** と **§7（停止条件）** を再読する。
 
 ## 2. 目的 (Why)

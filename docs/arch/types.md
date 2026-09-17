@@ -4,6 +4,7 @@
 
 ```ts
 export type GameType = 'voxel' | 'fps';
+export type ContentSource = 'official' | 'ugc';
 
 export interface TypeSpec {
   readonly type: GameType;
@@ -96,15 +97,17 @@ export interface Pose {
 
 ## GameModeDefinition
 
-- `id`: `/^[a-z][a-z0-9-]{2,31}$/`
-- `type: T` が所属タイプ
+- `id`: `/^[a-z][a-z0-9-]{2,31}$/`（例: `fps-official-pvp`, `voxel-ugc-athletic`）
+- `type: T` が所属タイプ（`fps` / `voxel` のみ）
+- `source: ContentSource` が公式/UGC 区分（`official` / `ugc`）。type に混ぜない
+- `slug`: URL 用の短い名前（例: `/fps/official/pvp` の `pvp`）
 - `minPlayers` / `maxPlayers`: 1..64
 - `world`: voxel なら `VoxelWorldSpec`、fps なら `FpsWorldSpec`
 - フック: `onRoomCreate/Destroy`, `onRoundStart/End`, `onPlayerJoin/Leave/Spawn/Death/Damage`, `onTick`, `onNetworkMessage`
 - voxel のみ: `onBlockPlace` / `onBlockBreak`
 - fps のみ: `onWeaponFire` / `onHit`
 
-`defineGameMode(def)` は検証してそのまま返す。実装例はソース仕様書 v2（`.archive/docs/マルチタイプ・ゲームプラットフォーム 設計書.md`）の fps-tdm / voxel-bedwars。
+`defineGameMode(def)` は `id` / `type` / `source` / `slug` を検証してそのまま返す。階層ルールは [`editor.md`](./editor.md)。
 
 ## RoomCtx
 

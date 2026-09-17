@@ -1,0 +1,25 @@
+{
+  "name": "@cod/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/main.tsx"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^9.25.0",
+    "@cod/profile-fps": "workspace:*",
+    "@cod/protocol": "workspace:*",
+    "nipplejs": "^1.0.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "screenfull": "^6.0.2",
+    "zustand": "^5.0.15"
+  }
+}
