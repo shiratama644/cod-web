@@ -21,6 +21,7 @@
 ```bash
 bun run typecheck
 bunx biome lint .
+bun run check:determinism
 bun run test:unit
 bun run build
 ```
@@ -35,6 +36,12 @@ E2E の spec discovery は browser binary 不要なので、Playwright 設定変
 
 ```bash
 bun run test:e2e -- --list
+```
+
+Husky pre-commit（`add-husky` 選択）で typecheck / lint / determinism / test:unit を自動実行する。`.husky/pre-commit` 参照。build は重いため CI で実行。
+
+```bash
+bun run check:determinism   # SimProfile.step の Math.random/Date.now禁止、L1のif(type)禁止を検出
 ```
 
 ## 3. Coverage gate
@@ -102,8 +109,10 @@ PLAYWRIGHT_BASE_URL=https://example-preview.example.com bun run test:e2e
 
 | Job | 内容 | 備考 |
 |---|---|---|
-| `quality` | `bun ci` → typecheck → lint → unit → coverage → build → E2E discovery | PR の基本 gate |
-| `e2e` | Playwright browser install → `bun run test:e2e` → report artifact upload | Browser 実行可能な GitHub-hosted runner / self-hosted runner 用 |
+| `quality` | `bun ci` → typecheck → lint → determinism → unit → coverage → build → E2E discovery | PR の基本 gate |
+| `e2e` | Playwright browser install → `bun run test:e2e` → report artifact upload | Browser 実行可能な GitHub-hosted runner / self-hosted runner 用。`add-ci` 選択で正式採用予定 |
+
+Husky はローカル強制、CI は `quality` job で determinism も含めて強制する。
 
 ## 6. Phase 2 へ進む前の確認
 

@@ -40,6 +40,10 @@
                       "@cod/engine-core/**",
                       "@cod/profile-fps",
                       "@cod/profile-fps/**",
+                      "@cod/profile-voxel",
+                      "@cod/profile-voxel/**",
+                      "@cod/gamemode-sdk",
+                      "@cod/gamemode-sdk/**",
                       "@cod/gameserver",
                       "@cod/gameserver/**",
                       "@cod/web",
@@ -67,6 +71,10 @@
                     "group": [
                       "@cod/profile-fps",
                       "@cod/profile-fps/**",
+                      "@cod/profile-voxel",
+                      "@cod/profile-voxel/**",
+                      "@cod/gamemode-sdk",
+                      "@cod/gamemode-sdk/**",
                       "@cod/gameserver",
                       "@cod/gameserver/**",
                       "@cod/web",
@@ -96,12 +104,78 @@
                 "patterns": [
                   {
                     "group": [
+                      "@cod/profile-voxel",
+                      "@cod/profile-voxel/**",
+                      "@cod/gamemode-sdk",
+                      "@cod/gamemode-sdk/**",
                       "@cod/gameserver",
                       "@cod/gameserver/**",
                       "@cod/web",
                       "@cod/web/**"
                     ],
-                    "message": "@cod/profile-fps は L2 profile です。app 層へ依存しないでください。"
+                    "message": "@cod/profile-fps は L2 profile です。app 層や他 profile へ依存しないでください。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/profile-voxel/src/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cod/profile-fps",
+                      "@cod/profile-fps/**",
+                      "@cod/gamemode-sdk",
+                      "@cod/gamemode-sdk/**",
+                      "@cod/gameserver",
+                      "@cod/gameserver/**",
+                      "@cod/web",
+                      "@cod/web/**"
+                    ],
+                    "message": "@cod/profile-voxel は L2 profile です。app 層や他 profile へ依存しないでください。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["gamemodes/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cod/protocol",
+                      "@cod/protocol/**",
+                      "@cod/engine-core",
+                      "@cod/engine-core/**",
+                      "@cod/profile-fps",
+                      "@cod/profile-fps/**",
+                      "@cod/profile-voxel",
+                      "@cod/profile-voxel/**",
+                      "@cod/gameserver",
+                      "@cod/gameserver/**",
+                      "@cod/web",
+                      "@cod/web/**"
+                    ],
+                    "message": "gamemodes/* は gamemode-sdk のみ import できます（UGC sandbox境界）。"
                   }
                 ]
               }
@@ -132,9 +206,11 @@
                       "@cod/engine-core",
                       "@cod/engine-core/**",
                       "@cod/gameserver",
-                      "@cod/gameserver/**"
+                      "@cod/gameserver/**",
+                      "@cod/gamemode-sdk",
+                      "@cod/gamemode-sdk/**"
                     ],
-                    "message": "@cod/web は server / engine-core 実装へ直接依存しないでください。protocol / profile / net 境界を使います。"
+                    "message": "@cod/web は server / engine-core / gamemode-sdk へ直接依存しないでください。protocol / profile / net 境界を使います。"
                   }
                 ]
               }
@@ -149,6 +225,26 @@
         "rules": {
           "style": {
             "noRestrictedGlobals": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/web/src/components/**/*.{ts,tsx}", "apps/web/src/store/**/*.{ts,tsx}", "apps/web/src/hub/**/*.{ts,tsx}", "apps/web/src/shell/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@babylonjs/core", "@babylonjs/core/**", "@babylonjs/loaders", "@babylonjs/loaders/**"],
+                    "message": "hub / store / components は Babylon.js を直接 import しないでください。Babylon は game/babylon 層のみで使用します。"
+                  }
+                ]
+              }
+            }
           }
         }
       }

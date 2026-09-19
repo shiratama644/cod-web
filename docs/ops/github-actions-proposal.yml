@@ -44,6 +44,9 @@ jobs:
       - name: Lint
         run: bunx biome lint .
 
+      - name: Determinism guard
+        run: bun run check:determinism
+
       - name: Unit tests
         run: bun run test:unit
 

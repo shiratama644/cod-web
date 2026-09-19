@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+# Husky pre-commit hook: enforce 4 verifications + determinism guard
+# User selected add-husky for verifications enforcement
+
+echo "[pre-commit] Running typecheck..."
+bun run typecheck || exit 1
+
+echo "[pre-commit] Running biome lint..."
+bunx biome lint . || exit 1
+
+echo "[pre-commit] Running determinism guard..."
+bun run check:determinism || exit 1
+
+echo "[pre-commit] Running unit tests..."
+bun run test:unit || exit 1
+
+# Build is heavy for pre-commit; run in CI (quality-gates.yml)
+# Uncomment to enforce locally:
+# echo "[pre-commit] Running build..."
+# bun run build || exit 1
+
+echo "[pre-commit] All checks passed"
