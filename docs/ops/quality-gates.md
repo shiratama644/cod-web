@@ -65,7 +65,8 @@ PH1.5-C で Playwright の入口を追加済み。
 | config | [`../../playwright.config.ts`](../../playwright.config.ts) |
 | specs | [`../../e2e/game-shell.spec.ts`](../../e2e/game-shell.spec.ts) |
 | local baseURL | `http://127.0.0.1:4173` |
-| local server | `webServer.command: bun run start` |
+| local server | `webServer.command: bun run preview` (軽量化。旧 `bun run start` は install+build+server+preview で重い) |
+| full E2E (server+preview) | `bun run start` を別ターミナルで起動してから `bun run test:e2e` または `PLAYWRIGHT_BASE_URL` 使用 |
 | preview / CI override | `PLAYWRIGHT_BASE_URL=<url> bun run test:e2e` |
 | current project | Desktop Chrome / Chromium |
 

@@ -30,7 +30,11 @@ export default defineConfig({
   ],
   webServer: shouldStartLocalServer
     ? {
-        command: 'bun run start',
+        // lighter than `bun run start` (which does install+build+server+preview).
+        // For E2E discovery (`--list`) browser binary is not needed.
+        // Full E2E with WS needs gameserver running separately (`bun run server`)
+        // or use `bun run start` manually. See docs/ops/quality-gates.md.
+        command: 'bun run preview',
         url: localBaseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
