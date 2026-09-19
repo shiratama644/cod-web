@@ -70,8 +70,8 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 - `coverage.include` は production source を明示する。PH1.5-A では package barrel、browser entrypoint、type-only transport、ambient d.ts だけを理由付き exclude。難しいファイルを除外して数字を作らない。
 - meaningful tests は protocol 境界、Input 16B / Channel 1B、prediction/reconcile、interpolation、server backpressure / rate-limit、GameClient transport 経路を優先する。PH1.5-B では `WebSocketTransport` の mock WebSocket、`GameClient` の mock transport、`StartOverlay` の mock screenfull、`TouchControls` の mock nipplejs が有効だった。
 - Playwright は `webServer` で `bun run start` を起動し、`baseURL` は Vite preview `http://127.0.0.1:4173` を基本にする。PH1.5-C では `@playwright/test@1.63.0`、`playwright.config.ts`、`e2e/game-shell.spec.ts`、`test:e2e` を追加済み。CI/preview では `PLAYWRIGHT_BASE_URL=<url> bun run test:e2e` とし、webServer を起動しない。app code は `/ws` 相対 URL を維持し、browser-facing code が backend localhost を直叩きしない。
-- Sandbox では `bun run test:e2e -- --list` による spec discovery まで確認し、browser 実行は捏造しない。`.github/workflows/` は書けない。CI YAML が必要なら `docs/ops/` に提案を置く。
-- PH1.5-D で `docs/ops/quality-gates.md` と `docs/ops/github-actions-proposal.yml` を追加済み。提案を採用する場合のみ、人間が `.github/workflows/quality-gates.yml` へコピーする。CI は `oven-sh/setup-bun@v2` + `bun ci`、E2E job は `bunx playwright install --with-deps chromium` + `bun run test:e2e` を想定する。
+- Sandbox では `bun run test:e2e -- --list` による spec discovery まで確認し、browser 実行は捏造しない。2026-09-19 以前は `.github/workflows/` への書き込みが禁止で CI YAML は `docs/ops/` に提案を置いていたが、現在は許可され直接 `.github/workflows/quality-gates.yml` を配置できる。
+- PH1.5-D で `docs/ops/quality-gates.md` と `docs/ops/github-actions-proposal.yml` を追加、2026-09-19 に `.github/workflows/quality-gates.yml` を本番配置。CI は `oven-sh/setup-bun@v2` + `bun ci`、E2E job は `bunx playwright install --with-deps chromium` + `bun run test:e2e`。
 
 ### bun WebSocket（移植する）
 

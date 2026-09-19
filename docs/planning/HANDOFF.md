@@ -31,7 +31,7 @@
 | D6 | fps Snapshot は現行 layout を維持し `vy` を含める | Phase 2 は profile 分離であり wire format 改定ではない |
 | D7 | トランスポートは WebSocket のみ | WT / geckos / 生 UDP / WebRTC DataChannel は実装しない |
 | D8 | PH1.5 quality gate を維持 | typecheck / lint / unit / coverage / build / E2E discovery を維持。browser E2E は実環境検証待ち |
-| D9 | `.github/workflows/` は Agent が作らない | CI 提案は `docs/ops/` のまま。人間が配置する |
+| D9 | `.github/workflows/` は直接作成可 (2026-09-19許可) | 旧ルールでは Agent が作らず人間配置だったが、許可により Agent が直接 `.github/workflows/quality-gates.yml` を作成・更新可 |
 | D10 | Game Type と Content Source を混同しない | `fps` / `voxel` が type。`official` / `ugc` は type ではない |
 
 ## 2. Phase 2 計画の要点
@@ -97,7 +97,6 @@ Playwright browser 実行は CI / 実環境で行う。Sandbox では `bun run t
 - `profile-voxel` package / voxel terrain / voxel physics 本実装を混ぜる。
 - gamemode SDK / matchmaker / Hello HMAC / Snapshot `0x11` / AOI / delta snapshot を混ぜる。
 - Playwright browser 実行を Sandbox で pass と主張する。
-- `.github/workflows/` を作る。
 - `bun test` を使う。
 
 ## 6. 読み順（次セッション）

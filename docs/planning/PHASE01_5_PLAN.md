@@ -33,7 +33,7 @@ PH1 でモノレポ・Channel・Babylon・入力・React/HUD 境界はローカ�
 - `playwright.config.ts` — Playwright Test 設定。`webServer` で `bun run start` を起動し、`baseURL` は local preview に合わせる
 - `e2e/` または `_tests_/e2e/` — Playwright specs。開始 overlay / HUD / canvas / basic WS path などを検証
 - `docs/task-list.md` / 本計画 / `docs/arch/engineering.md` / `docs/arch/api-sources.md` / `docs/planning/HANDOFF.md` — 進捗・証拠・品質方針更新
-- 必要なら `docs/ops/` — `.github/workflows/` に直接書けないため、CI 配置用の提案 YAML / 手順を置く
+- 必要なら `docs/ops/` と `.github/workflows/` — CI 配置用の YAML / 手順を置く（2026-09-19 以前は `.github/workflows/` への直接書き込みが禁止だったが、現在は許可）
 
 変更しない（境界外）:
 
@@ -42,7 +42,6 @@ PH1 でモノレポ・Channel・Babylon・入力・React/HUD 境界はローカ�
 - Snapshot 0x11 化や Input 16B payload の変更
 - テストしやすくするための protocol 緩和、lint 例外、実装の不正な単純化
 - Playwright browser binary の Sandbox install 成否をもって E2E 実行済みと主張すること
-- `.github/workflows/` への直接書き込み（権限制約）
 
 ## 4. 禁止事項
 
@@ -52,7 +51,7 @@ PH1 でモノレポ・Channel・Babylon・入力・React/HUD 境界はローカ�
 - coverage を通すためにテストを skip / only / assertion 緩和しない
 - Playwright E2E を Sandbox で実行できたように捏造しない。ローカルで browser install 不可なら「設定・型検証まで」と明記する
 - E2E からブラウザに `localhost` backend を直接叩かせない。クライアントは相対 `/ws`、Vite proxy / preview 経由を維持する
-- `.github/workflows/` を作らない。CI workflow は必要なら `docs/ops/` に提案として置く
+- CI workflow は `docs/ops/` の提案と `.github/workflows/` の本番配置の両方を扱う（2026-09-19 以前は `.github/workflows/` への直接書き込みが禁止だったが、現在は許可）
 
 ## 5. 完了条件 (DoD)
 
@@ -86,7 +85,6 @@ PH1 でモノレポ・Channel・Babylon・入力・React/HUD 境界はローカ�
 - Vitest / Playwright の公式 API と installed version の型・設定が食い違い、設定名を確定できない
 - coverage provider が現行 runner / Sandbox で動かず、Istanbul fallback 等の選択が必要になる
 - E2E 実装のために WebSocket protocol / Input payload / Snapshot layout の変更が必要になる
-- `.github/workflows/` への書き込みが必要になる
 - coverage 対象から重要な production code を広く除外しないと pass できない
 - Phase 2 以降の設計実装を混ぜないと E2E が書けない
 
@@ -164,9 +162,9 @@ PH1 でモノレポ・Channel・Babylon・入力・React/HUD 境界はローカ�
   - 2 page を開き、remote player path が破綻しない（flaky なら PH1.5-D または別タスク）
 - Sandbox では Chromium binary install 不可のため、`bun run test:e2e` 実行は CI / 実環境に限定する。ローカルでは config typecheck / lint / unit / build で担保する
 
-### 10.4 `.github/workflows/` 制約
+### 10.4 `.github/workflows/` 配置（2026-09-19 許可に変更）
 
-AGENTS.md §6.3 により `.github/workflows/` は書き込み不可。CI を提案する場合は `docs/ops/` に YAML と配置手順を置く。PR 上で実 CI が必要な場合は人間が配置する。
+旧ルールでは AGENTS.md §6.3 により `.github/workflows/` は書き込み不可で、CI を提案する場合は `docs/ops/` に YAML と配置手順を置き、人間が配置していた。2026-09-19 に許可され、現在は Agent が `.github/workflows/quality-gates.yml` を直接作成・更新できる。提案元は `docs/ops/github-actions-proposal.yml`、本番は `.github/workflows/quality-gates.yml`。
 
 ## 11. リスク・Gotchas
 
@@ -184,4 +182,4 @@ AGENTS.md §6.3 により `.github/workflows/` は書き込み不可。CI を提
 | PH1.5-A | 本コミット | `bun run test:coverage` pass（14 files / 84 tests） | `@vitest/coverage-v8@4.1.11` と `test:coverage` を追加。Vitest v8 coverage baseline: Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009)。`coverage.include` は production source、exclude は package barrel / browser entrypoint / type-only transport / ambient d.ts に限定。threshold は PH1.5-B ratchet 前の 0% 明示。typecheck・lint・unit・build pass、git diff --check pass |
 | PH1.5-B | 本コミット | `bun run test:coverage` pass（17 files / 107 tests） | Meaningful tests を追加: `websocket.ts` の Channel framing / malformed binary 1002 / text split / no-copy + fallback send / status、`GameClient.ts` の welcome reject / malformed snapshot ignore / lifecycle status / dispose、`interpolation.ts` の extrapolate cap / hold / departure / yaw wrap / history bound、`StartOverlay.tsx` の fullscreen unavailable / rejection / sync throw / change cleanup、`TouchControls.tsx` の non-touch / joystick clamp / reset cleanup / jump。Coverage は baseline Statements 66.82% / Branches 57.10% / Functions 64.43% / Lines 68.97% から、after Statements 79.17% (859/1085), Branches 73.85% (291/394), Functions 79.38% (154/194), Lines 80.77% (815/1009) へ増加。`vitest.config.ts` thresholds を statements 79 / branches 73 / functions 79 / lines 80 へ ratchet。`apps/gameserver/src/index.ts` は top-level server 起動を避けるため PH1.5-B では直 import しない。 |
 | PH1.5-C | 本コミット | `bun run test:e2e -- --list` pass（3 tests discovered）/ browser 実行は Sandbox 制約により未実行 | `@playwright/test@1.63.0` と `test:e2e` script を追加。`playwright.config.ts` は公式 `defineConfig` / `devices` / `webServer` / `use.baseURL` に沿い、local は `bun run start` → `http://127.0.0.1:4173`、CI/preview は `PLAYWRIGHT_BASE_URL` で webServer を起動しない構成。`e2e/game-shell.spec.ts` に smoke / fullscreen unavailable start / same-origin websocket proxy connection の 3 specs を追加。`playwright-report/` と `test-results/` を ignore。Sandbox では Chromium browser 実行を捏造せず、実環境または CI で `bun run test:e2e` 実行待ち。 |
-| PH1.5-D | 本コミット | docs 整合 / `bun run test:e2e -- --list` pass | Quality gate 運用を `docs/ops/quality-gates.md` に整理し、`.github/workflows/` を直接作らず `docs/ops/github-actions-proposal.yml` として GitHub Actions 提案を追加。coverage threshold は PH1.5-B の statements 79 / branches 73 / functions 79 / lines 80 を維持。E2E は Sandbox では browser 実行を捏造せず、CI / 実環境で `bun run test:e2e` を実行する方針を明記。次は Phase 2 計画作成。 |
+| PH1.5-D | 本コミット | docs 整合 / `bun run test:e2e -- --list` pass | Quality gate 運用を `docs/ops/quality-gates.md` に整理し、当時は `.github/workflows/` への直接書き込みが禁止だったため `docs/ops/github-actions-proposal.yml` として GitHub Actions 提案を追加（2026-09-19 に許可され本番配置へ）。coverage threshold は PH1.5-B の statements 79 / branches 73 / functions 79 / lines 80 を維持。E2E は Sandbox では browser 実行を捏造せず、CI / 実環境で `bun run test:e2e` を実行する方針を明記。次は Phase 2 計画作成。 |

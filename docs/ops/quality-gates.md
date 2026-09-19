@@ -2,7 +2,7 @@
 
 > 対応タスク: `PH1.5-D`  
 > 目的: Phase 2 の Sim Profile 分離前に、coverage / E2E / CI の運用ルールを明確化する。  
-> 注意: `.github/workflows/` は AGENTS.md §6.3 により AI Agent が直接作成しない。提案 YAML は [`github-actions-proposal.yml`](./github-actions-proposal.yml)。
+> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可されたため、提案 YAML と本番配置の両方を扱う。提案: [`github-actions-proposal.yml`](./github-actions-proposal.yml)、本番: `.github/workflows/quality-gates.yml`。
 
 ## 1. 公式確認した根拠
 
@@ -97,20 +97,19 @@ bun run test:e2e
 PLAYWRIGHT_BASE_URL=https://example-preview.example.com bun run test:e2e
 ```
 
-## 5. CI 提案
+## 5. CI 本番配置（2026-09-19 許可）
 
-提案 YAML は [`github-actions-proposal.yml`](./github-actions-proposal.yml) に置く。人間が採用する場合は次の場所へコピーする。
+旧ルールでは提案 YAML を `docs/ops/` に置き、人間が `.github/workflows/` へコピーする運用だったが、2026-09-19 に `.github/workflows/` への直接書き込みが許可されたため、Agent が直接配置する。
 
-```text
-.github/workflows/quality-gates.yml
-```
+- 提案元: [`github-actions-proposal.yml`](./github-actions-proposal.yml)
+- 本番: `.github/workflows/quality-gates.yml`（GitHub Actions が実行）
 
 提案の構成:
 
 | Job | 内容 | 備考 |
 |---|---|---|
 | `quality` | `bun ci` → typecheck → lint → determinism → unit → coverage → build → E2E discovery | PR の基本 gate |
-| `e2e` | Playwright browser install → `bun run test:e2e` → report artifact upload | Browser 実行可能な GitHub-hosted runner / self-hosted runner 用。`add-ci` 選択で正式採用予定 |
+| `e2e` | Playwright browser install → `bun run test:e2e` → report artifact upload | Browser 実行可能な runner 用 |
 
 Husky はローカル強制、CI は `quality` job で determinism も含めて強制する。
 

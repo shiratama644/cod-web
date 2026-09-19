@@ -188,8 +188,11 @@ bash .agent/hooks/restore-sandbox-env.sh
 | 外部ネットワークの一部到達不可 | 実 WS 結合は限定的。純粋関数・モックでユニットテスト。実結合は「実環境検証待ち」。 |
 | 3D のヘッドレス差 | 描画の目視はプレビュー依存。`SimProfile.step` 等は DOM/GPU 非依存でテスト。 |
 
-### 6.3 GitHub App 権限制約
-- **`.github/workflows/` に書き込み不可**。CI は `docs/ops/` に保管し、ユーザーが配置する。勝手に `.github/workflows/` を作らない。
+### 6.3 GitHub App 権限制約（2026-09-19 許可に変更）
+
+- **`.github/workflows/` への直接書き込みは許可**。CI は `docs/ops/` の提案を元に `.github/workflows/` に配置してよい。
+- 旧ルールでは「書き込み不可、CI は `docs/ops/` に保管しユーザーが配置する」としていたが、2026-09-19 にユーザー許可により解除。以降は Agent が直接 `.github/workflows/quality-gates.yml` 等を作成・更新してよい。
+- 変更前の表記が残っているドキュメントは本節を正とし、順次更新する。
 
 ### 6.4 ゲームループ・決定論・ゼロアロケ
 - **React とシミュレーションを分離する。** 座標は React State にしない。

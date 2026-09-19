@@ -74,7 +74,6 @@ Phase 2 完了時点では、`profile-voxel` は作らない。ただし `SimPro
 - matchmaker / seat reservation / Hello HMAC
 - Snapshot `0x11` 新ヘッダ化、AOI、delta snapshot、1200B 分割実装
 - FireAction / HitConfirm / 巻き戻しヒットスキャンの本実装
-- `.github/workflows/` の作成
 - Playwright browser 実行を Sandbox で pass と主張すること
 
 ## 4. 禁止事項
@@ -88,7 +87,7 @@ Phase 2 完了時点では、`profile-voxel` は作らない。ただし `SimPro
 - `SimProfile.step` 配下に `Math.random` / `Date.now` / `performance.now` / `setTimeout` / I/O を入れない
 - hot path で `.slice()` や不要な `{}` / `[]` 生成を増やさない。既存の未達は別タスク化し、Phase 2 の回帰は避ける
 - `bun test` を使わない。Vitest は `bun run test:unit` / `bun run test:coverage`
-- `.github/workflows/` を作らない。CI 提案は `docs/ops/` のまま維持する
+- CI は `docs/ops/` の提案と `.github/workflows/` の本番配置の両方を扱う（2026-09-19 許可）
 
 ## 5. 完了条件 (DoD)
 
