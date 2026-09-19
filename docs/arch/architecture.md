@@ -30,7 +30,25 @@ L0  プラットフォーム  ★タイプ非依存
 
 ## リポジトリ（Bun workspaces モノレポ）
 
-目標構成。現行は単一 `package.json` + `src/` / `shared/` / `server/`。フェーズ 1 で再編する。
+目標構成（理想）と現行実装（PH1-F時点）。
+
+### 現行（PH1-F時点、実装済み）
+
+```
+/
+├ package.json                    # workspaces ["apps/*","packages/*"]
+├ packages/
+│  ├ protocol/                    # @cod/protocol 実装済み
+│  ├ engine-core/                 # @cod/engine-core 実装済み
+│  └ profile-fps/                 # @cod/profile-fps 実装済み
+├ apps/
+│  ├ gameserver/                  # @cod/gameserver 実装済み
+│  └ web/                         # @cod/web 実装済み (src/game/babylon, net, input, components)
+├ _tests_/                        # ミラー配置 実装済み
+└ e2e/                            # Playwright 実装済み
+```
+
+### 理想（未実装はPH2以降、task-list参照）
 
 ```
 /
@@ -66,7 +84,11 @@ L0  プラットフォーム  ★タイプ非依存
 
 `packages/protocol` の中は `common/` / `voxel/` / `fps/` にパケットを分ける。PH1-A の内部 package 名は `@cod/protocol`, `@cod/engine-core`, `@cod/profile-fps`, `@cod/gameserver`, `@cod/web`。`engine-core` の `profile/SimProfile.ts` が L2 の実装契約。エディタとコンテンツ階層は [`editor.md`](./editor.md)。
 
-## 依存規則（Biome `linter.rules.style.noRestrictedImports` で強制）
+未実装: `profile-voxel/`, `gamemode-sdk/`, `shared-types/`, `apps/matchmaker/`, `gamemodes/` は理想構成。PH2ではfps先行、voxelは契約のみ。matchmakerはPH4以降（`docs/task-list.md`参照）。
+
+## 依存規則（Biome `linter.rules.style.noRestrictedImports` / `noRestrictedGlobals` で強制）
+
+### 理想（全てをBiomeで強制したい）
 
 ```
 gamemodes/*         → gamemode-sdk のみ（他は禁止）
@@ -80,4 +102,12 @@ apps/web/client-*   → protocol, net, 対応する profile-*
 
 `gamemodes/*` の制限は、UGC 移行時のサンドボックス境界になる。
 
-ゲームコードから `WebSocket` を直接参照しない。`apps/web/src/net/websocket-transport.ts` 以外は Biome の `linter.rules.style.noRestrictedImports` で禁止する（[protocol.md](./protocol.md)、[api-sources.md](./api-sources.md)）。
+### 現行（PH1-F時点でBiomeで強制済み）
+
+- `packages/protocol` → `@cod/engine-core`, `@cod/profile-fps`, `@cod/gameserver`, `@cod/web` 禁止（`biome.json`）
+- `packages/engine-core` → `@cod/profile-fps`, `@cod/gameserver`, `@cod/web`, `three`, `three-mesh-bvh`, `@react-three/fiber` 禁止
+- `packages/profile-fps` → `@cod/gameserver`, `@cod/web` 禁止
+- `apps/web` → `@cod/engine-core`, `@cod/gameserver` 禁止 + `WebSocket` global 禁止（`apps/web/src/game/net/websocket.ts` のみ許可）
+- 未強制: `gamemodes/*`, `shared-types`, `gamemode-sdk`, `profile-voxel`, `matchmaker`, `hubでBabylon禁止`, `client-voxel/client-fps分離` は今後 `biome.json` へ追加予定（`extend-biome` 選択）
+
+ゲームコードから `WebSocket` を直接参照しない。`apps/web/src/game/net/websocket.ts` 以外は Biome の `noRestrictedGlobals` で禁止する（[protocol.md](./protocol.md)、[api-sources.md](./api-sources.md)）。

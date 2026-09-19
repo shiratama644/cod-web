@@ -58,18 +58,19 @@ voxel タイプ
 
 ## 現行コード（cod-web）の扱い
 
-当初リポジトリは React Three Fiber ベースの単一ルーム FPS だった。PH1-D で apps/web の描画は Babylon.js へ移行済みだが、現行コード全体はまだ理想形への **移行元資産** を段階移植している途中であり、完成形ではない。
+当初リポジトリは React Three Fiber ベースの単一ルーム FPS だった。PH1 で Bun workspaces モノレポ（`apps/*`, `packages/*`）へ移行済み。PH1-D で apps/web の描画は Babylon.js へ移行済み。現行は理想形への段階移植途中。
 
-| 資産 | 判定 | 備考 |
+| 資産（旧パス → 現行パス） | 判定 | 備考 |
 |---|---|---|
-| `shared/protocol/*` | **移植** | タイプ非依存部分を `packages/protocol` へ |
-| `shared/sim/movement.ts` | **参考にして書き直し** | FPS Profile の基礎。ボクセルと共通化しない |
-| `src/game/net/*` | **移植** | レンダラ非依存。最も価値のある資産 |
-| `server/index.ts`, `server/room/Room.ts`, `server/net/snapshot.ts` | **拡張して移植** | マルチルーム化・タイプ対応 |
-| `server/net/lagcomp-store.ts` | **書き直し** | `record()` が呼ばれていないならデッドコード。毎ティック記録するか削除 |
-| `src/game/scene/*`, `src/game/renderer/*`, `src/game/GameCanvas.tsx` | **破棄** | Three.js / R3F 固有。描画は Babylon.js |
-| `_tests_/` | **移植** | 量子化ラウンドトリップ等は残す |
+| `shared/protocol/*` → `packages/protocol/src/protocol/*` | **移植済み** | タイプ非依存部分。PH1-Aで `@cod/protocol` へ |
+| `shared/sim/movement.ts` → `packages/profile-fps/src/sim/movement.ts` | **移植済み** | FPS Profile基礎。PH2-Bで `FpsSimProfile` として分離 |
+| `src/game/net/*` → `apps/web/src/game/net/*` + `packages/engine-core/src/net/*` | **移植済み** | レンダラ非依存。PH1-CでChannel framing、PH1-FでHUD分離 |
+| `server/index.ts`, `server/room/Room.ts` → `apps/gameserver/src/` + `packages/engine-core/src/room/` | **移植済み** | PH1でマルチルーム化・PH2-Cでprofile注入 |
+| `server/net/lagcomp-store.ts` → `packages/engine-core/src/net/lagcomp-store.ts` | **移植済み** | PH0で毎ティック `record()` 修正済み |
+| `src/game/scene/*`, `src/game/renderer/*` | **破棄済み** | PH1-Dで削除。Babylon.jsへ置換 |
+| `_tests_/` → `_tests_/apps/*`, `_tests_/packages/*` | **移植済み** | 量子化・決定論・rate-limit等を維持 |
 | `.archive/docs/` の旧仕様 | **参照のみ** | geckos.io / WT 主経路など、本 arch と矛盾する記述は使わない |
+| 未実装: `packages/profile-voxel/`, `packages/gamemode-sdk/`, `packages/shared-types/`, `apps/matchmaker/`, `gamemodes/` | **未実装** | 理想構成。PH2ではfps先行、voxelは契約のみ。matchmakerはPH4以降 |
 
 ## 初期スコープで決めた運用（詳細は [adr.md](./adr.md)）
 

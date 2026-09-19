@@ -6,9 +6,13 @@ PH1-D で旧 R3F scene / renderer / loop は破棄済み。PH1-F で React 側�
 
 ## バンドル
 
-初期（目標 &lt; 300 KB gzip）: shell / hub / net。Babylon を載せない。
+### 理想（目標 &lt; 300 KB gzip）
 
-ルーム参加時に動的 import: `client-voxel`（@babylonjs/core + noa-engine + profile-voxel）または `client-fps`（@babylonjs/core + profile-fps）。Vite が `@babylonjs/core` を共有チャンクに切り出すのは望ましい。
+初期: shell / hub / net。Babylon を載せない。ルーム参加時に動的 import: `client-voxel`（@babylonjs/core + noa-engine + profile-voxel）または `client-fps`（@babylonjs/core + profile-fps）。Vite が `@babylonjs/core` を共有チャンクに切り出すのは望ましい。
+
+### 現行（PH1-F時点）
+
+`apps/web` は `@babylonjs/core` を初期依存に含み、単一チャンクで配信している（`dist/assets/index-*.js` 約 1.4MB / gzip 364KB）。hub / shell / client-fps の分離は未実装。PH2-E以降で `hub/` / `shell/` / `net/` / `client-voxel/` / `client-fps/` の動的 import 分割を検討する。現状の 364KB gzip は理想の 300KB を超過しているが、移行中の暫定値として許容する。
 
 ## エンジン初期化
 
