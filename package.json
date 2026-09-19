@@ -15,7 +15,7 @@
   "scripts": {
     "dev": "cd apps/web && bun run dev",
     "build": "bun run build:packages && bun run build:apps",
-    "build:packages": "cd packages/protocol && bun run build && cd ../profile-fps && bun run build && cd ../engine-core && bun run build",
+    "build:packages": "cd packages/protocol && bun run build && cd ../engine-core && bun run build && cd ../profile-fps && bun run build",
     "build:apps": "cd apps/gameserver && bun run build && cd ../web && bun run build",
     "preview": "cd apps/web && bun run preview",
     "start": "bun run scripts/execute.ts",
