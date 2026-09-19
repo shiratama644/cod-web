@@ -8,29 +8,45 @@
 **調査入口:** [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](./docs/research/DEEP_RESEARCH_SYNTHESIS.md)
 **作業規約:** [`AGENTS.md`](./AGENTS.md)
 
-現行コードは単一ルーム FPS の原型（移行元）。描画の目標は Babylon.js。トランスポートの目標は当面 **WebSocket のみ**（WebTransport は条件付きの後続）。ライセンスは **MIT**（[`LICENSE`](./LICENSE)）。
+現行コードは Bun workspaces モノレポ（`apps/*`, `packages/*`）。単一ルーム FPS 原型から理想形へ段階移行中。描画は Babylon.js、トランスポートは当面 **WebSocket のみ**。ライセンスは **MIT**（[`LICENSE`](./LICENSE)）。
 
 旧 FPS 専用ドキュメントは [`.archive/docs/`](./.archive/docs/) にあります。
 
-## 現行コードの起動（移行元）
-
-まだモノレポ化前の単一パッケージです。
+## 起動・ビルド・テスト
 
 ```bash
-bun install
-bun run start          # vite build → ゲームサーバ :8080 と preview :4173
+bun install                          # 依存インストール (bun@1.4.0, bun.lock)
+
+# 本番構成: install → build → gameserver :8080 + preview :4173 を並列起動
+bun run start                        # = bun run scripts/execute.ts
+
 # 開発時
-bun run server         # 権威ゲームサーバ :8080
-bun run dev            # Vite :5173（/ws をプロキシ）
-bun run typecheck
-bun run lint
-bun run test:unit
-bun run build
+bun run dev                          # apps/web Vite :5173 (/ws を :8080 へプロキシ)
+bun run server                       # 権威ゲームサーバ :8080 (apps/gameserver)
+bun run server:dev                   # gameserver --watch
+bun run preview                      # apps/web preview :4173 (/ws プロキシ)
+
+# ビルド
+bun run build                        # = build:packages + build:apps
+bun run build:packages               # protocol → engine-core → profile-fps の依存順
+bun run build:apps                   # gameserver + web
+
+# 検証 (AGENTS.md §3.1 の4種)
+bun run typecheck                    # tsc --noEmit + tsc -p tsconfig.server.json
+bunx biome lint .                    # Biome 直接呼び出し (bun run lint より高速)
+bun run lint                         # = biome lint . (エイリアス)
+bun run format                       # biome format --write .
+bun run test:unit                    # vitest run
+bun run test:coverage                # vitest run --coverage (閾値: statements79/branches73/functions79/lines80)
+bun run test:e2e -- --list           # Playwright spec discovery (browser不要)
+bun run test:e2e                     # E2E実行 (要 browser, CI/実環境)
+
+# 詳細は docs/ops/quality-gates.md
 ```
 
-マルチプレイヤー確認: サーバとクライアントを起動し、ブラウザでプレビュー URL を開く。タブをもう 1 つ開くと互いにカプセルが見える（位置同期）。
+マルチプレイヤー確認: `bun run start` でサーバとクライアントを起動し、プレビュー URL を開く。タブをもう1つ開くと互いにカプセルが見える（位置同期）。
 
-テストは `./_tests_/` にソース構造をミラー。エイリアスは `@/` `@shared/` `@server/`。ランタイムは bun。テストランナーは Vitest（`bun test` は使わない）。
+テストは `./_tests_/` にソース構造をミラー。エイリアスは `@` → `apps/web/src`, `@cod/protocol`, `@cod/engine-core`, `@cod/profile-fps`。ランタイムは bun。テストランナーは Vitest（`bun test` は使わない）。
 
 ## 理想形の要点
 
