@@ -1,6 +1,6 @@
-# Quality Gates（Phase 1.5）
+# Quality Gates（Phase 2）
 
-> 対応タスク: `PH1.5-D`  
+> 対応タスク: `PH2-E`（Phase 2 完了）  
 > 目的: Phase 2 の Sim Profile 分離前に、coverage / E2E / CI の運用ルールを明確化する。  
 > 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可されたため、提案 YAML と本番配置の両方を扱う。提案: [`github-actions-proposal.yml`](./github-actions-proposal.yml)、本番: `.github/workflows/quality-gates.yml`。
 
@@ -32,6 +32,12 @@ Phase 1.5 以降は coverage も品質ゲートとして扱う。
 bun run test:coverage
 ```
 
+Phase 2 以降は determinism heavy も品質ゲートとして扱う（0.8s）。
+
+```bash
+bun run scripts/determinism-heavy.ts  # 1000 ticks x100 scenarios determinism
+```
+
 E2E の spec discovery は browser binary 不要なので、Playwright 設定変更時に確認する。
 
 ```bash
@@ -41,7 +47,8 @@ bun run test:e2e -- --list
 Husky pre-commit（`add-husky` 選択）で typecheck / lint / determinism / test:unit を自動実行する。`.husky/pre-commit` 参照。build は重いため CI で実行。
 
 ```bash
-bun run check:determinism   # SimProfile.step の Math.random/Date.now禁止、L1のif(type)禁止を検出
+bun run check:determinism            # SimProfile.step の Math.random/Date.now禁止、L1のif(type)禁止を検出
+bun run scripts/determinism-heavy.ts # 1000x100 determinism（PH2-E追加、0.8s）
 ```
 
 ## 3. Coverage gate
@@ -113,11 +120,15 @@ PLAYWRIGHT_BASE_URL=https://example-preview.example.com bun run test:e2e
 
 Husky はローカル強制、CI は `quality` job で determinism も含めて強制する。
 
-## 6. Phase 2 へ進む前の確認
+## 6. Phase 2 完了確認と Phase 3 へ進む前の確認
 
-Phase 2（Sim Profile 分離）へ進む前に最低限確認すること。
+Phase 2（Sim Profile 分離）は PH2-E で完了。Phase 3 へ進む前に最低限確認すること。
 
-- `bun run test:coverage` が PH1.5-B thresholds を満たす。
-- `bun run test:e2e -- --list` で spec discovery が通る。
-- CI または実環境で `bun run test:e2e` を一度実行し、結果を `docs/task-list.md` か後続ログに記録する。
-- E2E browser 実行が未完了の場合、Phase 2 は着手できるが、リリース判定では「実環境検証待ち」と明記する。
+- `bun run test:unit` 23 files / 127 tests pass（determinism 100x10 smoke + same-input 120ticks + per-tick 0.35m 含む）
+- `bun run test:coverage` が PH1.5-B thresholds（79/73/79/80）を満たす
+- `bun run check:determinism` pass（SimProfile 禁止API / L1 type分岐 0）
+- `bun run scripts/determinism-heavy.ts` pass（1000 ticks x100 scenarios 0.8s）
+- `bun run test:e2e -- --list` で spec discovery が通る（3 tests）
+- import boundary audit: `engine-core` → `profile-fps` 0 violations、`profile-voxel` 未追加
+- CI または実環境で `bun run test:e2e` を一度実行し、結果を `docs/task-list.md` か後続ログに記録する
+- E2E browser 実行が未完了の場合、Phase 3 は着手できるが、リリース判定では「実環境検証待ち」と明記する

@@ -93,24 +93,24 @@ Phase 2 完了時点では、`profile-voxel` は作らない。ただし `SimPro
 
 ### PLAT-2（本計画）の DoD
 
-- [ ] `docs/planning/PHASE02_PLAN.md` が `_TEMPLATE.md` 準拠で作成される
-- [ ] `docs/task-list.md` に `PLAT-2` と `PH2-A`〜`PH2-E` が追加される
-- [ ] `fps 先行＋voxel は契約だけ` 方針が計画書・handoff・task-list に明記される
-- [ ] 既存 arch / Phase 1.5 quality gate と矛盾しない
-- [ ] docs-only の整合確認（リンクチェック / `git diff --check`）が pass する
-- [ ] commit / push 済み
+- [x] `docs/planning/PHASE02_PLAN.md` が `_TEMPLATE.md` 準拠で作成される
+- [x] `docs/task-list.md` に `PLAT-2` と `PH2-A`〜`PH2-E` が追加される
+- [x] `fps 先行＋voxel は契約だけ` 方針が計画書・handoff・task-list に明記される
+- [x] 既存 arch / Phase 1.5 quality gate と矛盾しない
+- [x] docs-only の整合確認（リンクチェック / `git diff --check`）が pass する
+- [x] commit / push 済み
 
 ### Phase 2 全体の DoD
 
-- [ ] `engine-core` に `SimProfile` contract があり、L1 が type 非依存のまま動く
-- [ ] `profile-fps` に `FpsSimProfile` があり、現行 fps 移動・world・snapshot writer を profile として提供する
-- [ ] `TYPE_SPECS` があり、fps: sim 60 / input 60 / snapshot 30、将来 voxel: sim 30 / input 30 / snapshot 15 を表現できる
-- [ ] `GameClient` / `ClientPrediction` / `apps/gameserver` が fps 固有実装を direct hardcode せず、profile 注入で動く
-- [ ] client/server same input test がある
-- [ ] fps 決定論 test がある（目標: 1,000 tick × 100 scenario。Sandbox 時間が厳しい場合は軽量 smoke と重い test の分離方針を明記して停止判断する）
-- [ ] 既存 unit / coverage / build / E2E discovery が維持される
-- [ ] `engine-core` から `@cod/profile-fps` への import が Biome restricted import で引き続き禁止される
-- [ ] `profile-voxel` / voxel dependency は追加されていない
+- [x] `engine-core` に `SimProfile` contract があり、L1 が type 非依存のまま動く
+- [x] `profile-fps` に `FpsSimProfile` があり、現行 fps 移動・world・snapshot writer を profile として提供する
+- [x] `TYPE_SPECS` があり、fps: sim 60 / input 60 / snapshot 30、将来 voxel: sim 30 / input 30 / snapshot 15 を表現できる
+- [x] `GameClient` / `ClientPrediction` / `apps/gameserver` が fps 固有実装を direct hardcode せず、profile 注入で動く
+- [x] client/server same input test がある
+- [x] fps 決定論 test がある（目標: 1,000 tick × 100 scenario。Sandbox 時間が厳しい場合は軽量 smoke と重い test の分離方針を明記して停止判断する）
+- [x] 既存 unit / coverage / build / E2E discovery が維持される
+- [x] `engine-core` から `@cod/profile-fps` への import が Biome restricted import で引き続き禁止される
+- [x] `profile-voxel` / voxel dependency は追加されていない
 
 ## 6. テスト方法
 
@@ -277,4 +277,4 @@ const snapshots = new SnapshotBroadcaster({ profile })
 | `PH2-B` | 本コミット | typecheck / lint / unit / coverage / build / E2E discovery | `FpsSimProfile` factory。20 files / 116 tests、coverage thresholds pass |
 | `PH2-C` | 本コミット | typecheck / lint / unit / coverage / build / E2E discovery | gameserver runtime が `createFpsSimProfile()` を組み立て、`Room` / `Simulation` / `SnapshotBroadcaster` へ profile 注入。21 files / 120 tests、coverage thresholds pass。`engine-core` boundary audit 0 violations |
 | `PH2-D` | 本コミット | typecheck / lint / unit / coverage / build / E2E discovery | web `GameClient` / `ClientPrediction` が profile-like seam で動作。default fps 経路は `createFpsSimProfile()`、mock profile injection tests 追加。21 files / 122 tests、coverage thresholds pass |
-| `PH2-E` | 未実装 | 未実行 | determinism / same input / docs handoff |
+| `PH2-E` | 本コミット | typecheck / lint / unit 23 files 127 tests / coverage / build / E2E discovery / determinism-heavy 1000x100 0.8s pass | client/server same input + determinism + import boundary audit + docs整理。軽量 smoke 100x10 unit + heavy script分離。Phase 2 完了 |

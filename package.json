@@ -28,6 +28,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "check:determinism": "bun run scripts/check-determinism.ts",
+    "check:determinism:heavy": "bun run scripts/determinism-heavy.ts",
     "prepare": "husky"
   },
   "dependencies": {

@@ -45,7 +45,7 @@
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
 | **1** | モノレポ + Babylon 移行 | PH1-F ローカル検証済み |
 | **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-D ローカル検証済み（Phase 1.5 実装完了、E2E browser は実環境検証待ち） |
-| **2** | Sim Profile 分離 | PH2-D ローカル検証済み。次は PH2-E |
+| **2** | Sim Profile 分離 | PH2-E ローカル検証済み。Phase 2 完了 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4** | ハブ + マッチメイカー + voxel 永続化方針 | 未着手 |
 | **5** | voxel-creative / bedwars / fps-tdm | 未着手 |
@@ -107,7 +107,7 @@
 ### Phase 2
 
 計画書: [`planning/PHASE02_PLAN.md`](./planning/PHASE02_PLAN.md)
-橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（次は **PH2-E: client/server same input + 決定論 + docs 整理**）
+橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（Phase 2 完了。次は **Phase 3 計画作成 PLAT-3**）
 
 目的: `engine-core` を type 非依存の L1 として保ち、`profile-fps` を L2 の `FpsSimProfile` 実装として注入できる形に分離する。2026-09-15 の人間確認により、Phase 2 は **fps 先行＋voxel は契約だけ** とする。`profile-voxel` package、voxel terrain、voxel physics 本実装は含めない。
 
@@ -118,7 +118,7 @@
 | PH2-B | `FpsSimProfile` 実装 | ローカル検証済み | 100% | PH2-A | `profile-fps` が world / player spawn / step / snapshot writer を profile として提供し、現行 fps 挙動を維持する | 本コミット / `packages/profile-fps/src/profile/FpsSimProfile.ts` / `createFpsSimProfile()` / direct fps snapshot writer（現行 `encodeSnapshot` と byte-for-byte 一致）/ smoke tests / typecheck・lint・unit・coverage・build・E2E discovery pass |
 | PH2-C | gameserver への profile 注入 | ローカル検証済み | 100% | PH2-B | `apps/gameserver` が profile factory を注入し、`engine-core` は `@cod/profile-*` を import しない | 本コミット / `apps/gameserver/src/runtime.ts` / `createDefaultServerRuntime()` / `Room`・`Simulation`・`SnapshotBroadcaster` profile seam / gameserver runtime smoke test / typecheck・lint・unit・coverage・build・E2E discovery pass |
 | PH2-D | web `GameClient` / prediction への profile 注入 | ローカル検証済み | 100% | PH2-B | `GameClient` / `ClientPrediction` が profile contract で動き、default fps 経路が既存 E2E discovery と unit tests を維持する | 本コミット / `ClientSimProfile`・`ClientPredictionProfile` seam / default `createFpsSimProfile()` 経路 / mock profile injection tests / typecheck・lint・unit・coverage・build・E2E discovery pass |
-| PH2-E | client/server same input + 決定論 + docs 整理 | 未着手 | 0% | PH2-C, PH2-D | fps determinism と client/server 同一入力テストがあり、Phase 2 の証拠・handoff が更新される | |
+| PH2-E | client/server same input + 決定論 + docs 整理 | ローカル検証済み | 100% | PH2-C, PH2-D | fps determinism と client/server 同一入力テストがあり、Phase 2 の証拠・handoff が更新される | 本コミット / `_tests_/packages/profile-fps/sim/determinism.test.ts` 100ticks x10 scenarios smoke + purity + factory isolation / `_tests_/packages/profile-fps/sim/same-input.test.ts` server Simulation vs ClientPrediction same quantized input 120ticks exact + 100ticks per-tick <0.35m / `scripts/determinism-heavy.ts` 1000ticks x100 scenarios determinism 0.8s pass / `engine-core` import boundary audit 0 violations / `scripts/check-determinism.ts` pass / typecheck・lint・unit 23 files 127 tests・coverage・build・E2E discovery pass |
 
 ### ドキュメント・規約
 
