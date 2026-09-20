@@ -248,6 +248,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["apps/web/src/game/babylon/**/*.{ts,tsx}", "apps/web/src/game/net/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "error"
+          }
+        }
+      }
     }
   ]
 }

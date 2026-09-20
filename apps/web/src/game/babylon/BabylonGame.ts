@@ -74,7 +74,6 @@ export class BabylonGame {
     this.input.attach(this.canvas)
     this.client.setInput(this.input)
     this.client.onStatusChange = (status) => {
-      console.log(`[net] ${status}`)
       gameStoreApi.getState().setConnectionStatus(status)
     }
     this.client.connect()
