@@ -46,6 +46,7 @@
 | **1** | モノレポ + Babylon 移行 | PH1-F ローカル検証済み |
 | **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-D ローカル検証済み（Phase 1.5 実装完了、E2E browser は実環境検証待ち） |
 | **2** | Sim Profile 分離 | PH2-E ローカル検証済み。Phase 2 完了 |
+| **EM** | 完全バグ修正フェーズ（Emergency） | PLAT-EM 計画中。次は EM1-A |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4** | ハブ + マッチメイカー + voxel 永続化方針 | 未着手 |
 | **5** | voxel-creative / bedwars / fps-tdm | 未着手 |
@@ -119,6 +120,23 @@
 | PH2-C | gameserver への profile 注入 | ローカル検証済み | 100% | PH2-B | `apps/gameserver` が profile factory を注入し、`engine-core` は `@cod/profile-*` を import しない | 本コミット / `apps/gameserver/src/runtime.ts` / `createDefaultServerRuntime()` / `Room`・`Simulation`・`SnapshotBroadcaster` profile seam / gameserver runtime smoke test / typecheck・lint・unit・coverage・build・E2E discovery pass |
 | PH2-D | web `GameClient` / prediction への profile 注入 | ローカル検証済み | 100% | PH2-B | `GameClient` / `ClientPrediction` が profile contract で動き、default fps 経路が既存 E2E discovery と unit tests を維持する | 本コミット / `ClientSimProfile`・`ClientPredictionProfile` seam / default `createFpsSimProfile()` 経路 / mock profile injection tests / typecheck・lint・unit・coverage・build・E2E discovery pass |
 | PH2-E | client/server same input + 決定論 + docs 整理 | ローカル検証済み | 100% | PH2-C, PH2-D | fps determinism と client/server 同一入力テストがあり、Phase 2 の証拠・handoff が更新される | 本コミット / `_tests_/packages/profile-fps/sim/determinism.test.ts` 100ticks x10 scenarios smoke + purity + factory isolation / `_tests_/packages/profile-fps/sim/same-input.test.ts` server Simulation vs ClientPrediction same quantized input 120ticks exact + 100ticks per-tick <0.35m / `scripts/determinism-heavy.ts` 1000ticks x100 scenarios determinism 0.8s pass / `engine-core` import boundary audit 0 violations / `scripts/check-determinism.ts` pass / typecheck・lint・unit 23 files 127 tests・coverage・build・E2E discovery pass |
+
+### Emergency Phase (EM)
+
+計画書: [`planning/EM01_PLAN.md`](./planning/EM01_PLAN.md)
+橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（Phase 2 完了後、EM1 計画作成中）
+
+目的: Phase 3 前に現行コードのバグ・リーク・ゼロアロケ違反・ログ汚染を完全解消する。事実確認済みバグ B1〜B15 を対象。
+
+| ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
+|---|---|---|---:|---|---|---:|
+| PLAT-EM | EM01 計画作成（完全バグ修正） | ローカル検証済み | 100% | PH2-E | `_TEMPLATE.md` 準拠。事実確認とバグ一覧 B1〜B15 が明記され、task-list に EM が追加される | 本コミット / [`planning/EM01_PLAN.md`](./planning/EM01_PLAN.md) / 事実確認: typecheck・lint・unit 23/127・coverage 80.96% Statements 927/1145, Branches 75.06% 307/409, Functions 81.25% 169/208, Lines 82.6% 883/1069 / build 596 modules / determinism + heavy 100x1000 0.8s pass / E2E list 3 tests / console.log 4件( client 1件削除対象 ) / slice 0 / Math.random in sim 0 / any 0除node_modules / gh issue 0 / git diff --check pass |
+| EM1-A | メモリリーク修正（LagCompStore/InputQueues/paused） | 未着手 | 0% | PLAT-EM | `Simulation.removePlayer` / `SnapshotBroadcaster.removePlayer` / `LagCompStore.clear` が leave 時に呼ばれる | |
+| EM1-B | console.log削除 + ログ整理 | 未着手 | 0% | PLAT-EM | `BabylonGame.ts` console.log削除、gameserverログ整理、client側 noConsole lint | |
+| EM1-C | ゼロアロケ違反修正（Room.getPlayers / Snapshot encode） | 未着手 | 0% | EM1-A | `Room.getPlayersIterable()` 追加、hot path の `getPlayers()` 使用0、encodeループ外1回 | |
+| EM1-D | クライアントGC削減（remotes Map / players.map） | 未着手 | 0% | EM1-C | `GameClient.remotes` Map再利用、`writeCompatSnapshot` map廃止 | |
+| EM1-E | 入力キュー/補間/ラグ補償のshift/splice改善 | 未着手 | 0% | EM1-C | `shift()` / `splice` を head index リングに（可能な範囲） | |
+| EM1-F | 回帰テスト + coverage + docs整理 | 未着手 | 0% | EM1-A〜EM1-E | B1〜B5,B11,B12回帰テスト、coverage閾値維持、HANDOFF/quality-gates更新 | |
 
 ### ドキュメント・規約
 
