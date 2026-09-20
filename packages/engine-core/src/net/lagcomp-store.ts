@@ -20,32 +20,48 @@ export interface PositionSample {
   yaw: number
 }
 
+interface HistoryBuffer {
+  buf: PositionSample[]
+  head: number
+}
+
 export class LagCompStore {
-  private readonly history = new Map<number, PositionSample[]>()
+  private readonly history = new Map<number, HistoryBuffer>()
   /** 履歴を保持する時間（ms）。 */
   private readonly windowMs = LAGCOMP_HISTORY_MS
 
   /** 各シミュレーション tick でプレイヤーの位置を記録する。 */
   record(tick: number, timeMs: number, id: number, x: number, y: number, z: number, yaw: number): void {
-    let arr = this.history.get(id)
-    if (!arr) {
-      arr = []
-      this.history.set(id, arr)
+    let h = this.history.get(id)
+    if (!h) {
+      h = { buf: [], head: 0 }
+      this.history.set(id, h)
     }
-    arr.push({ tick, timeMs, x, y, z, yaw })
+    h.buf.push({ tick, timeMs, x, y, z, yaw })
 
-    // 古いサンプルを窓外になったら落とす。
+    // 古いサンプルを窓外になったら落とす。head を進めることで shift O(n) を回避。
     const cutoff = timeMs - this.windowMs
-    let oldest = arr[0]
-    while (oldest && oldest.timeMs < cutoff) {
-      arr.shift()
-      oldest = arr[0]
+    while (h.head < h.buf.length) {
+      const oldest = h.buf[h.head]
+      if (!oldest || oldest.timeMs >= cutoff) break
+      h.head++
+    }
+    // 定期的に compaction
+    if (h.head > 16 && h.head * 2 > h.buf.length) {
+      h.buf.splice(0, h.head)
+      h.head = 0
     }
   }
 
   /** プレイヤーの直近履歴を返す（射撃フェーズで巻き戻しに使用）。 */
   getHistory(id: number): readonly PositionSample[] {
-    return this.history.get(id) ?? EMPTY
+    const h = this.history.get(id)
+    if (!h) return EMPTY
+    if (h.head === 0) return h.buf
+    // head がある場合は有効範囲のみ返す（slice 1 回は許容、頻度低）。ゼロアロケを優先するなら
+    // 呼び出し側で head を意識すべきだが、現状は互換のため slice で返す。
+    // ただし GC 削減のため、head が小さい間は slice を避けるため上では head=0 のときは buf そのまま。
+    return h.buf.slice(h.head)
   }
 
   /** 離脱したプレイヤーの履歴を破棄する。 */

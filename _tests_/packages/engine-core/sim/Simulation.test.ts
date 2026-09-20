@@ -168,7 +168,10 @@ describe('Simulation — 権威シミュレーション', () => {
     // 内部的にキューと履歴がある（private へは any 経由でテスト）
     // biome-ignore lint/suspicious/noExplicitAny: private access for test
     const anySim = sim as any
-    expect(anySim.inputQueues.get(id)?.length).toBeGreaterThanOrEqual(0)
+    const q = anySim.inputQueues.get(id)
+    // 新構造は {buf, head}、旧は配列。両対応で長さチェック。
+    const qLen = q ? (Array.isArray(q) ? q.length : q.buf.length - q.head) : 0
+    expect(qLen).toBeGreaterThanOrEqual(0)
     expect(anySim.latestSeq.get(id)).toBe(2)
     expect(sim.lagComp.getHistory(id).length).toBeGreaterThan(0)
 

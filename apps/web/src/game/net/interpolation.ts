@@ -35,6 +35,7 @@ export interface InterpolatedPlayer {
 
 export class Interpolator {
   private samples: TimedSample[] = []
+  private sampleHead = 0
 
   /** スナップショットを受信した時刻（受信側で nowMs を添えて push）。 */
   push(snapshot: Snapshot, receivedAtMs: number): void {
@@ -42,12 +43,16 @@ export class Interpolator {
     for (const p of snapshot.players) players.set(p.id, p)
     this.samples.push({ timeMs: receivedAtMs, players })
 
-    // バッファは多めに持ちすぎない（古いものを落とす）。
+    // バッファは多めに持ちすぎない（古いものを落とす）。head で O(n) shift 回避。
     const cutoff = receivedAtMs - INTERP_DELAY_MS * 3
-    let oldest = this.samples[0]
-    while (oldest && oldest.timeMs < cutoff && this.samples.length > 2) {
-      this.samples.shift()
-      oldest = this.samples[0]
+    while (this.sampleHead < this.samples.length - 2) {
+      const oldest = this.samples[this.sampleHead]
+      if (!oldest || oldest.timeMs >= cutoff) break
+      this.sampleHead++
+    }
+    if (this.sampleHead > 8) {
+      this.samples.splice(0, this.sampleHead)
+      this.sampleHead = 0
     }
   }
 
@@ -61,10 +66,12 @@ export class Interpolator {
     const result = out ?? new Map<number, InterpolatedPlayer>()
     if (out) out.clear()
 
-    // renderMs を挟む 2 サンプルを探す。
+    // renderMs を挟む 2 サンプルを探す。head 以降のみ走査。
     let after: TimedSample | null = null
     let before: TimedSample | null = null
-    for (const s of this.samples) {
+    for (let i = this.sampleHead; i < this.samples.length; i++) {
+      const s = this.samples[i]
+      if (!s) continue
       if (s.timeMs <= renderMs) before = s
       else {
         after = s
@@ -127,7 +134,7 @@ export class Interpolator {
   }
 
   get sampleCount(): number {
-    return this.samples.length
+    return this.samples.length - this.sampleHead
   }
 }
 

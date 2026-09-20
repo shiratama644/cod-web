@@ -37,12 +37,17 @@ export type SimulationProfile<TWorld> = Pick<
 /** 1 プレイヤーあたりの入力キュー最大長（超えたら古いものから破棄して遅延を防ぐ）。 */
 const MAX_QUEUED_INPUTS = 120
 
+interface InputQueue {
+  buf: PlayerInput[]
+  head: number
+}
+
 export class Simulation<TWorld> {
   private tickNumber = 0
   /** ラグ補償用位置履歴。毎ティック記録する。巻き戻し判定は後続。 */
   readonly lagComp = new LagCompStore()
-  /** playerId → 未消費の入力キュー（FIFO・seq 順）。tick ごとに先頭を 1 つ消費する。 */
-  private readonly inputQueues = new Map<number, PlayerInput[]>()
+  /** playerId → 未消費の入力キュー（FIFO・seq 順）。tick ごとに先頭を 1 つ消費する。head index で O(n) shift を回避。 */
+  private readonly inputQueues = new Map<number, InputQueue>()
   /** playerId → キュー済みの最新 seq（巻き戻り/重複を弾くガード）。 */
   private readonly latestSeq = new Map<number, number>()
   private accumulator = 0
@@ -86,12 +91,20 @@ export class Simulation<TWorld> {
 
     let q = this.inputQueues.get(playerId)
     if (!q) {
-      q = []
+      q = { buf: [], head: 0 }
       this.inputQueues.set(playerId, q)
     }
-    q.push(input)
-    // 極端に溜まった場合（デバッグポーズ等）は古いものから捨てて遅延を防ぐ。
-    if (q.length > MAX_QUEUED_INPUTS) q.splice(0, q.length - MAX_QUEUED_INPUTS)
+    q.buf.push(input)
+    // 極端に溜まった場合（デバッグポーズ等）は古いものから捨てて遅延を防ぐ。head を進めることで O(n) splice を回避。
+    const len = q.buf.length - q.head
+    if (len > MAX_QUEUED_INPUTS) {
+      q.head += len - MAX_QUEUED_INPUTS
+      // head が大きくなりすぎたら compaction
+      if (q.head > 64) {
+        q.buf.splice(0, q.head)
+        q.head = 0
+      }
+    }
   }
 
   /**
@@ -114,7 +127,15 @@ export class Simulation<TWorld> {
     const dtMs = Math.round(this.stepSeconds * 1000)
     for (const player of this.room.getPlayersIterable()) {
       const q = this.inputQueues.get(player.id)
-      const queued = q && q.length > 0 ? q.shift() : undefined
+      let queued: PlayerInput | undefined
+      if (q && q.head < q.buf.length) {
+        queued = q.buf[q.head++]
+        // 定期的に compaction（償却 O(1)）
+        if (q.head > 32 && q.head * 2 > q.buf.length) {
+          q.buf.splice(0, q.head)
+          q.head = 0
+        }
+      }
       if (queued) {
         this.stepPlayer(player, queued, this.stepSeconds, this.world)
       } else {
