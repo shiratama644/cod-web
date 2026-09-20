@@ -261,7 +261,8 @@ export class GameClient<TWorld = ReturnType<FpsSimProfile['createWorld']>> {
   }
 
   private updateRemotes(): void {
-    this.remotes = this.interpolator.sample(performance.now(), this.selfId ?? -1)
+    // GC削減: remotes Map を毎フレーム new せず再利用。Interpolator 側でも out Map を再利用する。
+    this.interpolator.sample(performance.now(), this.selfId ?? -1, this.remotes)
   }
 
   private setStatus(s: ConnectionStatus): void {

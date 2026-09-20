@@ -54,10 +54,12 @@ export class Interpolator {
   /**
    * レンダー時刻 nowMs における全プレイヤーの補間位置を返す。
    * @param selfId 自プレイヤー ID（補間対象から除外）。
+   * @param out 再利用する Map（渡せば clear して再利用、GC 削減）。
    */
-  sample(nowMs: number, selfId: number): Map<number, InterpolatedPlayer> {
+  sample(nowMs: number, selfId: number, out?: Map<number, InterpolatedPlayer>): Map<number, InterpolatedPlayer> {
     const renderMs = nowMs - INTERP_DELAY_MS
-    const out = new Map<number, InterpolatedPlayer>()
+    const result = out ?? new Map<number, InterpolatedPlayer>()
+    if (out) out.clear()
 
     // renderMs を挟む 2 サンプルを探す。
     let after: TimedSample | null = null
@@ -75,12 +77,11 @@ export class Interpolator {
       const latest = this.samples[this.samples.length - 1]
       if (latest) {
         for (const p of latest.players.values()) {
-          if (p.id !== selfId) out.set(p.id, { id: p.id, x: p.x, y: p.y, z: p.z, yaw: p.yaw })
+          if (p.id !== selfId) result.set(p.id, { id: p.id, x: p.x, y: p.y, z: p.z, yaw: p.yaw })
         }
       }
-      return out
+      return result
     }
-
 
     if (!after) {
       // 最新より先のレンダー時刻（パケット途切れ）→ 最新から短く外挿する。
@@ -91,7 +92,7 @@ export class Interpolator {
       const dt = Math.min(rawDt, EXTRAPOLATE_MAX_SEC)
       for (const p of before.players.values()) {
         if (p.id === selfId) continue
-        out.set(p.id, {
+        result.set(p.id, {
           id: p.id,
           // クランプ内は最新速度で外挿、超えたら最新位置にホールド（速度 0 扱い）。
           x: withinCap ? p.x + p.vx * dt : p.x,
@@ -100,7 +101,7 @@ export class Interpolator {
           yaw: p.yaw,
         })
       }
-      return out
+      return result
     }
 
     // 2 サンプル間を Lerp。
@@ -111,10 +112,10 @@ export class Interpolator {
       const b = after.players.get(a.id)
       if (!b) {
         // after に居ない（離脱直後）なら before の値を使う。
-        out.set(a.id, { id: a.id, x: a.x, y: a.y, z: a.z, yaw: a.yaw })
+        result.set(a.id, { id: a.id, x: a.x, y: a.y, z: a.z, yaw: a.yaw })
         continue
       }
-      out.set(a.id, {
+      result.set(a.id, {
         id: a.id,
         x: lerp(a.x, b.x, t),
         y: lerp(a.y, b.y, t),
@@ -122,7 +123,7 @@ export class Interpolator {
         yaw: lerpAngle(a.yaw, b.yaw, t),
       })
     }
-    return out
+    return result
   }
 
   get sampleCount(): number {

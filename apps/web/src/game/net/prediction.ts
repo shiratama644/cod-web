@@ -138,8 +138,15 @@ export class ClientPrediction<TWorld> {
     const local = this.state
     const predicted = { x: local.x, y: local.y, z: local.z }
 
-    // ack 済みの入力を破棄（pending は replay のために保持）。
-    this.pending = this.pending.filter((p) => p.seq > lastAckSeq)
+    // ack 済みの入力を破棄（pending は replay のために保持）。GC削減: filter による新配列確保を避け in-place 削除。
+    let write = 0
+    for (let read = 0; read < this.pending.length; read++) {
+      const entry = this.pending[read]
+      if (entry && entry.seq > lastAckSeq) {
+        this.pending[write++] = entry
+      }
+    }
+    this.pending.length = write
 
     // 作業用に、サーバー確定状態を起点としたプレイヤー状態を構築。
     const corrected = this.profile.createPlayerState(local.id)
