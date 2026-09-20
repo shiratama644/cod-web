@@ -128,19 +128,19 @@ EM1 では **B1〜B5、B11、B12 を必須**、B6,B9,B10,B13 は可能な範囲�
 
 ### EM1 全体の DoD
 
-- [ ] B1: `LagCompStore` が `Room.leave` 時に `clear(id)` される（gameserver close ハンドラで `sim.removePlayer` 経由 or 直接）
-- [ ] B2: `Simulation` の `inputQueues` / `latestSeq` が `leave` 時に削除される（`removePlayer` API追加）
-- [ ] B3: `SnapshotBroadcaster.paused` が `leave` 時に削除される（`removePlayer` API追加）
-- [ ] B4: `Room.getPlayers()` の毎tick配列確保が解消される（Iterable or forEach経路へ移行、ゼロアロケ監査で `getPlayers()` の直接使用が hot path に0件）
-- [ ] B5: `SnapshotBroadcaster.maybeSend` がスナップショットエンコードをループ外1回に（CPU改善、byte-for-byte一致をテストで固定）
-- [ ] B7: `BabylonGame.ts` の `console.log` が削除される
-- [ ] B11/B12: `GameClient.remotes` と `writeCompatSnapshot` の毎フレーム/毎スナップショット配列確保が削減される（Map再利用 or clear+set、players.map廃止）
-- [ ] B14: `Room` / `Simulation` / `SnapshotBroadcaster` / `LagCompStore` の leave/clear経路に回帰テストがある
-- [ ] 既存 `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run test:coverage` / `bun run build` / `bun run test:e2e -- --list` / `bun run check:determinism` / `bun run check:determinism:heavy` が pass し、coverage閾値（79/73/79/80）を下回らない
-- [ ] `engine-core` から `@cod/profile-fps` への import が Biome restricted import で引き続き禁止される（0 violations）
-- [ ] `profile-voxel` / voxel dependency は追加されていない
-- [ ] `docs/task-list.md` / `docs/planning/HANDOFF.md` / `docs/ops/quality-gates.md` が EM1 完了で更新される
-- [ ] `.agent/logs/YYYY-MM-DD_em1-*.md` が作成される
+- [x] B1: `LagCompStore` が `Room.leave` 時に `clear(id)` される（gameserver close ハンドラで `sim.removePlayer` 経由）
+- [x] B2: `Simulation` の `inputQueues` / `latestSeq` が `leave` 時に削除される（`removePlayer` API追加）
+- [x] B3: `SnapshotBroadcaster.paused` が `leave` 時に削除される（`removePlayer` API追加）
+- [x] B4: `Room.getPlayers()` の毎tick配列確保が解消される（getPlayersIterable追加、hot path 0件）
+- [x] B5: `SnapshotBroadcaster.maybeSend` がスナップショットエンコードをループ外1回に（per-peer lastAckSeq patchで正確性維持）
+- [x] B7: `BabylonGame.ts` の `console.log` が削除される
+- [x] B11/B12: `GameClient.remotes` と `writeCompatSnapshot` の毎フレーム/毎スナップショット配列確保が削減される（Map再利用 + map廃止）
+- [x] B14: `Room` / `Simulation` / `SnapshotBroadcaster` / `LagCompStore` の leave/clear経路に回帰テストがある（142 tests）
+- [x] 既存 `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run test:coverage` / `bun run build` / `bun run test:e2e -- --list` / `bun run check:determinism` / `bun run check:determinism:heavy` が pass し、coverage閾値（79/73/79/80）を上回る（81.22%/76.02%/81.9%/82.8%）
+- [x] `engine-core` から `@cod/profile-fps` への import が Biome restricted import で引き続き禁止される（0 violations）
+- [x] `profile-voxel` / voxel dependency は追加されていない
+- [x] `docs/task-list.md` / `docs/planning/HANDOFF.md` / `docs/ops/quality-gates.md` が EM1 完了で更新される
+- [x] `.agent/logs/YYYY-MM-DD_em1-*.md` が作成される（2026-09-20_em1-complete-bugfix.md）
 
 ## 6. テスト方法
 
@@ -302,15 +302,15 @@ Biomeで `noConsole` を `apps/web/src/game/babylon/**/*` と `apps/web/src/game
 | SandboxでE2E browser実行不可 | `test:e2e --list` まで。browser実行はCI/実環境検証待ちと明記 |
 | EMフェーズがPhase3計画と競合 | EMは緊急バグ修正であり、Phase3の機能追加（gamemode SDK等）を含めない。task-listでEMをPhase2とPhase3の間に挿入し、依存を `PH2-E -> PLAT-EM -> EM1-* -> PLAT-3` にする |
 
-## 12. 実績と証拠（実装後に記入）
+## 12. 実績と証拠（EM01完了）
 
 | ID | コミット | テスト | 実測値・備考 |
 |---|---|---|---|
-| `PLAT-EM` | 本コミット | docs-only link check / `git diff --check` | EM01計画。事実確認済みバグB1〜B15を明記 |
-| `EM1-A` | 未実装 | 未実行 | メモリリーク修正 |
-| `EM1-B` | 未実装 | 未実行 | console.log削除 |
-| `EM1-C` | 未実装 | 未実行 | ゼロアロケ違反修正 |
-| `EM1-D` | 未実装 | 未実行 | クライアントGC削減 |
-| `EM1-E` | 未実装 | 未実行 | shift/splice改善 |
-| `EM1-F` | 未実装 | 未実行 | 回帰テスト + docs整理 |
+| `PLAT-EM` | e3d0c3b | docs-only link check / `git diff --check` | EM01計画。事実確認済みバグB1〜B15を明記 |
+| `EM1-A` | 003d95c | lagcomp-store 3 + Simulation 2 + snapshot 2 = 7 tests追加、24 tests pass | メモリリーク修正: Simulation.removePlayer + SnapshotBroadcaster.removePlayer + gameserver close |
+| `EM1-B` | 56f6c8b | 134 tests pass, lint noConsole | console.log削除: BabylonGame 1件削除、biome noConsole error追加 |
+| `EM1-C` | 721461e | 134 tests pass | ゼロアロケ: getPlayersIterable追加、Simulation.step iterable、snapshot encode once + lastAckSeq patch + map廃止 |
+| `EM1-D` | fddc7c7 | 134 tests pass | GC削減: GameClient remotes reuse + Interpolator out Map + prediction in-place filter |
+| `EM1-E` | 325771b | 134 tests pass | shift/splice改善: InputQueue {buf,head} + HistoryBuffer + Interpolator sampleHead |
+| `EM1-F` | 本コミット | 24 files / 142 tests, coverage 81.22%/76.02%/81.9%/82.8%, determinism heavy pass, E2E list 3 | 回帰テスト + docs: Room iterable 2 + snapshot encode once 2 + GameClient reuse 1 + prediction in-place 1 + interpolator reuse 2 = +8 tests、HANDOFF/quality-gates更新、log作成 |
 

@@ -46,7 +46,7 @@
 | **1** | モノレポ + Babylon 移行 | PH1-F ローカル検証済み |
 | **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-D ローカル検証済み（Phase 1.5 実装完了、E2E browser は実環境検証待ち） |
 | **2** | Sim Profile 分離 | PH2-E ローカル検証済み。Phase 2 完了 |
-| **EM** | 完全バグ修正フェーズ（Emergency） | PLAT-EM 計画中。次は EM1-A |
+| **EM** | 完全バグ修正フェーズ（Emergency） | EM1-F ローカル検証済み。次は PLAT-3 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
 | **4** | ハブ + マッチメイカー + voxel 永続化方針 | 未着手 |
 | **5** | voxel-creative / bedwars / fps-tdm | 未着手 |
@@ -131,12 +131,12 @@
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---:|
 | PLAT-EM | EM01 計画作成（完全バグ修正） | ローカル検証済み | 100% | PH2-E | `_TEMPLATE.md` 準拠。事実確認とバグ一覧 B1〜B15 が明記され、task-list に EM が追加される | 本コミット / [`planning/EM01_PLAN.md`](./planning/EM01_PLAN.md) / 事実確認: typecheck・lint・unit 23/127・coverage 80.96% Statements 927/1145, Branches 75.06% 307/409, Functions 81.25% 169/208, Lines 82.6% 883/1069 / build 596 modules / determinism + heavy 100x1000 0.8s pass / E2E list 3 tests / console.log 4件( client 1件削除対象 ) / slice 0 / Math.random in sim 0 / any 0除node_modules / gh issue 0 / git diff --check pass |
-| EM1-A | メモリリーク修正（LagCompStore/InputQueues/paused） | 未着手 | 0% | PLAT-EM | `Simulation.removePlayer` / `SnapshotBroadcaster.removePlayer` / `LagCompStore.clear` が leave 時に呼ばれる | |
-| EM1-B | console.log削除 + ログ整理 | 未着手 | 0% | PLAT-EM | `BabylonGame.ts` console.log削除、gameserverログ整理、client側 noConsole lint | |
-| EM1-C | ゼロアロケ違反修正（Room.getPlayers / Snapshot encode） | 未着手 | 0% | EM1-A | `Room.getPlayersIterable()` 追加、hot path の `getPlayers()` 使用0、encodeループ外1回 | |
-| EM1-D | クライアントGC削減（remotes Map / players.map） | 未着手 | 0% | EM1-C | `GameClient.remotes` Map再利用、`writeCompatSnapshot` map廃止 | |
-| EM1-E | 入力キュー/補間/ラグ補償のshift/splice改善 | 未着手 | 0% | EM1-C | `shift()` / `splice` を head index リングに（可能な範囲） | |
-| EM1-F | 回帰テスト + coverage + docs整理 | 未着手 | 0% | EM1-A〜EM1-E | B1〜B5,B11,B12回帰テスト、coverage閾値維持、HANDOFF/quality-gates更新 | |
+| EM1-A | メモリリーク修正（LagCompStore/InputQueues/paused） | ローカル検証済み | 100% | PLAT-EM | `Simulation.removePlayer` / `SnapshotBroadcaster.removePlayer` / `LagCompStore.clear` が leave 時に呼ばれる | `003d95c` / Simulation.removePlayer + SnapshotBroadcaster.removePlayer + gameserver close 整理 / 回帰 3+2+2 tests / typecheck/lint/unit 134/build pass |
+| EM1-B | console.log削除 + ログ整理 | ローカル検証済み | 100% | PLAT-EM | `BabylonGame.ts` console.log削除、gameserverログ整理、client側 noConsole lint | `56f6c8b` / BabylonGame console.log削除 / biome noConsole error for babylon/net / 134 tests pass |
+| EM1-C | ゼロアロケ違反修正（Room.getPlayers / Snapshot encode） | ローカル検証済み | 100% | EM1-A | `Room.getPlayersIterable()` 追加、hot path の `getPlayers()` 使用0、encodeループ外1回 | `721461e` / getPlayersIterable + getPeersIterable / Simulation.step iterable / Snapshot encode once + lastAckSeq patch + writeCompatSnapshot map廃止 / 134 tests |
+| EM1-D | クライアントGC削減（remotes Map / players.map） | ローカル検証済み | 100% | EM1-C | `GameClient.remotes` Map再利用、`writeCompatSnapshot` map廃止 | `fddc7c7` / GameClient remotes reuse via interpolator out Map / prediction pending in-place filter / 134 tests |
+| EM1-E | 入力キュー/補間/ラグ補償のshift/splice改善 | ローカル検証済み | 100% | EM1-C | `shift()` / `splice` を head index リングに（可能な範囲） | `325771b` / InputQueue {buf,head} + LagCompStore HistoryBuffer + Interpolator sampleHead / 134 tests |
+| EM1-F | 回帰テスト + coverage + docs整理 | ローカル検証済み | 100% | EM1-A〜EM1-E | B1〜B5,B11,B12回帰テスト、coverage閾値維持、HANDOFF/quality-gates更新 | 本コミット / Room iterable 2 tests + snapshot encode once 2 tests + GameClient reuse 1 + prediction in-place 1 + interpolator reuse 2 = 142 tests / coverage 81.22%/76.02%/81.9%/82.8% / determinism + heavy pass / E2E list 3 / HANDOFF/quality-gates更新 |
 
 ### ドキュメント・規約
 

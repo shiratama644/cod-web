@@ -1,8 +1,8 @@
-# Quality Gates（Phase 2）
+# Quality Gates（EM01 完了・Phase 3 準備）
 
-> 対応タスク: `PH2-E`（Phase 2 完了）  
-> 目的: Phase 2 の Sim Profile 分離前に、coverage / E2E / CI の運用ルールを明確化する。  
-> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可されたため、提案 YAML と本番配置の両方を扱う。提案: [`github-actions-proposal.yml`](./github-actions-proposal.yml)、本番: `.github/workflows/quality-gates.yml`。
+> 対応タスク: `EM1-F`（EM01 完了）  
+> 目的: Phase 2 の Sim Profile 分離と EM01 完全バグ修正後の品質ゲートを明確化する。  
+> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可。2026-09-20 EM01 で memory leak / zero-alloc / GC / shift 改善を追加。提案: [`github-actions-proposal.yml`](./github-actions-proposal.yml)、本番: `.github/workflows/quality-gates.yml`。
 
 ## 1. 公式確認した根拠
 
@@ -120,15 +120,32 @@ PLAYWRIGHT_BASE_URL=https://example-preview.example.com bun run test:e2e
 
 Husky はローカル強制、CI は `quality` job で determinism も含めて強制する。
 
-## 6. Phase 2 完了確認と Phase 3 へ進む前の確認
+## 6. EM01 完了確認と Phase 3 へ進む前の確認
 
-Phase 2（Sim Profile 分離）は PH2-E で完了。Phase 3 へ進む前に最低限確認すること。
+Phase 2（Sim Profile 分離）は PH2-E で完了。EM01（完全バグ修正）は EM1-F で完了。Phase 3 へ進む前に最低限確認すること。
 
-- `bun run test:unit` 23 files / 127 tests pass（determinism 100x10 smoke + same-input 120ticks + per-tick 0.35m 含む）
-- `bun run test:coverage` が PH1.5-B thresholds（79/73/79/80）を満たす
+- `bun run test:unit` 24 files / 142 tests pass（determinism 100x10 smoke + same-input 120ticks + per-tick 0.35m + EM1 回帰 15 tests 含む）
+- `bun run test:coverage` が thresholds（79/73/79/80）を満たす。EM01後: 81.22%/76.02%/81.9%/82.8%
 - `bun run check:determinism` pass（SimProfile 禁止API / L1 type分岐 0）
-- `bun run scripts/determinism-heavy.ts` pass（1000 ticks x100 scenarios 0.8s）
+- `bun run scripts/determinism-heavy.ts` pass（1000 ticks x100 scenarios 0.9s）
 - `bun run test:e2e -- --list` で spec discovery が通る（3 tests）
 - import boundary audit: `engine-core` → `profile-fps` 0 violations、`profile-voxel` 未追加
+- `grep console.log` client 0件、server 3件（運用ログ許容）
+- `grep getPlayers()` hot path 0件（getPlayersIterable へ移行）
+- `grep shift()` hot path 0件（head index へ移行）
+- `grep \.slice(` hot path 0件（LagCompStore互換 slice 1件のみ許容）
+- memory leak: `Simulation.removePlayer` / `SnapshotBroadcaster.removePlayer` / `LagCompStore.clear` が leave 時に呼ばれる
+- zero-alloc: Room.getPlayersIterable + Snapshot encode once + GameClient remotes reuse + prediction in-place
 - CI または実環境で `bun run test:e2e` を一度実行し、結果を `docs/task-list.md` か後続ログに記録する
 - E2E browser 実行が未完了の場合、Phase 3 は着手できるが、リリース判定では「実環境検証待ち」と明記する
+
+### EM01 追加ゲート
+
+| 項目 | 検証 | 証拠 |
+|---|---|---|
+| Memory leak B1-B3 | `removePlayer` / `clear` が leave 時に呼ばれる | unit 7 tests + gameserver close ハンドラ |
+| Zero alloc B4-B5 | `getPlayers()` hot path 0, encode 1回 | Room iterable 2 tests + snapshot encode once 2 tests |
+| Console B7 | client console.log 0 | biome noConsole error + grep 0 |
+| Client GC B11-B13 | remotes Map reuse, pending in-place | GameClient reuse 1 test + prediction 1 test + interpolator reuse 2 tests |
+| Shift/splice B6,B9,B10 | head index | Simulation head + LagCompStore head + Interpolator head |
+| Coverage | thresholds維持 | 81.22%/76.02%/81.9%/82.8% |

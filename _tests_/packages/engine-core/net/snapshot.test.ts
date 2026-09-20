@@ -241,4 +241,50 @@ describe('SnapshotBroadcaster', () => {
     expect(room.getPlayer(deadId)).toBeUndefined()
   })
 
+  it('encode は tick ごとに 1 回のみで、per-peer lastAckSeq がパッチされる（EM1-C）', () => {
+    const room = roomWith(2)
+    const p0 = room.getPlayers()[0]
+    const p1 = room.getPlayers()[1]
+    if (!p0 || !p1) throw new Error('no players')
+    p0.lastInputSeq = 10
+    p1.lastInputSeq = 20
+
+    let encodeCalls = 0
+    const bc = new SnapshotBroadcaster({
+      profile: {
+        typeSpec: TYPE_SPECS.fps,
+        writeSnapshot: ({ view, serverTick, lastAckSeq, players }) => {
+          encodeCalls++
+          // 簡易 payload: header のみ
+          view.setUint8(0, MSG_S2C_SNAPSHOT)
+          view.setUint32(1, serverTick, true)
+          view.setUint32(5, lastAckSeq, true)
+          return 9 + players.length * 16
+        },
+      },
+    })
+
+    bc.maybeSend(room, 0)
+    // 2人いても encode は1回
+    expect(encodeCalls).toBe(1)
+
+    const peer0 = peer(room, 0)
+    const peer1 = peer(room, 1)
+    const snap0 = decodeSnapshot(payloadOfFrame(firstPacket(peer0)), payloadOfFrame(firstPacket(peer0)).byteLength)
+    const snap1 = decodeSnapshot(payloadOfFrame(firstPacket(peer1)), payloadOfFrame(firstPacket(peer1)).byteLength)
+    // per-peer lastAckSeq が正しくパッチされている
+    expect(snap0.lastAckSeq).toBe(10)
+    expect(snap1.lastAckSeq).toBe(20)
+  })
+
+  it('writeCompatSnapshot は map なしで動作する（EM1-C B12）', () => {
+    const room = roomWith(2)
+    const bc = new SnapshotBroadcaster() // compat writer
+    const bytes = bc.maybeSend(room, 0)
+    expect(bytes).toBe(snapshotPayloadBytes(2))
+    // 各 peer が受信できている
+    expect(peer(room, 0).binary).toHaveLength(1)
+    expect(peer(room, 1).binary).toHaveLength(1)
+  })
+
 })

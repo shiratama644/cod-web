@@ -261,4 +261,29 @@ describe('GameClient network path', () => {
     expect(transport.send).toHaveBeenCalledTimes(5)
     expect(client.remotes.get(2)).toMatchObject({ id: 2, x: 8 })
   })
+
+  it('remotes Map は毎フレーム new せず再利用される（EM1-D GC削減）', () => {
+    const transport = new MockTransport()
+    const client = new GameClient(transport)
+    client.setInput(inputStub())
+
+    client.connect('ws://example.test/ws')
+    transport.emitOpen()
+    transport.emitText(JSON.stringify({ kind: 'welcome', playerId: 1 }))
+
+    transport.emitBinary(
+      Channel.Unreliable,
+      snapshotView({
+        serverTick: 1,
+        lastAckSeq: 1,
+        players: [{ id: 2, x: 1, y: 5, z: 0, vx: 0, vy: 0, vz: 0, yaw: 0 }],
+      }),
+    )
+    client.frame(SIM_DT)
+    const ref1 = client.remotes
+    client.frame(SIM_DT)
+    const ref2 = client.remotes
+    // 同じ Map インスタンスが再利用されている
+    expect(ref1).toBe(ref2)
+  })
 })

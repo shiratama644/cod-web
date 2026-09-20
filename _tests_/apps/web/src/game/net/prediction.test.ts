@@ -102,6 +102,19 @@ describe('ClientPrediction', () => {
     expect(pred.state.x).toBeCloseTo(before.x, 5)
     expect(pred.state.z).toBeCloseTo(before.z, 5)
   })
+
+  it('reconcile は pending を in-place で削除し新配列を確保しない（EM1-D）', () => {
+    const pred = createFpsPrediction(1)
+    for (let i = 0; i < 5; i++) pred.applyInput(moveInput())
+    // biome-ignore lint/suspicious/noExplicitAny: private access for test
+    const anyPred = pred as any
+    const beforeRef = anyPred.pending
+    const { state, seq } = srv({ x: pred.state.x, y: pred.state.y, z: pred.state.z }, 3)
+    pred.reconcile(state, seq)
+    // 同じ配列インスタンスが再利用されている（filter による new なし）
+    expect(anyPred.pending).toBe(beforeRef)
+    expect(pred.pendingCount).toBe(2)
+  })
 })
 
 describe('Interpolator', () => {
@@ -199,5 +212,30 @@ describe('Interpolator', () => {
 
     expect(interp.sampleCount).toBeLessThan(10)
     expect(interp.sampleCount).toBeGreaterThanOrEqual(2)
+  })
+
+  it('sample は out Map を再利用し GC を削減する（EM1-D）', () => {
+    const interp = new Interpolator()
+    interp.push(snapshot(0, [{ id: 2, x: 0 }]), 0)
+    interp.push(snapshot(1, [{ id: 2, x: 10 }]), 100)
+    const out = new Map()
+    const ref1 = interp.sample(150, 1, out)
+    const ref2 = interp.sample(160, 1, out)
+    expect(ref1).toBe(out)
+    expect(ref2).toBe(out)
+    expect(out.get(2)?.x).toBeDefined()
+  })
+
+  it('samples は head index で shift O(n) を回避する（EM1-E）', () => {
+    const interp = new Interpolator()
+    for (let i = 0; i < 20; i++) {
+      interp.push(snapshot(i, [{ id: 2, x: i }]), i * 100)
+    }
+    // 20 push しても sampleCount は 2 以上かつ 10 未満に抑えられる（古いものが head で捨てられる）
+    expect(interp.sampleCount).toBeGreaterThanOrEqual(2)
+    expect(interp.sampleCount).toBeLessThan(10)
+    // 最新の補間が正しく動く
+    const out = interp.sample(1950, 1)
+    expect(out.get(2)).toBeDefined()
   })
 })

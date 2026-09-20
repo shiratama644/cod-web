@@ -105,4 +105,25 @@ describe('Room — 参加/離退', () => {
     expect(room.join(makePeer())).toBeNull()
   })
 
+  it('getPlayersIterable は配列確保せずに同じ内容を返す（EM1-C ゼロアロケ）', () => {
+    const room = new Room()
+    const id1 = room.join(makePeer()) as number
+    const id2 = room.join(makePeer()) as number
+    const arr = room.getPlayers()
+    const iterable = room.getPlayersIterable()
+    const fromIterable = [...iterable]
+    expect(fromIterable).toHaveLength(arr.length)
+    expect(fromIterable.map((p) => p.id).sort()).toEqual([id1, id2].sort())
+    // Iterable は Map.values() を直接返すので、getPlayers() の配列とは別参照だが内容一致
+    expect(iterable).not.toBe(arr as unknown as Iterable<unknown>)
+  })
+
+  it('getPeersIterable は peers を返す', () => {
+    const room = new Room()
+    room.join(makePeer())
+    room.join(makePeer())
+    const peers = [...room.getPeersIterable()]
+    expect(peers).toHaveLength(2)
+  })
+
 })
