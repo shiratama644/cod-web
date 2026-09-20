@@ -55,6 +55,13 @@ export class SnapshotBroadcaster {
   }
 
   /**
+   * 離脱したプレイヤーの backpressure 状態を破棄する（メモリリーク防止）。
+   */
+  removePlayer(playerId: number): void {
+    this.paused.delete(playerId)
+  }
+
+  /**
    * シム tick ごとに呼ぶ。profile の snapshotHz に基づいて送信する。
    * @returns 送信した場合の payload バイト数（Channel を除く）、スキップしたら null。
    */
@@ -90,6 +97,7 @@ export class SnapshotBroadcaster {
       const sent = peer.sendBinary(u8.subarray(0, frameBytes))
       if (sent === 0) {
         peer.disconnect?.(1011, 'send failed')
+        this.removePlayer(p.id)
         dropped.push(p.id)
         continue
       }

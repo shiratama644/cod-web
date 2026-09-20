@@ -95,6 +95,16 @@ export class Simulation<TWorld> {
   }
 
   /**
+   * 離脱したプレイヤーのリソースを破棄する（メモリリーク防止）。
+   * Room.leave 後に gameserver の close ハンドラから呼ぶ。
+   */
+  removePlayer(playerId: number): void {
+    this.inputQueues.delete(playerId)
+    this.latestSeq.delete(playerId)
+    this.lagComp.clear(playerId)
+  }
+
+  /**
    * 1 固定ステップ進める。各プレイヤーについてキュー先頭の入力を 1 つ消費して
    * stepPlayer を適用。キューが空なら profile の idle input で進める。
    */

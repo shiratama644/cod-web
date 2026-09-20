@@ -100,6 +100,8 @@ const server = Bun.serve<SocketData>({
       const id = ws.data?.playerId
       if (id != null && id > 0) {
         inputRate.remove(id)
+        sim.removePlayer(id)
+        snapshots.removePlayer(id)
         room.leave(id)
         console.log(`[server] player left: id=${id} (room=${room.playerCount})`)
       }

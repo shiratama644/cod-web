@@ -207,4 +207,38 @@ describe('SnapshotBroadcaster', () => {
     expect(payload.getUint8(9)).toBe(1)
   })
 
+  it('removePlayer で paused Set がクリアされる（EM1-A リーク修正）', () => {
+    const room = roomWith(2)
+    const slow = peer(room, 0)
+    const slowId = room.getPlayers()[0]?.id
+    if (slowId == null) throw new Error('no slow id')
+    slow.sendResult = -1
+
+    const bc = new SnapshotBroadcaster()
+    bc.maybeSend(room, 0)
+    // biome-ignore lint/suspicious/noExplicitAny: private access for test
+    const anyBc = bc as any
+    expect(anyBc.paused.has(slowId)).toBe(true)
+
+    bc.removePlayer(slowId)
+    expect(anyBc.paused.has(slowId)).toBe(false)
+  })
+
+  it('send() 0 で paused がクリアされ、room.leave が呼ばれる', () => {
+    const room = roomWith(1)
+    const dead = peer(room, 0)
+    const deadId = room.getPlayers()[0]?.id
+    if (deadId == null) throw new Error('no dead id')
+    dead.sendResult = 0
+
+    const bc = new SnapshotBroadcaster()
+    bc.maybeSend(room, 0)
+
+    // paused はクリアされている（removePlayer 呼び出し）
+    // biome-ignore lint/suspicious/noExplicitAny: private access for test
+    const anyBc = bc as any
+    expect(anyBc.paused.has(deadId)).toBe(false)
+    expect(room.getPlayer(deadId)).toBeUndefined()
+  })
+
 })

@@ -157,4 +157,33 @@ describe('Simulation — 権威シミュレーション', () => {
     expect(p?.y).toBeLessThan(5)
   })
 
+  it('removePlayer で inputQueues / latestSeq / lagComp がクリアされる（EM1-A リーク修正）', () => {
+    const room = new Room()
+    const id = room.join(noopPeer()) as number
+    const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
+
+    sim.receiveInput(id, input({ seq: 1 }))
+    sim.receiveInput(id, input({ seq: 2 }))
+    sim.step()
+    // 内部的にキューと履歴がある（private へは any 経由でテスト）
+    // biome-ignore lint/suspicious/noExplicitAny: private access for test
+    const anySim = sim as any
+    expect(anySim.inputQueues.get(id)?.length).toBeGreaterThanOrEqual(0)
+    expect(anySim.latestSeq.get(id)).toBe(2)
+    expect(sim.lagComp.getHistory(id).length).toBeGreaterThan(0)
+
+    sim.removePlayer(id)
+
+    expect(anySim.inputQueues.has(id)).toBe(false)
+    expect(anySim.latestSeq.has(id)).toBe(false)
+    expect(sim.lagComp.getHistory(id)).toHaveLength(0)
+  })
+
+  it('存在しない id の removePlayer は例外を投げない', () => {
+    const room = new Room()
+    room.join(noopPeer())
+    const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
+    expect(() => sim.removePlayer(999)).not.toThrow()
+  })
+
 })
