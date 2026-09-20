@@ -112,7 +112,7 @@ export class Simulation<TWorld> {
     const tick = this.tickNumber + 1
     const timeMs = (tick * 1000) / this.tickHz
     const dtMs = Math.round(this.stepSeconds * 1000)
-    for (const player of this.room.getPlayers()) {
+    for (const player of this.room.getPlayersIterable()) {
       const q = this.inputQueues.get(player.id)
       const queued = q && q.length > 0 ? q.shift() : undefined
       if (queued) {

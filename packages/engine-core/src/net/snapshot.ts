@@ -5,12 +5,7 @@
  * `bufferedAmount` は使わない。
  */
 
-import {
-  CHANNEL_BYTES,
-  Channel,
-  SNAPSHOT_SEND_EVERY_TICKS,
-  snapshotPayloadBytes,
-} from '@cod/protocol/protocol/constants'
+import { CHANNEL_BYTES, Channel, SNAPSHOT_SEND_EVERY_TICKS } from '@cod/protocol/protocol/constants'
 import type { Snapshot } from '@cod/protocol/protocol/messages'
 import { SNAPSHOT_MAX_BYTES, encodeSnapshot } from '@cod/protocol/protocol/packer'
 import type { PlayerState } from '@cod/protocol/types'
@@ -69,7 +64,12 @@ export class SnapshotBroadcaster {
     if (serverTick - this.lastSentTick < this.snapshotEveryTicks) return null
     this.lastSentTick = serverTick
 
-    const players = room.getPlayers()
+    const playerCount = room.playerCount
+    if (playerCount === 0) return null
+
+    // ゼロアロケ: getPlayersIterable で配列確保を避ける。ただし writeSnapshot は配列を要求するため
+    // 1 回だけ配列化する（n 回 encode していた従来より大幅に削減）。encode は 1 回のみ。
+    const players = [...room.getPlayersIterable()]
     if (players.length === 0) return null
 
     const u8 = this.ring[this.ringIndex]
@@ -81,18 +81,21 @@ export class SnapshotBroadcaster {
       u8.byteLength - CHANNEL_BYTES,
     )
 
+    // 1 回だけエンコード（ダミー lastAckSeq）。後で per-peer に lastAckSeq をパッチする。
+    const payloadBytes = this.writeSnapshot({
+      view,
+      serverTick,
+      lastAckSeq: 0,
+      players,
+    })
+
     const dropped: number[] = []
-    let payloadBytes = snapshotPayloadBytes(players.length)
     for (const p of players) {
       const peer = room.getPeer(p.id)
       if (!peer) continue
       if (this.paused.has(p.id)) continue
-      payloadBytes = this.writeSnapshot({
-        view,
-        serverTick,
-        lastAckSeq: p.lastInputSeq,
-        players,
-      })
+      // per-peer lastAckSeq をパッチ（type:1B + serverTick:4B の後 = offset 5）
+      view.setUint32(5, p.lastInputSeq >>> 0, true)
       const frameBytes = CHANNEL_BYTES + payloadBytes
       const sent = peer.sendBinary(u8.subarray(0, frameBytes))
       if (sent === 0) {
@@ -110,19 +113,13 @@ export class SnapshotBroadcaster {
 }
 
 function writeCompatSnapshot({ view, serverTick, lastAckSeq, players }: Parameters<SnapshotProfile['writeSnapshot']>[0]): number {
+  // ゼロアロケ: players.map による中間配列確保を廃止。
+  // PlayerState は SnapshotPlayer のスーパーセット（id,x,y,z,vx,vy,vz,yaw を含む）なので
+  // map せずにキャストでそのまま渡せる。余分なフィールドは encodeSnapshot 内で無視される。
   const snapshot: Snapshot = {
     serverTick,
     lastAckSeq,
-    players: players.map((p) => ({
-      id: p.id,
-      x: p.x,
-      y: p.y,
-      z: p.z,
-      vx: p.vx,
-      vy: p.vy,
-      vz: p.vz,
-      yaw: p.yaw,
-    })),
+    players: players as unknown as Snapshot['players'],
   }
   return encodeSnapshot(view, snapshot)
 }

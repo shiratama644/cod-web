@@ -55,9 +55,19 @@ export class Room {
     return this.players.size
   }
 
-  /** 参加している全プレイヤー状態（スナップショット生成・シムで使用）。 */
+  /** 参加している全プレイヤー状態（スナップショット生成・シムで使用）。旧API: hot pathでは getPlayersIterable を使う。 */
   getPlayers(): PlayerState[] {
     return [...this.players.values()]
+  }
+
+  /** ゼロアロケ用: Map.values() の Iterable を直接返す。配列確保しない。 */
+  getPlayersIterable(): Iterable<PlayerState> {
+    return this.players.values()
+  }
+
+  /** ゼロアロケ用: peers の Iterable。 */
+  getPeersIterable(): Iterable<Peer> {
+    return this.peers.values()
   }
 
   getPlayer(id: number): PlayerState | undefined {
