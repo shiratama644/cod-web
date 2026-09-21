@@ -29,18 +29,26 @@ export default defineConfig({
     },
   ],
   webServer: shouldStartLocalServer
-    ? {
-        // lighter than `bun run start` (which does install+build+server+preview).
-        // For E2E discovery (`--list`) browser binary is not needed.
-        // Full E2E with WS needs gameserver running separately (`bun run server`)
-        // or use `bun run start` manually. See docs/ops/quality-gates.md.
-        command: 'bun run preview',
-        url: localBaseURL,
-        reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
-        stdout: 'pipe',
-        stderr: 'pipe',
-        gracefulShutdown: { signal: 'SIGTERM', timeout: 1_000 },
-      }
+    ? [
+        {
+          command: 'bun run server',
+          url: 'http://127.0.0.1:8080',
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+          stdout: 'pipe',
+          stderr: 'pipe',
+          gracefulShutdown: { signal: 'SIGTERM', timeout: 1_000 },
+        },
+        {
+          // preview proxies /ws to gameserver (vite.config.ts)
+          command: 'bun run preview',
+          url: localBaseURL,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+          stdout: 'pipe',
+          stderr: 'pipe',
+          gracefulShutdown: { signal: 'SIGTERM', timeout: 1_000 },
+        },
+      ]
     : undefined,
 })

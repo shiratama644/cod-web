@@ -138,6 +138,20 @@
 | EM1-E | 入力キュー/補間/ラグ補償のshift/splice改善 | ローカル検証済み | 100% | EM1-C | `shift()` / `splice` を head index リングに（可能な範囲） | `325771b` / InputQueue {buf,head} + LagCompStore HistoryBuffer + Interpolator sampleHead / 134 tests |
 | EM1-F | 回帰テスト + coverage + docs整理 | ローカル検証済み | 100% | EM1-A〜EM1-E | B1〜B5,B11,B12回帰テスト、coverage閾値維持、HANDOFF/quality-gates更新 | 本コミット / Room iterable 2 tests + snapshot encode once 2 tests + GameClient reuse 1 + prediction in-place 1 + interpolator reuse 2 = 142 tests / coverage 81.22%/76.02%/81.9%/82.8% / determinism + heavy pass / E2E list 3 / HANDOFF/quality-gates更新 |
 
+### Emergency Phase 2 (EM2) — テストカバレッジ 85% 達成
+
+計画書: [`planning/EM02_PLAN.md`](./planning/EM02_PLAN.md)  
+目的: 意味あるテストで coverage を Statements/Branches/Functions/Lines 85%以上へ引き上げ、Playwright フルE2E（gameserver + preview の複数 webServer）を実現する。include-all 方針で gameserver/index.ts、BabylonGame.ts、App.tsx もカバー。
+
+| ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
+|---|---|---|---:|---|---|---:|
+| PLAT-EM2 | EM02 計画作成（カバレッジ85%） | ローカル検証済み | 100% | EM1-F | `_TEMPLATE.md` 準拠の計画、事実確認（81.22%/76.02%/81.9%/82.8%）、低カバレッジ一覧、task-list に EM2 追加 | 本コミット / `EM02_PLAN.md` / task-list 更新 / 81.22%/76.02%/81.9%/82.8% 事実確認済み |
+| EM2-A | サーバー/プロトコル/エンジンの意味あるカバレッジ増加 | ローカル検証済み | 100% | PLAT-EM2 | gameserver/index.ts 0%→70%+、types 50%→100%、ingest/snapshot/Room/Simulation/collision/movement/packer/quantize 85%+、coverage 全体 85%へ寄与 | 本コミット / `handlers.ts` 新規 + `handlers.test.ts` 13 tests + `index.test.ts` 5 tests / `types.test.ts` 3 tests / `quantize.test.ts` 6 tests / `ingest` ArrayBuffer branch / `packer` readMessageType empty / handlers 97% / index 30%→~80% (setInterval loop + ws handlers) / coverage 95.12%/87.97%/90.7%/96.8% |
+| EM2-B | クライアント（BabylonGame/InputController/App/GameCanvas/store）のカバレッジ増加 | ローカル検証済み | 100% | PLAT-EM2 | BabylonGame 2%→80%+、InputController 72%→85%+、App 0%→85%+、GameCanvas/store/websocket/interpolation/prediction 85%+ | 本コミット / `babylonDeps.ts` 新規 (testability) / `BabylonGame.test.ts` 6 tests (mock deps) / `InputController.test.ts` 3→13 tests (WASD/jump/joystick/deadzone/pitch/touch-ui/pointer up/lock) / `App2.test.tsx` 2 tests (App 0%→100%) / `GameCanvas` 81%→~90% (null ref + re-create) / BabylonGame 2%→96.9% / InputController 72%→~95% |
+| EM2-C | Playwright E2E拡充（フルE2E複数webServer） | ローカル検証済み | 100% | PLAT-EM2 | `playwright.config.ts` webServer 配列化（gameserver + preview）、E2E 3→8+ tests、WS proxy・HUD・StartOverlay・TouchControls・multi-context・切断再接続 | 本コミット / `playwright.config.ts` webServer配列化 (gameserver 8080 + preview 4173) / `game-shell.spec.ts` 3→11 tests (HUD hp/ammo, StartOverlay hide, no console errors, TouchControls mobile, canvas resize, WS /ws proxy, multi-context 2 tabs, disconnection) / `bun run test:e2e -- --list` 11 tests discovered |
+| EM2-D | thresholds 85%更新 + docs整理 | ローカル検証済み | 100% | EM2-A〜EM2-C | `vitest.config.ts` thresholds 85/85/85/85、task-list/HANDOFF/quality-gates/skills/log 更新 | 本コミット / `vitest.config.ts` 79/73/79/80→85/85/85/85 / coverage 95.12%/87.97%/90.7%/96.8% pass / `App.tsx` 100% / `BabylonGame` 96.9% / `types` 100% / `quantize` 100% |
+| EM2-E | 最終検証（coverage 85%達成確認） | ローカル検証済み | 100% | EM2-D | 4検証 + coverage 85% + E2E discovery 8+ + determinism + heavy pass | 本コミット / typecheck pass / lint 0 warnings / test:unit 30 files 189 tests / coverage 95.12%/87.97%/90.7%/96.8% / build pass / E2E list 11 / determinism + heavy pass |
+
 ### ドキュメント・規約
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |

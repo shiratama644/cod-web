@@ -14,6 +14,7 @@ export default defineConfig({
       '@cod/protocol': path.resolve(rootDir, 'packages/protocol/src'),
       '@cod/engine-core': path.resolve(rootDir, 'packages/engine-core/src'),
       '@cod/profile-fps': path.resolve(rootDir, 'packages/profile-fps/src'),
+      '@cod/gameserver': path.resolve(rootDir, 'apps/gameserver/src'),
     },
   },
   test: {
@@ -50,12 +51,13 @@ export default defineConfig({
         'apps/web/src/vite-env.d.ts',
       ],
       thresholds: {
-        // PH1.5-B ratchet: set just below/at the measured meaningful-coverage
-        // floor so future changes cannot silently fall back to the PH1.5-A baseline.
-        statements: 79,
-        branches: 73,
-        functions: 79,
-        lines: 80,
+        // EM2: meaningful coverage 85% for all metrics (statements/branches/functions/lines)
+        // Baseline after EM1: 81.22%/76.02%/81.9%/82.8%
+        // After EM2-A/B: 93.88%/86.19%/88.49%/95.56% (30 files/185 tests)
+        statements: 85,
+        branches: 85,
+        functions: 85,
+        lines: 85,
       },
     },
   },

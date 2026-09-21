@@ -11,34 +11,20 @@
  * profile-fps の純粋ロジック（three core/math + three-mesh-bvh、CPU のみ）を使う。
  */
 
-import { ingestInput } from '@cod/engine-core/net/ingest'
-import { ProtocolError } from '@cod/protocol/protocol/binary'
 import { createDefaultServerRuntime } from './runtime'
-import type { Peer } from '@cod/engine-core/room/Room'
+import { createHandlers, type SocketData } from './handlers'
 
 const PORT = Number(process.env.PORT ?? 8080)
 const HOST = '0.0.0.0'
 
-/** WebSocket の data に乗せる接続ごとの状態。 */
-interface SocketData {
-  playerId: number
-}
-
 const { profile, room, sim, snapshots, inputRate } = createDefaultServerRuntime()
+
+const handlers = createHandlers({ room, sim, snapshots, inputRate })
 
 const server = Bun.serve<SocketData>({
   port: PORT,
   hostname: HOST,
-  fetch(req, server) {
-    // WebSocket アップグレード（接続ごとの data 初期値）
-    if (server.upgrade(req, { data: { playerId: -1 } })) {
-      return // アップグレード成功時は Response 不要
-    }
-    // 通常 HTTP は簡単なヘルスチェック応答のみ
-    return new Response('cod-web game server (bun) — connect via WebSocket', {
-      status: 200,
-    })
-  },
+  fetch: handlers.fetch,
   websocket: {
     maxPayloadLength: 64 * 1024,
     idleTimeout: 30,
@@ -47,62 +33,25 @@ const server = Bun.serve<SocketData>({
     sendPings: true,
     perMessageDeflate: false,
     open(ws) {
-      const peer: Peer = {
-        playerId: -1,
-        sendText: (data) => {
-          ws.send(data)
-        },
-        sendBinary: (data) => {
-          const u8 =
-            data instanceof Uint8Array
-              ? data
-              : new Uint8Array(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength)
-          return ws.send(u8)
-        },
-        disconnect: (code, reason) => {
-          ws.close(code, reason)
-        },
+      handlers.open(ws as unknown as Parameters<typeof handlers.open>[0])
+      const id = (ws as unknown as { data?: SocketData }).data?.playerId
+      if (id != null && id > 0) {
+        console.log(`[server] player joined: id=${id} (room=${room.playerCount})`)
       }
-      const id = room.join(peer)
-      if (id === null) {
-        ws.send(JSON.stringify({ kind: 'full' }))
-        ws.close(1013, 'room full')
-        return
-      }
-      peer.playerId = id
-      ws.data = { playerId: id }
-      console.log(`[server] player joined: id=${id} (room=${room.playerCount})`)
     },
     message(ws, message) {
-      try {
-        if (typeof message === 'string') {
-          // 制御テキストメッセージは現状なし（welcome/join/leave はサーバー発）。
-          return
-        }
-        const input = ingestInput(message)
-        const playerId = ws.data?.playerId
-        if (playerId != null && playerId > 0) {
-          if (!inputRate.allow(playerId, performance.now())) {
-            throw new ProtocolError('input rate exceeded')
-          }
-          sim.receiveInput(playerId, input)
-        }
-      } catch (err) {
-        const code = err instanceof ProtocolError ? err.closeCode : 1002
-        ws.close(code, 'protocol')
-      }
+      handlers.message(
+        ws as unknown as Parameters<typeof handlers.message>[0],
+        message as string | ArrayBuffer | Uint8Array,
+      )
     },
     drain(ws) {
-      const id = ws.data?.playerId
-      if (id != null && id > 0) snapshots.markWritable(id)
+      handlers.drain(ws as unknown as Parameters<typeof handlers.drain>[0])
     },
     close(ws) {
-      const id = ws.data?.playerId
+      const id = (ws as unknown as { data?: SocketData }).data?.playerId
+      handlers.close(ws as unknown as Parameters<typeof handlers.close>[0])
       if (id != null && id > 0) {
-        inputRate.remove(id)
-        sim.removePlayer(id)
-        snapshots.removePlayer(id)
-        room.leave(id)
         console.log(`[server] player left: id=${id} (room=${room.playerCount})`)
       }
     },

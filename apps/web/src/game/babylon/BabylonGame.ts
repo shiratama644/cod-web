@@ -6,22 +6,17 @@
  * `client.frame(dtSec)` と mesh/camera の直接更新だけを行う。
  */
 
-import { Engine } from '@babylonjs/core/Engines/engine'
+import type { Engine } from '@babylonjs/core/Engines/engine'
 import type { EngineOptions } from '@babylonjs/core/Engines/thinEngine.pure'
-import { Scene } from '@babylonjs/core/scene'
-import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera'
-import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight'
-import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight'
+import type { Scene } from '@babylonjs/core/scene'
+import type { FreeCamera } from '@babylonjs/core/Cameras/freeCamera'
 import type { Mesh as BabylonMesh } from '@babylonjs/core/Meshes/mesh'
-import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder'
-import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial'
-import { Color3, Color4 } from '@babylonjs/core/Maths/math.color'
-import { Vector3 } from '@babylonjs/core/Maths/math.vector'
 import { DEFAULT_OBSTACLES } from '@cod/profile-fps/sim/collisionWorld'
 import { PLAYER_HEIGHT } from '@cod/profile-fps/sim/movement'
 import { gameStoreApi } from '@/store/gameStore'
 import type { InputController } from '../input/InputController'
 import { GameClient } from '../net/GameClient'
+import * as deps from './babylonDeps'
 
 const GRACE_MS = 600
 const CAMERA_BACKWARD_YAW = Math.PI
@@ -38,8 +33,8 @@ export class BabylonGame {
   private readonly camera: FreeCamera
   private readonly client = new GameClient()
   private readonly remotes = new Map<number, RemoteMesh>()
-  private readonly cameraPosition = new Vector3()
-  private readonly remotePosition = new Vector3()
+  private readonly cameraPosition = deps.createVector3()
+  private readonly remotePosition = deps.createVector3()
   private readonly resize = () => this.engine.resize()
   private frameMark = 0
   private disposed = false
@@ -57,11 +52,15 @@ export class BabylonGame {
       powerPreference: 'high-performance',
     }
 
-    this.engine = new Engine(canvas, false, options, false)
+    this.engine = deps.createEngine(canvas, options)
     this.engine.setHardwareScalingLevel(1)
-    this.scene = new Scene(this.engine)
-    this.scene.clearColor = new Color4(0.64, 0.81, 0.95, 1)
-    this.camera = new FreeCamera('player-camera', new Vector3(0, PLAYER_HEIGHT, -4), this.scene)
+    this.scene = deps.createScene(this.engine)
+    this.scene.clearColor = deps.createColor4(0.64, 0.81, 0.95, 1)
+    this.camera = deps.createFreeCamera(
+      'player-camera',
+      deps.createVector3(0, PLAYER_HEIGHT, -4),
+      this.scene,
+    )
     this.camera.minZ = 0.05
     this.camera.maxZ = 600
     this.scene.activeCamera = this.camera
@@ -91,33 +90,33 @@ export class BabylonGame {
   }
 
   private createLighting(): void {
-    const hemi = new HemisphericLight('sky-light', new Vector3(0, 1, 0), this.scene)
+    const hemi = deps.createHemisphericLight('sky-light', deps.createVector3(0, 1, 0), this.scene)
     hemi.intensity = 0.95
-    hemi.groundColor = new Color3(0.45, 0.52, 0.38)
+    hemi.groundColor = deps.createColor3(0.45, 0.52, 0.38)
 
-    const sun = new DirectionalLight('sun', new Vector3(-0.72, -0.46, -0.5), this.scene)
-    sun.position = new Vector3(34, 22, 24)
+    const sun = deps.createDirectionalLight('sun', deps.createVector3(-0.72, -0.46, -0.5), this.scene)
+    sun.position = deps.createVector3(34, 22, 24)
     sun.intensity = 1.8
   }
 
   private createStaticMap(): void {
-    const groundMaterial = new StandardMaterial('ground-material', this.scene)
-    groundMaterial.diffuseColor = new Color3(0.49, 0.6, 0.37)
-    groundMaterial.specularColor = Color3.Black()
+    const groundMaterial = deps.createStandardMaterial('ground-material', this.scene)
+    groundMaterial.diffuseColor = deps.createColor3(0.49, 0.6, 0.37)
+    groundMaterial.specularColor = deps.Color3.Black()
     groundMaterial.freeze()
 
-    const obstacleMaterial = new StandardMaterial('obstacle-material', this.scene)
-    obstacleMaterial.diffuseColor = new Color3(0.6, 0.54, 0.43)
-    obstacleMaterial.specularColor = Color3.Black()
+    const obstacleMaterial = deps.createStandardMaterial('obstacle-material', this.scene)
+    obstacleMaterial.diffuseColor = deps.createColor3(0.6, 0.54, 0.43)
+    obstacleMaterial.specularColor = deps.Color3.Black()
     obstacleMaterial.freeze()
 
-    const ground = MeshBuilder.CreateBox('ground', { width: 400, height: 1, depth: 400 }, this.scene)
+    const ground = deps.createBox('ground', { width: 400, height: 1, depth: 400 }, this.scene)
     ground.position.y = -0.5
     ground.material = groundMaterial
     ground.freezeWorldMatrix()
 
     for (const o of DEFAULT_OBSTACLES) {
-      const obstacle = MeshBuilder.CreateBox(
+      const obstacle = deps.createBox(
         `obstacle-${o.cx}-${o.cy}-${o.cz}`,
         { width: o.sizeX, height: o.sizeY, depth: o.sizeZ },
         this.scene,
@@ -129,12 +128,12 @@ export class BabylonGame {
   }
 
   private createRemoteMesh(id: number): RemoteMesh {
-    const material = new StandardMaterial(`remote-material-${id}`, this.scene)
-    material.diffuseColor = new Color3(1, 0.35, 0.35)
-    material.specularColor = Color3.Black()
+    const material = deps.createStandardMaterial(`remote-material-${id}`, this.scene)
+    material.diffuseColor = deps.createColor3(1, 0.35, 0.35)
+    material.specularColor = deps.Color3.Black()
     material.freeze()
 
-    const mesh = MeshBuilder.CreateCapsule(
+    const mesh = deps.createCapsule(
       `remote-${id}`,
       { radius: 0.4, height: PLAYER_HEIGHT, tessellation: 8, subdivisions: 4 },
       this.scene,
