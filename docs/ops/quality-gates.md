@@ -1,8 +1,8 @@
-# Quality Gates（Phase 3 完了・Phase 4 計画作成中 PLAT-4）
+# Quality Gates（Phase 4 完了・Phase 5 計画作成待ち）
 
-> 対応タスク: `PLAT-4`（Phase 4 計画作成中）  
-> 目的: Phase 3 gamemode API第1版 + fps-ffa最小完了後、Phase 4 ハブ+Sandboxモーダル+投票+マッチメイカー骨組み計画作成中の品質ゲートを明確化する。  
-> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可。2026-09-20 EM01 で memory leak / zero-alloc / GC / shift 改善を追加。2026-09-21 EM02 で coverage 85%達成 + Playwright フルE2E複数webServer。2026-09-22 ドキュメント整理で `docs/ops/github-actions-proposal.yml` 重複提案を削除し、正本は `.github/workflows/quality-gates.yml` のみに統一。2026-09-22 Phase 3完了で gamemode-api/sdk + GameModeRuntime + fps-ffa + gameserver統合。2026-09-22 ユーザー理想 FPS/Voxel/Sandbox 3カテゴリ確定、product.md/editor.md/types.md/matchmaker.md/client.md/architecture.md更新、PHASE04_PLAN.md作成。
+> 対応タスク: `PH4-F`（Phase 4 完了）  
+> 目的: Phase 4 ハブ+Sandboxモーダル+投票+マッチメイカー骨組み完了後、Phase 5 計画作成前の品質ゲートを明確化する。  
+> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可。2026-09-20 EM01 で memory leak / zero-alloc / GC / shift 改善を追加。2026-09-21 EM02 で coverage 85%達成 + Playwright フルE2E複数webServer。2026-09-22 ドキュメント整理で `docs/ops/github-actions-proposal.yml` 重複提案を削除し、正本は `.github/workflows/quality-gates.yml` のみに統一。2026-09-22 Phase 3完了で gamemode-api/sdk + GameModeRuntime + fps-ffa + gameserver統合。2026-09-22改訂版 Official FPS 1ゲーム複数モード + Voxel 1モード永続 + Sandbox公式拡張+UGC、product.md/editor.md/types.md/matchmaker.md/client.md/architecture.md更新、PHASE04_PLAN.md改訂版。2026-09-22 Phase 4完了 PH4-A〜F ハブUI骨組み (Header/Sidebar/SandboxModal/Detail/Room/Vote)。
 
 ## 1. 公式確認した根拠
 
@@ -50,12 +50,12 @@ bun run test:e2e -- --list
 
 EM02 で thresholds を 85% に引き上げ、意味あるテストで達成。
 
-| Metric | PH1.5-A baseline | PH1.5-B after | EM01 after | EM02 after | PH3-D after | Current threshold |
-|---|---:|---:|---:|---:|---:|---:|
-| Statements | 66.82% (725/1085) | 79.17% (859/1085) | 81.22% (965/1188) | 95.12% (1151/1210) | 93.34% (1486/1592) | 85 |
-| Branches | 57.10% (225/394) | 73.85% (291/394) | 76.02% (333/438) | 87.97% (395/449) | 86.82% (547/630) | 85 |
-| Functions | 64.43% (125/194) | 79.38% (154/194) | 81.9% (172/210) | 90.7% (205/226) | 86.72% (281/324) | 85 |
-| Lines | 68.97% (696/1009) | 80.77% (815/1009) | 82.8% (915/1105) | 96.8% (1091/1127) | 94.83% (1413/1490) | 85 |
+| Metric | PH1.5-A baseline | PH1.5-B after | EM01 after | EM02 after | PH3-D after | PH4-F after | Current threshold |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Statements | 66.82% (725/1085) | 79.17% (859/1085) | 81.22% (965/1188) | 95.12% (1151/1210) | 93.34% (1486/1592) | 93.51% (1702/1820) | 85 |
+| Branches | 57.10% (225/394) | 73.85% (291/394) | 76.02% (333/438) | 87.97% (395/449) | 86.82% (547/630) | 85.8% (653/761) | 85 |
+| Functions | 64.43% (125/194) | 79.38% (154/194) | 81.9% (172/210) | 90.7% (205/226) | 86.72% (281/324) | 88.48% (361/408) | 85 |
+| Lines | 68.97% (696/1009) | 80.77% (815/1009) | 82.8% (915/1105) | 96.8% (1091/1127) | 94.83% (1413/1490) | 94.76% (1594/1682) | 85 |
 
 運用ルール:
 
@@ -153,11 +153,12 @@ bun run typecheck && bunx biome lint . && bun run check:determinism && bun run t
 bunx playwright install --with-deps chromium && bun run test:e2e
 ```
 
-## 6. Phase 3 完了確認と Phase 4 へ進む前の確認
+## 6. Phase 4 完了確認と Phase 5 へ進む前の確認
 
-- `bun run test:unit` 37 files / 255 tests pass (PH3-C 36/242 → PH3-D 37/255)
-- `bun run test:coverage` が thresholds（85/85/85/85）を満たす。PH3-D後: 93.34%/86.82%/86.72%/94.83%
+- `bun run test:unit` 44 files / 311 tests pass (PH3-D 37/255 → PH4-F 44/311, +7 files +56 tests)
+- `bun run test:coverage` が thresholds（85/85/85/85）を満たす。PH4-F後: 93.51%/85.8%/88.48%/94.76%
 - `bun run check:determinism` pass (no forbidden patterns)
+- `bun run scripts/determinism-heavy.ts` pass (100x1000 0.7s)
 - `bun run test:e2e -- --list` で 11 tests discovered
 - import boundary audit: 0 violations (engine-core→profile-*, gamemodes→sdkのみ)
 - `grep console.log` client 0件、server 3件（運用ログ許容）
@@ -169,15 +170,21 @@ bunx playwright install --with-deps chromium && bun run test:e2e
 - gamemode exception safety: roomが落ちない (GameModeRuntime safeCall + timer try/catch + runtime-gamemode.test.ts)
 - CI または実環境で `bun run test:e2e` を一度実行し、結果を記録する
 
-### Phase 3 追加ゲート
+### Phase 4 追加ゲート — 改訂版
 
 | 項目 | 検証 | 証拠 |
 |---|---|---:|
-| Coverage 85% | 全メトリクス85%以上 | 93.34%/86.82%/86.72%/94.83% (PH3-D) |
-| gamemode-api | L1 core, protocolのみ依存 | defineGameMode 10 tests + ctx 5 tests |
-| GameModeRuntime | 例外安全, tick基準timer, rate limit 40/s burst20 | Timer 8 + RateLimiter 8 + Runtime 11 tests |
-| fps-ffa | waiting→countdown→playing→ended, spawn, score, respawn 3s, chat 200 | 11 tests + runtime-gamemode統合 |
-| gameserver統合 | profile+gamemode注入, FpsCtx実装, RoomState管理, 例外安全 | runtime.ts 77% + handlers.ts 98% + runtime-gamemode 13 tests |
-| Room | sendTo/sendBinaryTo/broadcastExcept public | runtime-gamemode.test.ts |
-| Playwright full-e2e | 複数webServer + 11 tests | webServer配列化 + game-shell.spec.ts |
+| Coverage 85% | 全メトリクス85%以上 | 93.51%/85.8%/88.48%/94.76% (PH4-F) |
+| gamemode-api | parentGenre/genres/tags/subModes/category/display/stats拡張 | defineGameMode 19 tests (PH4-A) + ctx 5 tests |
+| fps-ffa | Official FPSのFFAサブモード parentGenre fps genres [ffa] subModes [ffa,tdm,dom] | 11 tests + PH4-A拡張 |
+| Header | Official FPS/Voxel切替 [FPS][Voxel] | Header.test.tsx 5 tests (PH4-B) |
+| LeftSidebar | Krunker風 Sandboxボタン 公式拡張+UGC | LeftSidebar.test.tsx 5 tests (PH4-C) |
+| sandbox.ts | 親ジャンル+サブタグフィルタ+ソート 公式拡張+UGC | sandbox.test.ts 7 tests (PH4-D) |
+| SandboxModal | カード一覧 thumbnail/title/creator/plays/desc 親ジャンル+サブタグ | SandboxModal.test.tsx 8 tests (PH4-D) |
+| SandboxDetailPage | 詳細 Play Now auto-match / Room Selection manual | DetailPage.test.tsx 7 tests (PH4-E) |
+| RoomSelectionModal | ルーム一覧手動選択 | RoomSelectionModal.test.tsx 6 tests (PH4-E) |
+| VoteOverlay | Official FPS FFA/TDM/DOM投票 Voxel対象外 | VoteOverlay.test.tsx 8 tests (PH4-F) |
+| matchmaker-mock | Official FPS投票 + Sandbox公式拡張+UGC mock | mockGameModes 6件 + mockRooms 4件 + fetch/seek/vote |
+| gameStore | activeTab/sandboxOpen/parentGenre/subTag/sort/selectedId/roomOpen/voteSession | store拡張 PH4-B〜F |
+| App統合 | Header+LeftSidebar+SandboxModal+Detail+Room+Vote | App2.test.tsx mock |
 | Import boundary | engine-core→profile-* 0, gamemodes→sdkのみ 0 | Biome + check-determinism |

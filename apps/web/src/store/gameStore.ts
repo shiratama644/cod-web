@@ -19,6 +19,20 @@ export type ParentGenreFilter = 'all' | 'fps' | 'voxel'
 export type SubTagFilter = 'all' | string
 export type SandboxSortKey = 'totalPlays' | 'activePlayers' | 'detailViews'
 
+export interface VoteOption {
+  readonly subMode: string
+  readonly label: string
+  readonly votes: number
+}
+
+export interface VoteSession {
+  readonly roomId: string
+  readonly gameId: string
+  readonly options: VoteOption[]
+  readonly endsAtMs: number
+  readonly voters: Set<string>
+}
+
 export interface GameState {
   /** 描画バックエンド（Babylon Engine 初期化時に 1 回決定）。 */
   renderer: RendererBackend | null
@@ -45,6 +59,9 @@ export interface GameState {
   /** Room Selectionモーダル — 改訂版 (PH4-E) */
   roomSelectionOpen: boolean
 
+  /** 投票セッション — 改訂版 (PH4-F) Official FPS 1ゲーム複数モード */
+  voteSession: VoteSession | null
+
   setRenderer: (backend: RendererBackend) => void
   setConnectionStatus: (status: GameConnectionStatus) => void
   setHp: (hp: number) => void
@@ -57,6 +74,7 @@ export interface GameState {
   setSandboxSearch: (search: string) => void
   setSelectedSandboxCardId: (id: string | null) => void
   setRoomSelectionOpen: (open: boolean) => void
+  setVoteSession: (session: VoteSession | null) => void
 }
 
 const MAX_HP = 100
@@ -74,6 +92,7 @@ export const useGameStore = create<GameState>((set) => ({
   sandboxSearch: '',
   selectedSandboxCardId: null,
   roomSelectionOpen: false,
+  voteSession: null,
 
   setRenderer: (renderer) => set({ renderer }),
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
@@ -87,6 +106,7 @@ export const useGameStore = create<GameState>((set) => ({
   setSandboxSearch: (sandboxSearch) => set({ sandboxSearch }),
   setSelectedSandboxCardId: (selectedSandboxCardId) => set({ selectedSandboxCardId }),
   setRoomSelectionOpen: (roomSelectionOpen) => set({ roomSelectionOpen }),
+  setVoteSession: (voteSession) => set({ voteSession }),
 }))
 
 /** ループ等の React 外からストアを読むための非フック API（getState/subscribe をラップ）。 */

@@ -4,6 +4,7 @@ import { LeftSidebar } from './components/LeftSidebar.tsx'
 import { SandboxModal } from './components/SandboxModal.tsx'
 import { SandboxDetailPage } from './components/SandboxDetailPage.tsx'
 import { RoomSelectionModal } from './components/RoomSelectionModal.tsx'
+import { VoteOverlay } from './components/VoteOverlay.tsx'
 import { RendererHud } from './components/RendererHud.tsx'
 import { StartOverlay } from './components/StartOverlay.tsx'
 import { TouchControls } from './components/TouchControls.tsx'
@@ -28,6 +29,7 @@ export function App() {
           <SandboxModal />
           <SandboxDetailPage />
           <RoomSelectionModal />
+          <VoteOverlay />
         </div>
       </div>
     </main>

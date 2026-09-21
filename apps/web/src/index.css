@@ -531,3 +531,54 @@ body {
   border-radius: 6px;
   font-size: 12px;
 }
+
+/* ── Vote Overlay — 改訂版 PH4-F ───────────────────────────────── */
+.vote-overlay {
+  width: 90%;
+  max-width: 560px;
+  background: rgba(12, 18, 30, 0.95);
+  border: 1px solid rgba(255, 216, 132, 0.4);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.vote-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vote-info {
+  font-size: 11px;
+  color: #8da0b8;
+  margin: 8px 0;
+}
+
+.vote-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.vote-option {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(159, 231, 255, 0.1);
+  border: 1px solid rgba(159, 231, 255, 0.3);
+  border-radius: 8px;
+  color: #9fe7ff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.vote-option:hover {
+  background: rgba(159, 231, 255, 0.2);
+}
+
+.vote-results {
+  font-size: 11px;
+  color: #b9c6d6;
+  margin-top: 8px;
+}

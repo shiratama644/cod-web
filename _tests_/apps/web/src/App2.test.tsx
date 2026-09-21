@@ -38,6 +38,10 @@ vi.mock('@/components/RoomSelectionModal', () => ({
   RoomSelectionModal: () => <div data-testid="room-selection">rooms</div>,
 }))
 
+vi.mock('@/components/VoteOverlay', () => ({
+  VoteOverlay: () => <div data-testid="vote-overlay">vote</div>,
+}))
+
 describe('App', () => {
   beforeEach(() => {
     useGameStore.setState({
@@ -53,6 +57,7 @@ describe('App', () => {
       sandboxSearch: '',
       selectedSandboxCardId: null,
       roomSelectionOpen: false,
+      voteSession: null,
     })
   })
 
