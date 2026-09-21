@@ -143,4 +143,4 @@ bun run test:unit       # 30 files / 189 tests
 - `docs/planning/EM02_PLAN.md` §10.1-10.5
 - `.agent/logs/2026-09-09_ph1-5-a-vitest-coverage-baseline.md`
 - `.agent/logs/2026-09-09_ph1-5-b-meaningful-coverage.md`
-- `.agent/logs/2026-09-21_em2-coverage-85.md` (.claude/logs)
+- `.agent/logs/2026-09-21_em2-coverage-85.md`

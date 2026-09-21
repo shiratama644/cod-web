@@ -22,6 +22,9 @@ coverage/
 playwright-report/
 test-results/
 
+# agent memory canonical is .agent only, .claude is forbidden
+.claude/
+
 # env
 .env
 .env.local

@@ -55,7 +55,7 @@
   - PointerLock/Input蓄積 → `input-accumulation`
   - BVH/kinematic/SimProfile分離 → `physics-collision`
 - ※ 一過性の作業メモ（「〇〇のコミットハッシュ」等）はスキル化せずログに留める。
-- ログは `.agent/logs/` + `.claude/logs/` の両方を対象に読む（2026-09-21_em2-coverage-85.mdは.claude/logsにあり）。
+- ログは `.agent/logs/` を対象に読む。
 
 ## 4. 完了条件
 

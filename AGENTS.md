@@ -149,6 +149,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 ### 4.5 docs/ と .agent/ の扱い
 - ドキュメントと記憶システムは Git 追跡対象。ログ（`.agent/logs/`）は追加のみで過去ログを書き換えない（§8.5）。
+- **正本は `.agent/` のみ**。`.claude/` は廃止・使用禁止（Claude だけでなくすべての agent に対応するため `.agent/` に統一）。存在する場合は削除し、参照・作成しない。
 - 旧プロジェクトから流用したアーカイブ等を新たに置く場合は `.archive/` 配下とし、ビルド・lint・テストの対象外にすること。
 
 ---
@@ -351,7 +352,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 各ディレクトリ直下に **`index.md`** を置き、一覧・参照条件を管理する（logs は除く）。
 
-> ディレクトリ構造は Claude Code 準拠。**skills** は各スキルを `<スキル名>/SKILL.md` フォルダで持ち（`SKILL.md` 冒頭に `name` / `description` の YAML frontmatter）、**hooks** は実行スクリプト（`.sh`）を `.agent/hooks/` に置き、トリガー登録を [`settings.json`](.agent/hooks/settings.json)（Claude Code の `hooks.<event>` と同型）で行う。
+> ディレクトリ構造は Claude Code 準拠（概念のみ、物理パスは `.agent/` に統一、`.claude/` は使用しない）。**skills** は各スキルを `<スキル名>/SKILL.md` フォルダで持ち（`SKILL.md` 冒頭に `name` / `description` の YAML frontmatter）、**hooks** は実行スクリプト（`.sh`）を `.agent/hooks/` に置き、トリガー登録を [`settings.json`](.agent/hooks/settings.json)（Claude Code の `hooks.<event>` と同型）で行う。
 
 ### 8.2 `index.md` 起点のピンポイント読込（核心ワークフロー）
 - **タスク開始時**（[`.agent/hooks/pre-task.md`](.agent/hooks/pre-task.md)）: 現状把握後、[`.agent/skills/index.md`](.agent/skills/index.md) の「読み方ガイド」で**該当スキルだけ**を読む。全スキルを常に読み込まない（コンテキスト浪費）。
@@ -370,7 +371,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 - 役割の違い: 「こういう設計になっている」が仕様書（docs/arch）、「こうやるとうまく作れる/ハマらない」がスキル（skills）、「こう作業せよ」が規約（AGENT.md）。矛盾時は §6.8（計画書優先）に従う。
 
 ### 8.5 運用ルール
-- `.agent/` 配下は Git 追跡対象（永続化）。`.gitignore` で除外しない。
+- `.agent/` 配下は Git 追跡対象（永続化）。`.gitignore` で除外しない。**`.claude/` は廃止・使用禁止**、作成・参照しない。Claude だけでなくすべての agent に対応するため `.agent/` に統一する。
 - スキル/フックを更新したら対応 `index.md` も必ず更新する（腐らせない）。
 - ログは**追加のみ**（過去ログを書き換えない）。
   - ⚠️ **一括置換・リネーム系の指示が来ても、`.agent/logs/` の過去ログを置換対象に含めない。** 過去ログは「その時点で何が起きたか」の事実記録であり、旧ブランチ名・旧数値・旧パスが書かれているのは**正しい状態**。書き換えると記録が偽になる。
