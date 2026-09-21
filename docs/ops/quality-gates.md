@@ -2,16 +2,16 @@
 
 > 対応タスク: `EM2-E`（EM02 完了）  
 > 目的: EM02 カバレッジ85%達成後の品質ゲートを明確化する。  
-> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可。2026-09-20 EM01 で memory leak / zero-alloc / GC / shift 改善を追加。2026-09-21 EM02 で coverage 85%達成 + Playwright フルE2E複数webServer。提案: [`github-actions-proposal.yml`](./github-actions-proposal.yml)、本番: `.github/workflows/quality-gates.yml`。
+> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可。2026-09-20 EM01 で memory leak / zero-alloc / GC / shift 改善を追加。2026-09-21 EM02 で coverage 85%達成 + Playwright フルE2E複数webServer。2026-09-22 ドキュメント整理で `docs/ops/github-actions-proposal.yml` 重複提案を削除し、正本は `.github/workflows/quality-gates.yml` のみに統一。
 
 ## 1. 公式確認した根拠
 
 | 領域 | 確認内容 | URL |
 |---|---|---:|
 | Playwright CI | CI agent は browser 実行環境が必要。Linux では Docker image または `playwright install --with-deps` を使う。CI では workers=1 が安定性優先として推奨される。 | <https://playwright.dev/docs/ci> |
-| Playwright webServer | `webServer.command` / `url` / `reuseExistingServer` / `timeout` / `gracefulShutdown` があり、`use.baseURL` と組み合わせると相対 `page.goto('/')` を使える。`webServer` は配列を取れ、複数サーバー（gameserver + preview）を同時に起動できる。 | <https://playwright.dev/docs/test-webserver> / <https://www.aidoczh.com/playwright/docs/test-webserver.html> |
-| Playwright WebSocket | `page.on('websocket')` で WS 接続を監視、フレーム送受信を検証できる。`routeWebSocket` でモックも可能。 | <https://dzone.com/articles/playwright-for-real-time-applications-testing-webs> |
-| Vitest coverage thresholds | `thresholds.lines/statements/branches/functions` で閾値設定、perFileやglobで個別設定も可能。 | <https://v2.vitest.dev/config/coverage> |
+| Playwright webServer | `webServer.command` / `url` / `reuseExistingServer` / `timeout` / `gracefulShutdown` があり、`use.baseURL` と組み合わせると相対 `page.goto('/')` を使える。`webServer` は配列を取れ、複数サーバー（gameserver + preview）を同時に起動できる。 | <https://playwright.dev/docs/test-webserver> |
+| Playwright WebSocket | `page.on('websocket')` で WS 接続を監視、フレーム送受信を検証できる。公式 API は `WebSocket` / `WebSocketRoute`。補助資料として実践記事も参照。 | <https://playwright.dev/docs/api/class-websocket> / <https://playwright.dev/docs/mock#mock-websockets> / <https://dzone.com/articles/playwright-for-real-time-applications-testing-webs> |
+| Vitest coverage thresholds | `thresholds.lines/statements/branches/functions` で閾値設定、perFileやglobで個別設定も可能。 | <https://vitest.dev/config/coverage> |
 | Bun CI install | 再現性のため `bun ci` または `bun install --frozen-lockfile` を使う。 | <https://bun.com/docs/pm/cli/install> |
 | GitHub Actions workflow | workflow は YAML で、公式配置先は `.github/workflows`。 | <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax> |
 | setup-bun | GitHub Actions では `oven-sh/setup-bun@v2` で Bun をセットアップできる。 | <https://github.com/oven-sh/setup-bun> |
@@ -110,10 +110,10 @@ Sandbox 方針:
 - Sandbox で確認するのは `bun run test:e2e -- --list` による spec discovery まで。
 - 実行結果は CI または実機で記録する。
 
-## 5. CI 本番配置（2026-09-19 許可）
+## 5. CI 本番配置（2026-09-19 許可 / 2026-09-22 整理）
 
-- 提案元: [`github-actions-proposal.yml`](./github-actions-proposal.yml)
-- 本番: `.github/workflows/quality-gates.yml`
+- 本番: `.github/workflows/quality-gates.yml`（正本、Agent が直接配置）
+- 旧提案: `docs/ops/github-actions-proposal.yml` は 2026-09-22 に削除。正本は `.github/workflows/` のみ。
 
 | Job | 内容 | 備考 |
 |---|---|---|

@@ -42,10 +42,9 @@ docs/
 │       ├── README.md
 │       ├── PHASE00_PLAN.md
 │       └── DEEP_RESEARCH_PLAN.md
-├── ops/                 # CI / quality gate（提案 + 本番配置）
+├── ops/                 # CI / quality gate（本番は .github/workflows/）
 │   ├── README.md
-│   ├── quality-gates.md
-│   └── github-actions-proposal.yml  # 提案元、正式は .github/workflows/quality-gates.yml
+│   └── quality-gates.md
 └── research/            # 競合・関連技術の調査結果
     ├── README.md
     ├── DEEP_RESEARCH_SYNTHESIS.md

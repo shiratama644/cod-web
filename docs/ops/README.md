@@ -1,14 +1,13 @@
 # Ops / CI
 
-このディレクトリは、運用・CI・品質ゲートの提案と本番配置の入口です。
+このディレクトリは、運用・CI・品質ゲートの運用手順をまとめた入口です。
 
-## `.github/workflows/` への配置（2026-09-19 許可）
+## `.github/workflows/` が正本（2026-09-19 許可 / 2026-09-22 整理）
 
 旧ルールでは AGENTS.md §6.3 により AI Agent が `.github/workflows/` に直接 workflow を作成できませんでしたが、2026-09-19 にユーザー許可により解除されました。
 
-現在は **提案 + 本番配置** の両方を扱います：
+2026-09-22 のドキュメント整理で `docs/ops/github-actions-proposal.yml` の重複提案ファイルは削除し、**正本は `.github/workflows/quality-gates.yml` のみ**としました。CI の仕様変更は `.github/workflows/quality-gates.yml` を直接編集し、本ディレクトリの `quality-gates.md` に運用手順を記録します。
 
-- 提案: [`github-actions-proposal.yml`](./github-actions-proposal.yml)（人間/Agentが編集する元）
 - 本番: `.github/workflows/quality-gates.yml`（GitHub Actions が実際に実行するファイル、Agent が直接作成可）
 
 ## ファイル
@@ -16,8 +15,7 @@
 | ファイル | 役割 |
 |---|---|
 | [`quality-gates.md`](./quality-gates.md) | Phase 1.5 で導入した coverage / E2E / validation gate の運用手順 |
-| [`github-actions-proposal.yml`](./github-actions-proposal.yml) | 提案元 YAML（本番と同期） |
-| `../../.github/workflows/quality-gates.yml` | 本番 CI ワークフロー（許可後、Agent が直接配置） |
+| `../../.github/workflows/quality-gates.yml` | 本番 CI ワークフロー（正本） |
 
 ## 現在の品質ゲート要約
 

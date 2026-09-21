@@ -99,7 +99,7 @@ EM01でメモリリーク・ゼロアロケ違反・GC・shift/spliceを解消�
       - コンソールエラーがないこと
     - 計 3 → 8-10 tests を目標。Sandbox では `bun run test:e2e -- --list` まで、browser実行は実環境検証待ちと明記するが、spec の意味は担保する。
 - `playwright.config.ts`
-  - webServer を配列化し、gameserver と preview の両方を起動する。`PLAYWRIGHT_BASE_URL` がある場合は local server を起動しない従来の分岐を維持しつつ、フルE2E用の設定を追加。公式 docs [1](https://www.aidoczh.com/playwright/docs/test-webserver.html) / [3](https://docs.w3cub.com/playwright/test-webserver.html) に基づき配列化。
+  - webServer を配列化し、gameserver と preview の両方を起動する。`PLAYWRIGHT_BASE_URL` がある場合は local server を起動しない従来の分岐を維持しつつ、フルE2E用の設定を追加。公式 docs <https://playwright.dev/docs/test-webserver> に基づき配列化（旧ミラー https://www.aidoczh.com/playwright/docs/test-webserver.html / https://docs.w3cub.com/playwright/test-webserver.html は公式に置換）。
 - `_tests_/`
   - 上記各ファイルの回帰テストを追加。`_tests_/apps/gameserver/src/index.test.ts` 新規、`_tests_/apps/web/src/game/babylon/BabylonGame.test.ts` 新規、`_tests_/apps/web/src/App.test.tsx` 拡充、`_tests_/packages/protocol/src/types.test.ts` 新規、`_tests_/packages/engine-core/net/ingest.test.ts` 拡充、`_tests_/apps/web/src/game/input/InputController.test.ts` 拡充等。
 - `docs/` / `.agent/`
@@ -156,7 +156,7 @@ EM01でメモリリーク・ゼロアロケ違反・GC・shift/spliceを解消�
 - [ ] `apps/web/src/game/input/InputController.ts` が 72% → 85%以上（キーボード/ポインタ/ジョイスティック/デッドゾーン/Pitch制限/PointerLock fallback）
 - [ ] `packages/protocol/src/types.ts` が 50% → 100%（createSimWorld）
 - [ ] その他低カバレッジ（ingest, snapshot, Room, Simulation, collisionWorld, movement, gameStore, websocket, interpolation, prediction）がそれぞれ 85%以上または改善
-- [ ] Playwright E2E が 3 → 8+ tests に拡充され、フルE2E（gameserver + preview の複数 webServer）構成が `playwright.config.ts` に実装される（配列化）[1](https://www.aidoczh.com/playwright/docs/test-webserver.html)。Sandbox では `bun run test:e2e -- --list` で 8+ tests discovered、browser実行は実環境検証待ちと明記
+- [ ] Playwright E2E が 3 → 8+ tests に拡充され、フルE2E（gameserver + preview の複数 webServer）構成が `playwright.config.ts` に実装される（配列化）<https://playwright.dev/docs/test-webserver>。Sandbox では `bun run test:e2e -- --list` で 8+ tests discovered、browser実行は実環境検証待ちと明記
 - [ ] 既存 `bun run typecheck` / `bunx biome lint .` / `bun run test:unit` / `bun run test:coverage` / `bun run build` / `bun run test:e2e -- --list` / `bun run check:determinism` / `bun run check:determinism:heavy` が pass
 - [ ] `engine-core` から `@cod/profile-fps` への import が 0 violations
 - [ ] `profile-voxel` / voxel dependency は追加されていない
@@ -279,7 +279,7 @@ vi.mock('@babylonjs/core/Engines/engine', () => ({ Engine: vi.fn() => ({ setHard
 
 ### 10.4 Playwright 複数 webServer
 
-公式 docs [1](https://www.aidoczh.com/playwright/docs/test-webserver.html) によれば、`webServer` は配列を取れる:
+公式 docs <https://playwright.dev/docs/test-webserver> によれば、`webServer` は配列を取れる:
 
 ```ts
 webServer: [
@@ -295,7 +295,7 @@ gameserver は HTTP で 200 を返す health check を持つため `url` での�
 - HUD の初期値（hp 100, ammo 30, renderer null → babylon-webgl）
 - StartOverlay のクリックで非表示、gameStore の状態変化
 - TouchControls の表示（mobile viewport 375x667）
-- 2つの browser contexts で同時接続し、互いの presence を確認（WebSocket frames を `page.on('websocket')` で監視 [2](https://dzone.com/articles/playwright-for-real-time-applications-testing-webs)）
+- 2つの browser contexts で同時接続し、互いの presence を確認（WebSocket frames を `page.on('websocket')` で監視 <https://playwright.dev/docs/api/class-websocket>、補助資料 [2](https://dzone.com/articles/playwright-for-real-time-applications-testing-webs)）
 - 切断・再接続の挙動（routeWebSocket で close 注入）
 - リサイズ時の canvas 可視性
 - コンソールエラーがないこと（page.on('console') で error 監視）
@@ -325,7 +325,7 @@ gameserver は HTTP で 200 を返す health check を持つため `url` での�
 | `PLAT-EM2` | 本コミット | docs-only | EM02計画。事実確認済みカバレッジ 81.22%/76.02%/81.9%/82.8% を明記。task-list に EM2 追加 |
 | `EM2-A` | 本コミット | 30 files/189 tests | サーバー/プロトコル/エンジンのカバレッジ増加: `handlers.ts` 新規 (97.29%/91.66%) + `handlers.test.ts` 13 tests + `index.test.ts` 5 tests (Bun.serve モック、ws handlers、setInterval loop) / `types.test.ts` 3 tests (100%) / `quantize.test.ts` 6 tests (100%) / ingest ArrayBuffer branch / 全体 coverage 95.12%/87.97%/90.7%/96.8% |
 | `EM2-B` | 本コミット | 30 files/189 tests | クライアントのカバレッジ増加: `babylonDeps.ts` 新規 (testability) / `BabylonGame.test.ts` 6 tests (mock deps) → BabylonGame 2.06%→96.9%/90% / `InputController.test.ts` 3→13 tests (WASD/jump/joystick/deadzone/pitch/touch-ui/pointer up/lock) / `App2.test.tsx` 2 tests → App.tsx 0%→100% / GameCanvas 81%→~90% |
-| `EM2-C` | 本コミット | E2E 11 discovered | Playwright E2E拡充: `playwright.config.ts` webServer 配列化 (gameserver 8080 + preview 4173) 公式 docs [1](https://www.aidoczh.com/playwright/docs/test-webserver.html) 準拠 / `game-shell.spec.ts` 3→11 tests (HUD, StartOverlay hide, no console errors, TouchControls mobile 375x667, canvas resize, WS /ws proxy via page.on('websocket'), multi-context 2 tabs, disconnection reload) / `bun run test:e2e -- --list` 11 tests |
+| `EM2-C` | 本コミット | E2E 11 discovered | Playwright E2E拡充: `playwright.config.ts` webServer 配列化 (gameserver 8080 + preview 4173) 公式 docs <https://playwright.dev/docs/test-webserver> 準拠 / `game-shell.spec.ts` 3→11 tests (HUD, StartOverlay hide, no console errors, TouchControls mobile 375x667, canvas resize, WS /ws proxy via page.on('websocket'), multi-context 2 tabs, disconnection reload) / `bun run test:e2e -- --list` 11 tests |
 | `EM2-D` | 本コミット | thresholds 85 | `vitest.config.ts` 79/73/79/80→85/85/85/85 更新 / task-list/HANDOFF/quality-gates 更新 / coverage 95.12%/87.97%/90.7%/96.8% pass |
 | `EM2-E` | 本コミット | 4検証 + coverage + E2E + determinism | typecheck pass / lint 0 warnings / test:unit 30 files 189 tests / coverage 95.12%/87.97%/90.7%/96.8% / build pass / E2E list 11 / determinism + heavy pass / ブラウザE2EはSandbox制約で実環境検証待ち |
 

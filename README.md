@@ -37,7 +37,7 @@ bunx biome lint .                    # Biome 直接呼び出し (bun run lint �
 bun run lint                         # = biome lint . (エイリアス)
 bun run format                       # biome format --write .
 bun run test:unit                    # vitest run
-bun run test:coverage                # vitest run --coverage (閾値: statements79/branches73/functions79/lines80)
+bun run test:coverage                # vitest run --coverage (閾値: statements85/branches85/functions85/lines85, EM2 95.12%/87.97%/90.7%/96.8%)
 bun run test:e2e -- --list           # Playwright spec discovery (browser不要)
 bun run test:e2e                     # E2E実行 (要 browser, CI/実環境)
 
