@@ -1,8 +1,8 @@
 /// <reference types="vitest/config" />
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vitest/config'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 
@@ -41,6 +41,7 @@ export default defineConfig({
         'packages/profile-fps/src/**/*.{ts,tsx}',
         'packages/gamemode-api/src/**/*.{ts,tsx}',
         'packages/gamemode-sdk/src/**/*.{ts,tsx}',
+        'gamemodes/**/*.{ts,tsx}',
         'apps/web/src/**/*.{ts,tsx}',
         'apps/gameserver/src/**/*.{ts,tsx}',
       ],

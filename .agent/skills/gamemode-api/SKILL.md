@@ -109,7 +109,7 @@ class GameModeRuntime {
 - 例外安全: safeCall/safeCallSyncでtry/catch、asyncはcatch、1ルームのみcatch、他ルーム巻き込まない、mode例外でroomが落ちないテスト、timer例外でも他cb継続
 - Room統合: Room.setGameModeBinding({rateLimiter})でバインド、leaveでrateLimiter.remove(String(id))クリーンアップ、GameModeRuntime.onPlayerLeaveでもremove、メモリリーク防止
 
-## ffa最小モード（PH3-C予定）
+## ffa最小モード（PH3-C完了）
 
 ```ts
 // gamemodes/fps/official/ffa/index.ts — map名のみ、spawnPointsはctx経由
@@ -149,7 +149,7 @@ export default ffa;
 - static-arena再利用、three-mesh-bvh衝突はprofile側維持、gamemodeはルールのみ
 - kill判定簡易、巻き戻しヒットスキャンは将来
 
-## 統合（PH3-D予定）
+## 統合（PH3-D未着手）
 
 - `apps/gameserver/src/runtime.ts` が `createFpsSimProfile()` + `fps-official-ffa` を組み立てて Room へ注入
 - `biome.json` に `gamemodes/* → @cod/gamemode-sdkのみ` 制限追加済み（本タスクで先行追加）
@@ -167,10 +167,10 @@ export default ffa;
 
 ```bash
 grep -R "profile-fps\|profile-voxel" packages/gamemode-api --include="*.ts" # 0件
-grep -R "from.*gamemode" gamemodes --include="*.ts" | grep -v "gamemode-sdk" # 0件
-grep -R "Math.random\|Date.now\|setTimeout" packages/gamemode-api packages/engine-core/src/gamemode --include="*.ts" # 0件 (GameModeTimerはsetTimeout不使用)
-grep -R "setTimeout" packages/engine-core/src/gamemode --include="*.ts" # 0件
-bun run test:unit # 35 files 231 tests (PH3-Bで+3 files +27 tests)
+grep -R "from.*gamemode" gamemodes --include="*.ts" | grep -v "gamemode-sdk" # 0件 (ffaはsdkのみ)
+grep -R "Math.random\|Date.now\|setTimeout" packages/gamemode-api packages/engine-core/src/gamemode gamemodes --include="*.ts" # 0件 (TimerはsetTimeout不使用, ffaはctx経由)
+grep -R "setTimeout" packages/engine-core/src/gamemode gamemodes --include="*.ts" # 0件
+bun run test:unit # 36 files 242 tests (PH3-Cで+1 file +11 tests, 計+4 files +38 tests from PH3-A)
 ```
 
 ## 関連
