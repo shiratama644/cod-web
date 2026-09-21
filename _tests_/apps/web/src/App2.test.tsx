@@ -30,6 +30,14 @@ vi.mock('@/components/SandboxModal', () => ({
   SandboxModal: () => <div data-testid="sandbox-modal">sandbox</div>,
 }))
 
+vi.mock('@/components/SandboxDetailPage', () => ({
+  SandboxDetailPage: () => <div data-testid="sandbox-detail">detail</div>,
+}))
+
+vi.mock('@/components/RoomSelectionModal', () => ({
+  RoomSelectionModal: () => <div data-testid="room-selection">rooms</div>,
+}))
+
 describe('App', () => {
   beforeEach(() => {
     useGameStore.setState({
@@ -44,6 +52,7 @@ describe('App', () => {
       sandboxSort: 'totalPlays',
       sandboxSearch: '',
       selectedSandboxCardId: null,
+      roomSelectionOpen: false,
     })
   })
 

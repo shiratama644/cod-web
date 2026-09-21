@@ -42,6 +42,9 @@ export interface GameState {
   sandboxSearch: string
   selectedSandboxCardId: string | null
 
+  /** Room Selectionモーダル — 改訂版 (PH4-E) */
+  roomSelectionOpen: boolean
+
   setRenderer: (backend: RendererBackend) => void
   setConnectionStatus: (status: GameConnectionStatus) => void
   setHp: (hp: number) => void
@@ -53,6 +56,7 @@ export interface GameState {
   setSandboxSort: (sort: SandboxSortKey) => void
   setSandboxSearch: (search: string) => void
   setSelectedSandboxCardId: (id: string | null) => void
+  setRoomSelectionOpen: (open: boolean) => void
 }
 
 const MAX_HP = 100
@@ -69,6 +73,7 @@ export const useGameStore = create<GameState>((set) => ({
   sandboxSort: 'totalPlays',
   sandboxSearch: '',
   selectedSandboxCardId: null,
+  roomSelectionOpen: false,
 
   setRenderer: (renderer) => set({ renderer }),
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
@@ -81,6 +86,7 @@ export const useGameStore = create<GameState>((set) => ({
   setSandboxSort: (sandboxSort) => set({ sandboxSort }),
   setSandboxSearch: (sandboxSearch) => set({ sandboxSearch }),
   setSelectedSandboxCardId: (selectedSandboxCardId) => set({ selectedSandboxCardId }),
+  setRoomSelectionOpen: (roomSelectionOpen) => set({ roomSelectionOpen }),
 }))
 
 /** ループ等の React 外からストアを読むための非フック API（getState/subscribe をラップ）。 */

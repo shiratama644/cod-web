@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { Header } from './components/Header.tsx'
 import { LeftSidebar } from './components/LeftSidebar.tsx'
 import { SandboxModal } from './components/SandboxModal.tsx'
+import { SandboxDetailPage } from './components/SandboxDetailPage.tsx'
+import { RoomSelectionModal } from './components/RoomSelectionModal.tsx'
 import { RendererHud } from './components/RendererHud.tsx'
 import { StartOverlay } from './components/StartOverlay.tsx'
 import { TouchControls } from './components/TouchControls.tsx'
@@ -24,6 +26,8 @@ export function App() {
           <TouchControls input={input} />
           <StartOverlay />
           <SandboxModal />
+          <SandboxDetailPage />
+          <RoomSelectionModal />
         </div>
       </div>
     </main>
