@@ -2,7 +2,7 @@
 
 > 対応 task-list ID: `PLAT-4`, `PH4-A`〜`PH4-F` (docs/task-list.md)  
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠  
-> 範囲決定: 2026-09-22 ユーザー提供「ゲームプラットフォーム 仕様定義書」理想確定、FPS/Voxel/Sandbox 3カテゴリ、Header FPS/Voxelタブ、Left Sidebar Krunker風 Sandboxボタン、Sandboxモーダル (カード: thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views)、詳細ページ Play Now/Room Selection、メインFPS投票システム。L1 type分岐は fps|voxel の2つのまま、Sandboxは source=ugc 表示集約、boxelはvoxelエイリアス。
+> 範囲決定: 2026-09-22 ユーザー提供「ゲームプラットフォーム 仕様定義書」理想確定、FPS/Voxel/Sandbox 3カテゴリ、Header FPS/Voxelタブ、Left Sidebar Krunker風 Sandboxボタン、Sandboxモーダル (カード: thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views)、詳細ページ Play Now/Room Selection、メインFPS投票システム。L1 type分岐は fps|voxel の2つのまま、Sandboxは source=ugc 表示集約。過去の `boxel` 表記は `voxel` のタイポで訂正済み。
 
 ## 1. 開始前確認
 
@@ -12,7 +12,7 @@
   - `AGENTS.md` §6（L1にtype分岐を書かない、決定論、ゼロアロケ、Sandbox制約、Biome境界、.agent正本）
   - `.agent/skills/index.md` から `project-overview` / `tech-stack` / `import-boundaries` / `deterministic-sim` / `zero-alloc` / `networking` / `babylon-integration`
   - `docs/arch/product.md`（2026-09-22更新: FPS/Voxel/Sandbox 3カテゴリ、Header/Sidebar、Sandboxモーダル、投票）
-  - `docs/arch/editor.md`（genre/tag拡張、Sandbox表示マッピング、boxelエイリアス）
+  - `docs/arch/editor.md`（genre/tag拡張、Sandbox表示マッピング）
   - `docs/arch/types.md`（GameModeDefinition拡張 genres/tags/display/stats、SandboxCard/Filter/Sort、Voting、Boxel正規化）
   - `docs/arch/architecture.md`（L3表示集約、SandboxはL1分岐増やさない）
   - `docs/arch/matchmaker.md`（genre/tagフィルタ、ソート、Play Now/Room Selectionフロー）
@@ -36,13 +36,12 @@ Phase 4 の目的は、**Phase 3で分離した gamemode API の上に、ユー�
 - Sandboxモーダル (カード一覧、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views) が無い
 - 詳細ページ Play Now (auto-match) / Room Selection (manual) フローが無い
 - 投票システム (onRoundEndで次モード投票) が無い
-- `GameModeDefinition` に genres/tags/display/stats が無い、boxelエイリアス処理が無い
+- `GameModeDefinition` に genres/tags/display/stats が無い
 - matchmakerは未実装 (apps/matchmaker無し)
 
 Phase 4 完了時点では:
 
 - `GameModeDefinition` に `genres?`, `tags?`, `display?`, `stats?` が optional追加され、既存 ffa は後方互換で動く
-- `boxel` は `voxel` エイリアスとして正規化関数 `normalizeGameType` が存在
 - `apps/web` に Header (FPS/Voxelタブ切替)、Left Sidebar (Krunker風、Sandboxボタン)、Sandboxモーダル (カード: thumbnail/title/creator/plays/desc、フィルタ genre、ソート plays/active/views、mockデータ)、詳細ページ (Play Now / Room Selection モーダル mock)、投票UI (mock) が実装され、既存GameCanvas経路を壊さない
 - `packages/gamemode-api` に `SandboxCard`, `SandboxFilterCategory`, `SandboxSortKey`, `VoteOption` 等の型が追加（または `shared-types` 的な web用型として `apps/web/src/lib/sandbox.ts` に分離）
 - matchmakerは依然mockだが、web側で `GET /v1/gamemodes` / `game-list` / `seek-game` 相当のmock APIを `apps/web/src/lib/matchmaker-mock.ts` として提供
@@ -57,16 +56,14 @@ Phase 4 完了時点では:
   - `Genre`, `Tag`, `PlatformCategory` 型追加
   - `GameModeDefinition` に `genres?: Genre[]`, `tags?: Tag[]`, `display?: { title, description, thumbnail, creator, creatorId }`, `stats?: { totalPlays, activePlayers, detailViews }` optional追加
   - `SandboxCard`, `SandboxFilterCategory`, `SandboxSortKey`, `SandboxQuery`, `RoomSummary`, `VoteOption`, `VoteSession`, `VoteEvent` 型追加
-  - `normalizeGameType(input: string): GameType` 関数追加（boxel→voxel）
   - 後方互換: 既存 `defineGameMode` 検証は genres/tags/display/stats を無視、既存 ffa テストが壊れない
 - `packages/gamemode-api/src/defineGameMode.ts` 拡張
   - genres/tags が配列なら要素が string であることを検証（空配列許容）、display/stats は optional object 検証（不正なら無視 or throw せず後方互換）
-  - boxelがtypeに来たらエラーではなくvoxelへ正規化 or エラー（設計: typeは fps|voxelのみなので boxelはエラー、normalizeGameTypeは別途UI層で使用）
 - `gamemodes/fps/official/ffa/index.ts` 拡張
   - `genres: ['ffa','fps']`, `tags: ['official','pvp','fps']`, `display: { title: 'FFA', description: 'Free For All', creator: 'Official' }`, `stats: { totalPlays: 0, activePlayers: 0, detailViews: 0 }` を追加（mock値）
   - 既存 hooks維持
 - `apps/web/src/` 新規/拡張
-  - `lib/sandbox.ts` 新規: `Genre`, `Tag`, `SandboxCard`, `SandboxFilterCategory`, `SandboxSortKey`, `normalizeGameType`, `SORT_FUNCS`, `FILTER_FUNCS`、mockデータ生成
+  - `lib/sandbox.ts` 新規: `Genre`, `Tag`, `SandboxCard`, `SandboxFilterCategory`, `SandboxSortKey`, `SORT_FUNCS`, `FILTER_FUNCS`、mockデータ生成
   - `lib/matchmaker-mock.ts` 新規: `mockGameModes: SandboxCard[]`, `mockRooms: RoomSummary[]`, `fetchGameModes(query): SandboxCard[]`, `fetchGameList(modeId): RoomSummary[]`, `seekGame(modeId|roomId): ticket mock`
   - `components/Header.tsx` 新規: `[Logo] [FPS] [Voxel] [Search] [User]`、FPS/Voxelタブ切替、active state、onTabChange callback
   - `components/LeftSidebar.tsx` 新規: Krunker風縦ボタン群、`[Play] [Sandbox] [Settings] [Shop]`、SandboxボタンでonOpenSandbox
@@ -81,7 +78,7 @@ Phase 4 完了時点では:
   - `activeTab: 'fps'|'voxel'`, `sandboxOpen: boolean`, `selectedSandboxCard: SandboxCard | null`, `sandboxFilter: SandboxFilterCategory`, `sandboxSort: SandboxSortKey`, `voteSession: VoteSession | null` 等を追加
   - 既存 state維持
 - `_tests_/apps/web/` 新規/拡張
-  - `sandbox.test.ts`: normalizeGameType boxel→voxel、filter/sort関数、mockデータ生成
+  - `sandbox.test.ts`: filter/sort関数、mockデータ生成
   - `Header.test.tsx` or `LeftSidebar.test.tsx`: タブ切替、Sandboxボタン押下でモーダルopen
   - `SandboxModal.test.tsx`: フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views、カード表示 thumbnail/title/creator/plays/desc
   - 既存 unit tests維持
@@ -129,14 +126,13 @@ Phase 4 完了時点では:
 - [ ] `docs/planning/PHASE04_PLAN.md` が `_TEMPLATE.md` 準拠で作成される
 - [ ] `docs/task-list.md` に `PLAT-4` と `PH4-A`〜`PH4-F` が追加され、Phase 4が「ハブ+Sandboxモーダル骨組み+投票入口」であることが明記される
 - [ ] FPS/Voxel/Sandbox 3カテゴリ構成、Header FPS/Voxelタブ、Left Sidebar Sandboxボタン、Sandboxモーダル (カード thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views)、詳細ページ Play Now/Room Selection、投票システム入口が計画書・arch・task-listに明記される
-- [ ] L1 type分岐は fps|voxelの2つのまま、Sandboxは source=ugc表示集約、boxelはvoxelエイリアスであることが明記される
+- [ ] L1 type分岐は fps|voxelの2つのまま、Sandboxは source=ugc表示集約であることが明記される
 - [ ] docs-onlyの整合確認（リンクチェック / `git diff --check`）がpassする
 - [ ] commit / push 済み
 
 ### Phase 4 全体の DoD
 
 - [ ] `packages/gamemode-api` に `genres?`, `tags?`, `display?`, `stats?` が optional追加され、既存 `fps-official-ffa` が後方互換で動く（既存 tests 255 pass維持）
-- [ ] `normalizeGameType` が存在し、`boxel` → `voxel` 正規化、未知typeでthrow、unit testがある
 - [ ] `gamemodes/fps/official/ffa` に `genres`, `tags`, `display`, `stats` が追加され、mock値でSandboxカード表示可能
 - [ ] `apps/web` に Header (FPS/Voxelタブ切替)、LeftSidebar (Krunker風、Sandboxボタン)、SandboxModal (カード一覧、フィルタ、ソート、mock)、SandboxDetailPage (Play Now auto-match mock、Room Selection modal)、VoteOverlay (投票UI mock) が実装され、既存 GameCanvas経路を壊さない
 - [ ] `apps/web/src/lib/sandbox.ts` に filter/sort関数があり、Bedwars/Zombie/Athleticフィルタ、plays/active/viewsソートのunit testがある
@@ -153,14 +149,14 @@ Phase 4 完了時点では:
 
 | 層 | 実施 | 確認内容 |
 |---|---|---|
-| Unit (vitest) | `bun run test:unit` | 既存255 tests維持 + normalizeGameType boxel→voxel / filter Bedwars/Zombie/Athletic / sort plays/active/views / mockデータ生成 / Header tab切替 / Sidebar Sandboxボタン / SandboxModal card表示 / GameStore state |
+| Unit (vitest) | `bun run test:unit` | 既存255 tests維持 + filter Bedwars/Zombie/Athletic / sort plays/active/views / mockデータ生成 / Header tab切替 / Sidebar Sandboxボタン / SandboxModal card表示 / GameStore state |
 | Coverage | `bun run test:coverage` | thresholds 85/85/85/85を下回らない。sandbox.ts / matchmaker-mock.ts / Header / Sidebar / Modal の重要branchをassertion。include-all維持 |
 | Typecheck | `bun run typecheck` | client/server TS strict + workspace exports（gamemode-api拡張含む）が通る |
 | Lint | `bunx biome lint .` | engine-core→profile-*禁止、gamemodes/*→gamemode-sdkのみ、WebSocket global禁止、Biome warnings 0 |
 | Build | `bun run build` | packages（gamemode-api拡張含む）とappsがproduction build。Vite chunk-size warningは既知 |
 | E2E discovery | `bun run test:e2e -- --list` | 11 tests以上 discovery。browser実行はSandboxでは行わない |
 | Determinism | `bun run check:determinism` + `scripts/determinism-heavy.ts` | SimProfile.step + GameModeRuntimeに禁止API混入なし、heavy pass |
-| 構造監査 | `grep -R "profile-fps\\|profile-voxel" packages/engine-core --include="*.ts"` 0件 / `grep -R "from '@cod/profile" packages/gamemode-api --include="*.ts"` 0件 / `grep -R "from.*gamemode" gamemodes --include="*.ts" \\| grep -v "gamemode-sdk"` 0件 / `grep -R "boxel" packages/gamemode-api --include="*.ts"` normalizeのみ |
+| 構造監査 | `grep -R "profile-fps\\|profile-voxel" packages/engine-core --include="*.ts"` 0件 / `grep -R "from '@cod/profile" packages/gamemode-api --include="*.ts"` 0件 / `grep -R "from.*gamemode" gamemodes --include="*.ts" \\| grep -v "gamemode-sdk"` 0件 |
 | 実環境 | CIまたは実機で `bun run test:e2e` | Browser E2Eは実環境検証待ち。Sandboxモーダル/投票UIの手動確認は実環境で |
 
 ## 7. 停止条件
@@ -175,7 +171,7 @@ Phase 4 完了時点では:
 - `profile-voxel` / voxel terrain本実装が必要になる
 - 既存 coverage threshold 85%を下げないと進められない（数字稼ぎではなく重要経路assertion追加で対応）
 - `defineGameMode` の genres/tags/display/stats 追加が後方互換を壊し、既存 ffa testsが大量に落ちる
-- boxelエイリアスの扱いで `GameType` を `fps|voxel|boxel` の3つに増やす必要が生じた（Sandboxは表示集約、L1分岐増やさない方針違反）
+- `GameType` を `fps|voxel` 以外に増やす必要が生じた（Sandboxは表示集約、L1分岐増やさない方針違反）
 - Sandbox制約により検証不能な項目を完了扱いにしそうになった
 - 開始時点で作業ツリーに未確認の変更がある
 
@@ -195,7 +191,7 @@ Phase 4 完了時点では:
 4. `docs/task-list.md` の状態・進捗・証拠を更新する（PLAT-4 / PH4-A〜F）
 5. `docs/planning/HANDOFF.md` を更新する（Phase 4完了、次はPhase 5計画）
 6. `.agent/logs/YYYY-MM-DD_<summary>.md` を追加する（4セクション）
-7. 必要な知見を `.agent/skills/` に同期する（sandbox hub / voting / boxel alias）
+7. 必要な知見を `.agent/skills/` に同期する（sandbox hub / voting）
 8. タスクIDを含むConventional Commitでcommitする
 9. `git push origin <session-branch>` でセッション固定ブランチへpushする
 10. 完了報告では、Playwright browser実行はSandbox未実行であることを明記し、Sandboxモーダル/投票UIのmock性質を明示する
@@ -204,11 +200,11 @@ Phase 4 完了時点では:
 
 | ID | テーマ | 主要成果物 | 依存 |
 |---|---|---|---|
-| `PLAT-4` | Phase 4計画作成（ハブ+Sandboxモーダル骨組み+投票入口） | `docs/planning/PHASE04_PLAN.md`、task-listにPLAT-4/PH4-A〜F追加、FPS/Voxel/Sandbox 3カテゴリ・Sandboxモーダル・投票・boxelエイリアス明記 | `PH3-D` |
-| `PH4-A` | `GameModeDefinition` genres/tags/display/stats拡張 + boxelエイリアス | `packages/gamemode-api/src/types.ts`拡張、`defineGameMode.ts`拡張、`gamemodes/fps/official/ffa`拡張、`normalizeGameType`関数+tests、後方互換維持 | `PLAT-4` |
+| `PLAT-4` | Phase 4計画作成（ハブ+Sandboxモーダル骨組み+投票入口） | `docs/planning/PHASE04_PLAN.md`、task-listにPLAT-4/PH4-A〜F追加、FPS/Voxel/Sandbox 3カテゴリ・Sandboxモーダル・投票明記 | `PH3-D` |
+| `PH4-A` | `GameModeDefinition` genres/tags/display/stats拡張 | `packages/gamemode-api/src/types.ts`拡張、`defineGameMode.ts`拡張、`gamemodes/fps/official/ffa`拡張、後方互換維持 | `PLAT-4` |
 | `PH4-B` | ハブUI Header FPS/Voxelタブ切替 | `apps/web/src/components/Header.tsx`新規、`store/gameStore.ts` activeTab追加、`App.tsx`統合、unit tests | `PH4-A` |
 | `PH4-C` | Left Sidebar Krunker風 + Sandboxボタン | `apps/web/src/components/LeftSidebar.tsx`新規、Sandboxボタンでモーダルopen、GameStore sandboxOpen、App統合、unit tests | `PH4-B` |
-| `PH4-D` | Sandboxモーダル カード一覧+フィルタ+ソート (mock) | `lib/sandbox.ts`新規 (filter/sort/normalize)、`lib/matchmaker-mock.ts`新規 (mockGameModes)、`components/SandboxModal.tsx`新規 (カード thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views)、GameStore filter/sort、unit tests | `PH4-C` |
+| `PH4-D` | Sandboxモーダル カード一覧+フィルタ+ソート (mock) | `lib/sandbox.ts`新規 (filter/sort)、`lib/matchmaker-mock.ts`新規 (mockGameModes)、`components/SandboxModal.tsx`新規 (カード thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views)、GameStore filter/sort、unit tests | `PH4-C` |
 | `PH4-E` | 詳細ページ + Play Now / Room Selectionモーダル (mock) | `components/SandboxDetailPage.tsx`新規、 `components/RoomSelectionModal.tsx`新規、 `lib/matchmaker-mock.ts`拡張 (mockRooms, fetchGameList, seekGame)、Play Now auto-match mock、Room Selection manual mock、unit tests | `PH4-D` |
 | `PH4-F` | 投票システム入口 (mock) | `components/VoteOverlay.tsx`新規、 `store/gameStore.ts` voteSession追加、 `lib/sandbox.ts` Vote型、onRoundEnd mockで投票UI表示、FFA/TDM/DOM候補、多数決、tick基準タイマー、unit tests、最終quality gate、task-list/HANDOFF/quality-gates更新 | `PH4-E` |
 
@@ -220,7 +216,7 @@ Phase 4 完了時点では:
 // packages/gamemode-api/src/types.ts 拡張
 export type PlatformCategory = 'fps' | 'voxel' | 'sandbox';
 export type Genre = 'fps' | 'ffa' | 'pvp' | 'tdm' | 'dom' | 'zombie' | 'athletic' | 'bedwars' | 'survival' | string;
-export type Tag = 'official' | 'ugc' | 'fps' | 'voxel' | 'boxel' | 'pvp' | 'pve' | string;
+export type Tag = 'official' | 'ugc' | 'fps' | 'voxel' | 'pvp' | 'pve' | string;
 
 export interface GameModeDefinition {
   // 既存
@@ -231,13 +227,6 @@ export interface GameModeDefinition {
   display?: { title?: string; description?: string; thumbnail?: string; creator?: string; creatorId?: string; };
   stats?: { totalPlays?: number; activePlayers?: number; detailViews?: number; };
   // hooks既存維持
-}
-
-export function normalizeGameType(input: string): GameType {
-  const lower = input.toLowerCase().trim();
-  if (lower === 'boxel') return 'voxel'; // typo alias
-  if (lower === 'voxel' || lower === 'fps') return lower as GameType;
-  throw new Error(`unknown game type: ${input}`);
 }
 
 export interface SandboxCard {
@@ -252,8 +241,6 @@ export type SandboxSortKey = 'totalPlays' | 'activePlayers' | 'detailViews';
 ```
 
 - 後方互換: genres/tags/display/stats は optional、defineGameMode検証では不正でもthrowせず無視 or 軽量検証（配列要素がstringか）
-- boxel: typeとしてはエラー、normalizeGameTypeでUI層がvoxelへ正規化
-
 ### 10.2 `gamemodes/fps/official/ffa` 拡張
 
 ```ts
@@ -315,7 +302,7 @@ export function LeftSidebar({ onOpenSandbox }: { onOpenSandbox: ()=>void }) {
 // lib/sandbox.ts
 export function filterByGenre(cards: SandboxCard[], genre: SandboxFilterCategory): SandboxCard[] {
   if (genre==='all') return cards;
-  const g = normalizeGenre(genre); // boxel→voxel含む
+  const g = genre.toLowerCase();
   return cards.filter(c => c.genres.includes(g));
 }
 
@@ -325,7 +312,6 @@ export function sortByKey(cards: SandboxCard[], key: SandboxSortKey, order: 'des
 
 export function normalizeGenre(input: string): string {
   const lower = input.toLowerCase();
-  if (lower==='boxel') return 'voxel';
   return lower;
 }
 
@@ -496,7 +482,7 @@ export function seekGame(params: { modeId?: string; roomId?: string }): { ticket
 | リスク | 対応 |
 |---|---|
 | `GameModeDefinition` 拡張が後方互換を壊す | optional追加、defineGameModeではgenres/tags/display/statsが不正でもthrowせず軽量検証 or 無視、既存 tests 255 passをCIで確認 |
-| boxelエイリアスで GameTypeを3つに増やしたくなる | 禁止、L1分岐はfps|voxelの2つのまま、boxelはUI層でvoxelへ正規化、normalizeGameType関数で吸収 |
+| GameTypeを3つに増やしたくなる | 禁止、L1分岐はfps|voxelの2つのまま |
 | Header/Sidebar/Modal追加で既存 GameCanvas描画経路を壊す | App.tsxでGameCanvasを維持、Header/SidebarはDOM overlay、z-index管理、Babylon canvasのpointer eventsを邪魔しないよう CSS `pointer-events` 制御 |
 | Sandboxモーダルのカード画像が無い | mockでは `/thumb/*.png` は存在しないので `onError` fallback or placeholder div、Phase 6でCDN本番化 |
 | matchmaker本実装を混ぜたくなる | Phase 4ではmockのみ、本実装はPH4以降、Redis/HMACは含めない |
@@ -509,8 +495,8 @@ export function seekGame(params: { modeId?: string; roomId?: string }): { ticket
 
 | ID | コミット | テスト | 実測値・備考 |
 |---|---|---|---|
-| `PLAT-4` | 本コミット | docs-only link check / `git diff --check` | Phase 4計画。ハブ+Sandboxモーダル骨組み+投票入口、FPS/Voxel/Sandbox 3カテゴリ、boxelエイリアス、genre/tag拡張 |
-| `PH4-A` | | | GameModeDefinition genres/tags/display/stats拡張 + boxelエイリアス |
+| `PLAT-4` | 本コミット | docs-only link check / `git diff --check` | Phase 4計画。ハブ+Sandboxモーダル骨組み+投票入口、FPS/Voxel/Sandbox 3カテゴリ、genre/tag拡張 |
+| `PH4-A` | | | GameModeDefinition genres/tags/display/stats拡張 |
 | `PH4-B` | | | Header FPS/Voxelタブ |
 | `PH4-C` | | | Left Sidebar + Sandboxボタン |
 | `PH4-D` | | | Sandboxモーダル カード+フィルタ+ソート mock |

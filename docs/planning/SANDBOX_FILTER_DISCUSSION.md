@@ -1,6 +1,7 @@
-# Sandbox + フィルター設計の整理 (議論用)
+# Sandbox + フィルター設計の整理 (議論用) — 最終訂正
 
-> Date: 2026-09-22 / Status: 議論中 / 対象: ユーザー理想 `sandbox/{fps, zombie, athletic, boxel, bedwars}` + タグフィルター `official`, `boxel` 等
+> Date: 2026-09-22 / Status: 議論中→合意済み / 対象: ユーザー理想 `sandbox/{fps, zombie, athletic, boxel, bedwars}` + タグフィルター `official`, `boxel` 等
+> **最終訂正 2026-09-22: ユーザー確認により `boxel` は `voxel` のタイポ。エイリアス機能としては扱わない。`voxel` に訂正済み。以下の議論中の `boxel` 表記はすべて `voxel` のタイポとして読む。**
 
 ## 現状の設計 (docs/arch/editor.md)
 

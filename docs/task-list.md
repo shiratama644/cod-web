@@ -48,7 +48,7 @@
 | **2** | Sim Profile 分離 | PH2-E ローカル検証済み。Phase 2 完了 |
 | **EM** | 完全バグ修正フェーズ（Emergency） | EM1-F ローカル検証済み。EM02完了 |
 | **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | PH3-D ローカル検証済み（統合+例外安全+coverage 93%）。Phase 3 完了 |
-| **4** | ハブ + Sandbox モーダル + 投票 + マッチメイカー骨組み | PLAT-4 実装中（FPS/Voxel/Sandbox 3カテゴリ、Header/Sidebar、Sandboxモーダル、詳細ページ、投票入口、boxelエイリアス） |
+| **4** | ハブ + Sandbox モーダル + 投票 + マッチメイカー骨組み | PLAT-4 実装中（FPS/Voxel/Sandbox 3カテゴリ、Header/Sidebar、Sandboxモーダル、詳細ページ、投票入口） |
 | **5** | voxel-creative / bedwars / fps-tdm | 未着手 |
 | **6** | API 再設計 | 未着手 |
 | **7** | チャンク本同期・AOI・スケール | 未着手 |
@@ -172,12 +172,12 @@
 計画書: [`planning/PHASE04_PLAN.md`](./planning/PHASE04_PLAN.md)  
 橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（PH3-D完了。次は **Phase 4 計画作成 PLAT-4** → Phase 4 実装）
 
-目的: Phase 3で分離した gamemode APIの上に、ユーザー理想の 3カテゴリプラットフォーム (FPS公式/Voxel公式/Sandbox UGC) のハブUI骨組みを実装し、Sandbox UGCハブのフィルタ/ソート/参加フローとFPS投票システムの入口を作る。L1 type分岐は fps|voxelの2つのまま、Sandboxは source=ugc表示集約、boxelはvoxelエイリアス。matchmaker本実装は含めずmock、voxel本実装/AOI/delta/QuickJS/GLBエディタ本実装は含めない。
+目的: Phase 3で分離した gamemode APIの上に、ユーザー理想の 3カテゴリプラットフォーム (FPS公式/Voxel公式/Sandbox UGC) のハブUI骨組みを実装し、Sandbox UGCハブのフィルタ/ソート/参加フローとFPS投票システムの入口を作る。L1 type分岐は fps|voxelの2つのまま、Sandboxは source=ugc表示集約。過去の `boxel` 表記は `voxel` のタイポで訂正済み。matchmaker本実装は含めずmock、voxel本実装/AOI/delta/QuickJS/GLBエディタ本実装は含めない。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---:|
-| PLAT-4 | Phase 4計画作成（ハブ+Sandboxモーダル骨組み+投票入口） | ローカル検証済み | 100% | PH3-D | `_TEMPLATE.md`準拠。PLAT-4とPH4-A〜Fがtask-listに追加され、FPS/Voxel/Sandbox 3カテゴリ・Header FPS/Voxelタブ・Left Sidebar Sandboxボタン・Sandboxモーダル(カード thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views)・詳細ページ Play Now/Room Selection・投票システム入口・boxelエイリアス・genre/tag拡張が明記される | `f2a6ff1` / `PHASE04_PLAN.md` _TEMPLATE準拠 / product.md/editor.md/types.md/matchmaker.md/client.md/architecture.md 2026-09-22理想反映 / task-listにPLAT-4/PH4-A〜F追加 / HANDOFF D17-D24追加 / quality-gates更新 / SANDBOX_FINAL_AGREED.md新規 / typecheck pass / lint 117 files 0 warnings / test:unit 37 files 255 tests pass / determinism pass / `git diff --check` pass / push済み |
-| PH4-A | GameModeDefinition genres/tags/display/stats拡張 + boxelエイリアス | 未着手 | 0% | PLAT-4 | `gamemode-api`にgenres/tags/display/stats optional追加、normalizeGameType boxel→voxel、ffa拡張、後方互換維持、tests追加 | - |
+| PLAT-4 | Phase 4計画作成（ハブ+Sandboxモーダル骨組み+投票入口） | ローカル検証済み | 100% | PH3-D | `_TEMPLATE.md`準拠。PLAT-4とPH4-A〜Fがtask-listに追加され、FPS/Voxel/Sandbox 3カテゴリ・Header FPS/Voxelタブ・Left Sidebar Sandboxボタン・Sandboxモーダル(カード thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views)・詳細ページ Play Now/Room Selection・投票システム入口・genre/tag拡張が明記される | `f2a6ff1` / `PHASE04_PLAN.md` _TEMPLATE準拠 / product.md/editor.md/types.md/matchmaker.md/client.md/architecture.md 2026-09-22理想反映 / task-listにPLAT-4/PH4-A〜F追加 / HANDOFF D17-D24追加 / quality-gates更新 / SANDBOX_FINAL_AGREED.md新規 / typecheck pass / lint 117 files 0 warnings / test:unit 37 files 255 tests pass / determinism pass / `git diff --check` pass / push済み |
+| PH4-A | GameModeDefinition genres/tags/display/stats拡張 | 未着手 | 0% | PLAT-4 | `gamemode-api`にgenres/tags/display/stats optional追加、ffa拡張、後方互換維持、tests追加 | - |
 | PH4-B | ハブUI Header FPS/Voxelタブ切替 | 未着手 | 0% | PH4-A | Headerコンポーネント FPS/Voxelタブ、activeTab state、App統合、tests | - |
 | PH4-C | Left Sidebar Krunker風 + Sandboxボタン | 未着手 | 0% | PH4-B | LeftSidebarコンポーネント、Sandboxボタンでモーダルopen、GameStore sandboxOpen、App統合、tests | - |
 | PH4-D | Sandboxモーダル カード一覧+フィルタ+ソート (mock) | 未着手 | 0% | PH4-C | sandbox.ts filter/sort/normalize、matchmaker-mock.ts mockGameModes、SandboxModal カード thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views、GameStore filter/sort、tests | - |

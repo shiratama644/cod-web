@@ -14,7 +14,6 @@ L2  Sim Profile 層  ★ここだけがタイプごとに分岐
     VoxelProfile          FpsProfile
     チャンク / voxel-physics   静的マップ+BVH / カプセル
     i32 座標 / 20-30Hz         i16 座標 / 60Hz
-    boxel は voxel エイリアス
 
 L1  エンジンコア  ★タイプ非依存
     Room / TickScheduler / PlayerRegistry / InputQueue
@@ -29,7 +28,7 @@ L0  プラットフォーム  ★タイプ非依存
 
 `official` / `ugc` は type ではなく Content Source。3 種類目の type として扱わない。**Sandbox は `source=ugc` の表示集約**で、L1/L2 分岐を増やさない。将来 3 つ目の本当の type（例: `racing`）を足すときに触るのは L2 と L3 だけ。L0/L1 は無変更。**この性質が保たれているかが設計の判定基準。**
 
-`boxel` は `voxel` の typo エイリアスとして UI で正規化、内部型は `voxel` のみ。
+> 注: 過去の議論で `boxel` と記載があった箇所は `voxel` のタイポ。`voxel` に訂正済み。
 
 実装中に「L1 に `if (type === 'voxel')` を書きたくなった」ら、L1/L2 の境界を見直す。
 

@@ -15,8 +15,8 @@
 | Voxel (公式) | `type=voxel&source=official` |
 | Sandbox (UGC) | `source=ugc` (+ `genre=bedwars|zombie|athletic` 等) |
 
-- `boxel` は `voxel` エイリアスとして正規化。
 - Sandbox は `source=ugc` の集約ビュー。`/sandbox` 表示は `GET /v1/gamemodes?source=ugc` 相当。
+- 過去の議論で `boxel` と記載があった箇所は `voxel` のタイポ。`voxel` に訂正済み。
 
 ## HTTP
 

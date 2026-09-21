@@ -200,7 +200,7 @@ Room List Modal:
 - gamemodes/* → @cod/gamemode-sdkのみ (Biome維持)
 - engine-core → profile-* 禁止 (Biome維持)
 - 決定論・ゼロアロケ・例外安全維持
-- boxelはvoxelのエイリアスとしてUIで表示、内部はvoxel
+- boxelはvoxelのタイポでvoxelに訂正。エイリアス機能としては扱わない
 
 ## 6. 次のアクション (合意後)
 

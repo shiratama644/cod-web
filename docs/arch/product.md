@@ -4,7 +4,7 @@
 
 | 用語 | 意味 |
 |---|---|
-| **タイプ（Game Type）** | `voxel` または `fps`。シミュレーションの根本的なパラダイム。`boxel` は `voxel` の typo エイリアス |
+| **タイプ（Game Type）** | `voxel` または `fps`。シミュレーションの根本的なパラダイム |
 | **Sim Profile** | タイプごとのシミュレーション実装 |
 | **コンテンツソース（Content Source）** | `official` または `ugc`。タイプではなく、運営/ユーザー作成の区分 |
 | **ゲームモード** | ルールの単位。1つのタイプと1つの source に属する。例: `/fps/official/pvp`, `/voxel/ugc/athletic`。`genres`/`tags`/`display`/`stats` は optional 拡張 |
@@ -24,7 +24,7 @@
 
 - **ハブ**から稼働中ルームを一覧・検索して参加できる。Header [FPS][Voxel]タブ切替、Left Sidebar (Krunker風) Sandboxボタン
 - ルームは **2 タイプ**のいずれかに属する（L1分岐は fps|voxel の2つのまま）
-  - `voxel` — Minecraft / bloxd.io 的。編集可能なボクセル世界。公式 survival / bedwars と UGC world。`boxel` は typoエイリアス
+  - `voxel` — Minecraft / bloxd.io 的。編集可能なボクセル世界。公式 survival / bedwars と UGC world
   - `fps` — Krunker.io 的。静的/編集可能アリーナ。公式 pvp / zombie と UGC map
 - 各タイプ内に `official` と `ugc` の **コンテンツソース**がある。`official` / `ugc` を 3 種類目の type にしない。**Sandbox は `source=ugc` の表示集約**
 - 表示上は **3カテゴリ**: FPS (公式対戦) FFA/TDM/DOM等、Voxel (公式サバイバル) Survival、Sandbox (UGC) Bedwars/Zombie/Athletic等
@@ -43,8 +43,8 @@
 | **Voxel (公式サバイバル)** | `type=voxel`, `source=official` | 公式サバイバル voxel | `/voxel/official/survival` |
 | **Sandbox (UGC)** | `source=ugc` (type は `fps` / `voxel` 両方) | ユーザー生成コンテンツハブ。Bedwars/Zombie/Athletic 等 | `/fps/ugc/*`, `/voxel/ugc/*` をまとめて Sandbox として表示。内部 URL は `/{type}/ugc/{slug}` |
 
-- `boxel` は `voxel` の typo として扱い、表示エイリアスに留める。内部 `GameType` は `voxel` のみ。
-- Sandbox の `fps / zombie / athletic / boxel / bedwars` という表現は、Sandbox UGC の genre フィルタを指す。`official` タグは `source=official` を表す。
+- 過去の議論で `boxel` と記載があった箇所は `voxel` のタイポ。`voxel` に訂正する。
+- Sandbox の `fps / zombie / athletic / bedwars` という表現は、Sandbox UGC の genre フィルタを指す。`official` タグは `source=official` を表す。
 
 ## ナビゲーション & レイアウト
 

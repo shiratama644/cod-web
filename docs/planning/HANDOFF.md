@@ -46,7 +46,7 @@
 | D19 | メイン画面デフォルト FPS + 投票システム | 2026-09-22 理想。初期表示FPS、1マッチ終了時全プレイヤー投票で次モード決定 |
 | D20 | Sandboxモーダル カード/フィルタ/ソート | 2026-09-22 理想。カード thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic (genres)、ソート plays/active/views (totalPlays/activePlayers/detailViews) |
 | D21 | 詳細ページ Play Now/Room Selection | 2026-09-22 理想。カードクリックで詳細ページ、Play Now空きルーム自動マッチ、ルーム選択モーダル手動選択 |
-| D22 | boxel は voxel typoエイリアス | 2026-09-22 ユーザー確認。boxel=voxel typo、UI表示エイリアスとしてvoxelに正規化、内部GameTypeはvoxelのみ |
+| D22 | boxel は voxel のタイポ | 2026-09-22 ユーザー確認。`boxel` は `voxel` のタイポで `voxel` に訂正。エイリアス機能としては扱わない |
 | D23 | genres/tags/display/stats optional拡張 | 2026-09-22 設計。GameModeDefinitionにgenres/tags/display/stats optional追加、後方互換維持、Sandboxフィルタ/ソート/カード表示用 |
 | D24 | matchmakerはPhase 4 mock、本実装は後続 | Phase 4では mock API (matchmaker-mock.ts)、本実装 Redis/HMACはPhase 5以降 |
 
@@ -96,12 +96,12 @@ Phase 3 計画書は [`PHASE03_PLAN.md`](./PHASE03_PLAN.md)。PLAT-3〜PH3-D 完
 
 ### 目的
 
-ハブ + Sandboxモーダル + 投票システム + マッチメイカー骨組みの計画を作成し、実装する。ユーザー理想の 3カテゴリプラットフォーム (FPS公式 FFA/TDM/DOM、Voxel公式 Survival、Sandbox UGC Bedwars/Zombie/Athletic) を実現する。Header FPS/Voxelタブ、Left Sidebar Sandboxボタン、Sandboxモーダル (カード thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views)、詳細ページ Play Now/Room Selection、メインFPS投票システム。L1 type分岐は fps|voxelの2つのまま、Sandboxは source=ugc表示集約、boxelはvoxelエイリアス。
+ハブ + Sandboxモーダル + 投票システム + マッチメイカー骨組みの計画を作成し、実装する。ユーザー理想の 3カテゴリプラットフォーム (FPS公式 FFA/TDM/DOM、Voxel公式 Survival、Sandbox UGC Bedwars/Zombie/Athletic) を実現する。Header FPS/Voxelタブ、Left Sidebar Sandboxボタン、Sandboxモーダル (カード thumbnail/title/creator/plays/desc、フィルタ Bedwars/Zombie/Athletic、ソート plays/active/views)、詳細ページ Play Now/Room Selection、メインFPS投票システム。L1 type分岐は fps|voxelの2つのまま、Sandboxは source=ugc表示集約。過去の `boxel` 表記は `voxel` のタイポで訂正済み。
 
 ### PLAT-4 でやること（完了 80%）
 
-- [x] `docs/planning/PHASE04_PLAN.md` を `_TEMPLATE.md` 準拠で作成（FPS/Voxel/Sandbox 3カテゴリ、Header/Sidebar、Sandboxモーダル、詳細ページ、投票、boxelエイリアス、genre/tag拡張）
-- [x] `docs/arch/product.md`, `editor.md`, `types.md`, `matchmaker.md`, `client.md`, `architecture.md` を 2026-09-22理想に更新
+- [x] `docs/planning/PHASE04_PLAN.md` を `_TEMPLATE.md` 準拠で作成（FPS/Voxel/Sandbox 3カテゴリ、Header/Sidebar、Sandboxモーダル、詳細ページ、投票、genre/tag拡張）
+- [x] `docs/arch/product.md`, `editor.md`, `types.md`, `matchmaker.md`, `client.md`, `architecture.md` を 2026-09-22理想に更新（boxelはvoxelタイポで訂正、エイリアス機能としては扱わない）
 - [x] `docs/task-list.md` に PLAT-4 / PH4-A〜F を追加、Phase 4テーマを「ハブ+Sandboxモーダル+投票+マッチメイカー骨組み」に更新
 - [x] `docs/planning/SANDBOX_SPEC整理.md` / `SANDBOX_FILTER_DISCUSSION.md` / `SANDBOX_FINAL_AGREED.md` を参照し、Sandbox表示マッピングを明確化
 - [ ] link check / `git diff --check` / typecheck/lint/unit/build/determinism pass（PLAT-4完了時）
@@ -109,7 +109,7 @@ Phase 3 計画書は [`PHASE03_PLAN.md`](./PHASE03_PLAN.md)。PLAT-3〜PH3-D 完
 
 ### PH4-A〜F でやること（次）
 
-- PH4-A: `GameModeDefinition` genres/tags/display/stats拡張 + boxelエイリアス `normalizeGameType`、ffa拡張、後方互換
+- PH4-A: `GameModeDefinition` genres/tags/display/stats拡張、ffa拡張、後方互換
 - PH4-B: Header FPS/Voxelタブ切替コンポーネント
 - PH4-C: Left Sidebar Krunker風 + Sandboxボタン
 - PH4-D: Sandboxモーダル カード一覧+フィルタ+ソート (mockデータ)

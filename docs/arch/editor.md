@@ -30,7 +30,7 @@
 
 | 層 | 値 | 意味 |
 |---|---|---|
-| `type` | `fps` / `voxel` | シミュレーション・物理・座標系・同期形式を決める。`boxel` は `voxel` の表示エイリアス |
+| `type` | `fps` / `voxel` | シミュレーション・物理・座標系・同期形式を決める |
 | `source` | `official` / `ugc` | 運営が同梱/承認するか、ユーザー作成かを表す。`official` タグはこれ |
 | `mode-or-world` | `ffa`, `pvp`, `tdm`, `dom`, `zombie`, `survival`, `bedwars`, `athletic` 等 | ルール/ワールド/マップの表示・検索上の slug。Sandbox フィルタの genre と一致 |
 
@@ -60,7 +60,7 @@ interface GameModeDefinition {
 - Voxel公式: `genres=[survival]`, `tags=[official, voxel, survival]`
 - Sandbox UGC: `genres=[bedwars] / [zombie] / [athletic]`, `tags=[ugc, ...]`
 
-`boxel` は UI 表示エイリアスとして `voxel` に正規化。検索・フィルタでは `boxel` 入力も `voxel` として扱う。
+> 注: 過去の議論で `boxel` と記載があった箇所は `voxel` のタイポ。`voxel` に訂正済み。エイリアス機能としては扱わない。
 
 ## Sandbox 表示マッピング
 
@@ -80,7 +80,7 @@ interface GameModeDefinition {
 | 表示/URL (内部正本) | `/{type}/{source}/{slug}` |
 | Sandbox 表示集約 | `/sandbox`, `/sandbox?genre={genre}`, `/sandbox/{id}` |
 | GameMode ID | `fps-official-pvp`, `fps-official-ffa`, `voxel-official-survival`, `fps-ugc-athletic` 等 |
-| 内部 metadata | `type: 'fps' | 'voxel'`, `source: 'official' | 'ugc'`, `slug: string`, `genres?: Genre[]`, `tags?: Tag[]`, `boxel` は `voxel` エイリアス |
+| 内部 metadata | `type: 'fps' | 'voxel'`, `source: 'official' | 'ugc'`, `slug: string`, `genres?: Genre[]`, `tags?: Tag[]` |
 
 `source` を Game Type に混ぜない。検索・一覧・権限・公開状態は metadata として扱う。Sandbox は表示上のグルーピング。
 

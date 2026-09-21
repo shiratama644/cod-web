@@ -111,7 +111,7 @@ export type Genre =
 
 export type Tag =
   | 'official' | 'ugc'
-  | 'fps' | 'voxel' | 'boxel' // boxel は voxel エイリアス、内部では voxel に正規化
+  | 'fps' | 'voxel'
   | 'pvp' | 'pve' | 'parkour' | string;
 
 export interface GameModeDefinition<TType extends GameType = GameType> {
@@ -166,7 +166,7 @@ export interface GameModeDefinition<TType extends GameType = GameType> {
 ```
 
 - `id`: `/^[a-z][a-z0-9-]{2,31}$/`（例: `fps-official-pvp`, `voxel-ugc-athletic`）
-- `type: T` が所属タイプ（`fps` / `voxel` のみ）。`boxel` は `voxel` の表示エイリアスとして UI で正規化。
+- `type: T` が所属タイプ（`fps` / `voxel` のみ）。過去に `boxel` と記載があった箇所は `voxel` のタイポ。
 - `source: ContentSource` が公式/UGC 区分（`official` / `ugc`）。type に混ぜない。`Sandbox = source=ugc` の表示集約。
 - `slug`: URL 用の短い名前（例: `/fps/official/pvp` の `pvp`）
 - `minPlayers` / `maxPlayers`: 1..64
@@ -253,20 +253,6 @@ export type VoteEvent =
 - トリガー: `onRoundEnd` 後に全プレイヤーへ投票 UI 表示。
 - 候補: `type=fps, source=official` の一覧（FFA/TDM/DOM 等）。
 - 多数決で次モード決定。`after`/`every` tick 基準でタイマー管理（`setTimeout` 禁止）。
-
-## Boxel エイリアス
-
-```ts
-export function normalizeGameType(input: string): GameType {
-  const lower = input.toLowerCase();
-  if (lower === 'boxel') return 'voxel'; // typo エイリアス
-  if (lower === 'voxel' || lower === 'fps') return lower;
-  throw new Error(`unknown type: ${input}`);
-}
-```
-
-- ユーザー入力 `boxel` は `voxel` として正規化。
-- UI 表示では `Voxel` と表記。内部型は `voxel` のみ。
 
 ## RoomCtx
 

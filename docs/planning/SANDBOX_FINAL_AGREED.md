@@ -73,7 +73,7 @@
 | 詳細ページ遷移 カードクリック | /sandbox/{id} → 内部 /{type}/ugc/{slug} | editor.md, client.md |
 | Play Now 自動マッチング | POST /v1/seek-game 相当 mock | matchmaker.md, client.md |
 | ルーム選択 モーダル手動選択 | GET /v1/game-list 相当 mock | matchmaker.md, client.md |
-| boxel | voxel typo、voxelエイリアスとして正規化 | types.md, editor.md, architecture.md |
+| boxel | voxel のタイポ、`voxel` に訂正。エイリアス機能としては扱わない | - |
 
 ## 技術制約維持 (D2等)
 
@@ -81,7 +81,7 @@
 - gamemodes/* → @cod/gamemode-sdkのみ (Biome維持)
 - engine-core → profile-* 禁止 (Biome維持)
 - 決定論・ゼロアロケ・例外安全維持
-- boxelはvoxelエイリアス、内部GameTypeはvoxelのみ
+- `boxel` は `voxel` のタイポで `voxel` に訂正。エイリアス機能としては扱わない
 - matchmaker本実装はPhase 4 mock、Redis/HMACはPhase 5以降
 - voxel本実装、AOI、delta snapshot、QuickJS、GLBエディタ本実装はPhase 5以降
 
@@ -89,7 +89,7 @@
 
 | Phase 4 Subtask | 対応仕様 |
 |---|---|
-| PH4-A genres/tags/display/stats + boxelエイリアス | GameModeDefinition拡張、normalizeGameType、ffa拡張 |
+| PH4-A genres/tags/display/stats | GameModeDefinition拡張、ffa拡張 |
 | PH4-B Header FPS/Voxelタブ | Headerコンポーネント、activeTab state |
 | PH4-C Left Sidebar + Sandboxボタン | LeftSidebar、sandboxOpen state |
 | PH4-D Sandboxモーダル カード+フィルタ+ソート mock | sandbox.ts filter/sort、matchmaker-mock.ts mockGameModes、SandboxModal |
@@ -100,7 +100,7 @@
 
 - product.md: プラットフォームカテゴリ、ナビゲーション、メイン画面、Sandboxハブ仕様
 - editor.md: 階層モデル、Genre/Tag拡張、Sandbox表示マッピング、ルーティング
-- types.md: GameModeDefinition拡張、SandboxCard/Filter/Sort、Voting、Boxelエイリアス
+- types.md: GameModeDefinition拡張、SandboxCard/Filter/Sort、Voting、
 - matchmaker.md: フィルタ/ソート、Play Now/Room Selectionフロー、Redis拡張
 - client.md: Header/Sidebar/Sandboxモーダル/詳細ページ/投票UI
 - architecture.md: L3表示集約、SandboxはL1分岐増やさない
