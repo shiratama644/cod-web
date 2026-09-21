@@ -50,7 +50,7 @@
 | [babylon-engine/SKILL.md](./babylon-engine/SKILL.md) | Babylon Engine初期化とR3F排除、thinEngine.pure型解決、Depsファサード | 2026-09-22（PH1-D + EM02） |
 | [input-accumulation/SKILL.md](./input-accumulation/SKILL.md) | Pointer Lock/raw mouse、InputController蓄積/消費、joystick deadzone | 2026-09-22（PH1-E + EM02 95%） |
 | [physics-collision/SKILL.md](./physics-collision/SKILL.md) | BVH衝突とkinematic controllerをSimProfileへ分離 | 2026-09-22（PH2-B seam + voxel契約） |
-| [gamemode-api/SKILL.md](./gamemode-api/SKILL.md) | gamemode-api core + sdk facade、define検証、RoomCtx、hybrid async、ctx spawn、Runtime/Timer/RateLimiter例外安全、ffa最小+pvpエイリアス、gameserver統合例外安全 | 2026-09-22（PH3-D 統合 profile+gamemode注入 FpsCtx実装 13 tests + coverage 93%） |
+| [gamemode-api/SKILL.md](./gamemode-api/SKILL.md) | gamemode-api core + sdk facade、define検証、RoomCtx、hybrid async、ctx spawn、Runtime/Timer/RateLimiter例外安全、ffa最小+pvpエイリアス、gameserver統合例外安全、parentGenre/genres/tags/subModes/display/stats拡張、Official FPS 1ゲーム複数モード投票、Sandbox公式拡張+UGC、Header/Sidebar/Modal/Detail/Room/VoteハブUI骨組み | 2026-09-22（PH4-F 投票 Official FPS FFA/TDM/DOM + Sandbox公式拡張+UGC + ハブUI 44 files 311 tests + coverage 93.51%） |
 
 ## 設計仕様の正本（スキルではなく docs/arch/）
 

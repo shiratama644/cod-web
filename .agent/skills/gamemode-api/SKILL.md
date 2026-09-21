@@ -1,12 +1,12 @@
 ---
 name: gamemode-api
-description: L1 gamemode-api core + gamemode-sdk facade、defineGameMode検証、RoomCtx/BaseCtx/FpsCtx/VoxelCtx、hybrid async、spawnPointsはctx経由の実装スキル。
+description: L1 gamemode-api core + gamemode-sdk facade、defineGameMode検証、RoomCtx/BaseCtx/FpsCtx/VoxelCtx、hybrid async、spawnPointsはctx経由、parentGenre/genres/tags/subModes/display/stats拡張、Official FPS 1ゲーム複数モード投票の実装スキル。
 ---
 
-# Gamemode API — L1 core + facade + ffa最小の実装スキル
+# Gamemode API — L1 core + facade + ffa最小 + Phase4拡張の実装スキル
 
-> 仕様正本: `docs/arch/types.md`（GameModeDefinition / RoomCtx）、`docs/arch/architecture.md`（gamemodes/* → sdkのみ）、`docs/arch/server.md`（レート制限）、`docs/planning/PHASE03_PLAN.md`  
-> 計画: PLAT-3 / PH3-A / PH3-B / PH3-C / PH3-D
+> 仕様正本: `docs/arch/types.md`（GameModeDefinition / RoomCtx）、`docs/arch/architecture.md`（gamemodes/* → sdkのみ）、`docs/arch/server.md`（レート制限）、`docs/planning/PHASE03_PLAN.md` / `PHASE04_PLAN.md`（改訂版）  
+> 計画: PLAT-3 / PH3-A / PH3-B / PH3-C / PH3-D / PLAT-4 / PH4-A〜F
 
 ## パッケージ構成（ユーザー確認 both）
 
@@ -155,13 +155,65 @@ export default ffa;
 - `biome.json` に `gamemodes/* → @cod/gamemode-sdkのみ` 制限追加済み（本タスクで先行追加）
 - coverage 85%維持、E2E discovery 11+維持、determinism heavy 0.8s維持
 
+## Phase 4拡張（PH4-A〜F完了）2026-09-22改訂版
+
+### GameModeDefinition拡張（PH4-A）
+
+```ts
+export type ParentGenre = 'fps' | 'voxel';
+export type SubTag = 'bedwars' | 'zombie' | 'athletic' | 'tdm' | 'dom' | 'ffa' | 'survival' | 'creative' | 'pvp' | ...;
+export type Tag = 'official' | 'ugc' | 'fps' | 'voxel' | ...;
+export type GameCategory = 'Official' | 'Community'; // Official=公式、Community=UGC含む公式拡張+UGC
+export interface GameModeDisplay { title: string; creator: string; thumbnail: string; description?: string; }
+export interface GameModeStats { totalPlays: number; activePlayers: number; detailViews: number; }
+export interface GameModeDefinition<T extends GameType> {
+  id, type, source, slug, minPlayers, maxPlayers, world,
+  parentGenre?: ParentGenre; // 親ジャンル FPS/Voxel
+  genres?: SubTag[]; // サブタグ Bedwars/Zombie/Athletic/TDM/DOM/FFA
+  tags?: Tag[];
+  subModes?: SubTag[]; // Official FPS 1ゲーム複数モード [FFA,TDM,DOM]
+  currentSubMode?: SubTag; // 現在のサブモード
+  category?: GameCategory; // Official vs Community
+  display?: GameModeDisplay; // thumbnail/title/creator
+  stats?: GameModeStats; // plays/active/views
+  // ...hooks
+}
+```
+
+- parentGenre/genres/tags/display/stats/subModes/currentSubMode/categoryは全てoptional、後方互換維持、空配列許容
+- ffa拡張: parentGenre fps, genres [ffa], tags [official,pvp,fps], subModes [ffa,tdm,dom], currentSubMode ffa, category Official, display title/creator/thumbnail, stats totalPlays/activePlayers/detailViews
+- Sandboxは公式拡張+UGCの集合、parentGenre FPS/Voxel + subTag Bedwars/Zombie/Athleticでフィルタ、ソート plays/active/views
+
+### ハブUI骨組み（PH4-B〜F）
+
+| Component | File | 役割 |
+|---|---|---|
+| Header | `apps/web/src/components/Header.tsx` | Official FPS/Voxel切替 [FPS][Voxel]、activeTab store、data-testid header/official-fps-tab/official-voxel-tab |
+| LeftSidebar | `apps/web/src/components/LeftSidebar.tsx` | Krunker風縦ナビ、SandboxボタンでsetSandboxOpen(true) 公式拡張+UGC、data-testid left-sidebar/sandbox-btn |
+| sandbox.ts | `apps/web/src/lib/sandbox.ts` | MOCK_CARDS 6件 公式拡張+UGC、filterByParentGenre/SubTag/Search/sortByKey/applySandboxFilters純粋関数 |
+| matchmaker-mock.ts | `apps/web/src/lib/matchmaker-mock.ts` | mockGameModes 6件 公式拡張+UGC、mockRooms 4件、fetchGameModes/fetchGameList/seekGame mock |
+| SandboxModal | `apps/web/src/components/SandboxModal.tsx` | カード一覧 thumbnail/title/creator/plays/desc、親ジャンルフィルタ [All,FPS,Voxel] + サブタグ [All,Bedwars,Zombie,Athletic,TDM,DOM,FFA] + ソート [plays,active,views] |
+| SandboxDetailPage | `apps/web/src/components/SandboxDetailPage.tsx` | 詳細 /{type}/{source}/{slug}→/sandbox/{id}、Play Now seekGame auto-match、Room Selection manual |
+| RoomSelectionModal | `apps/web/src/components/RoomSelectionModal.tsx` | ルーム一覧手動選択、Join seekGame |
+| VoteOverlay | `apps/web/src/components/VoteOverlay.tsx` | Official FPS 1-game multi-mode [FFA,TDM,DOM]投票、Voxel excluded Survival永続、timer/total/results sorted、vote-option-ffa/tdm/dom |
+
+- gameStore拡張: activeTab, sandboxOpen, sandboxParentGenre, sandboxSubTag, sandboxSort, sandboxSearch, selectedSandboxCardId, roomSelectionOpen, voteSession {roomId,gameId,options[{subMode,label,votes}],endsAtMs}
+- App統合: Header+LeftSidebar+SandboxModal+Detail+Room+Vote
+- boxelはvoxelのタイポで訂正済み、エイリアス機能としては扱わない
+
 ## テスト
 
-- `defineGameMode.test.ts` 10 tests: valid ffa/voxel、invalid id/type/source/slug/min/max/world/map、hooks preserved
+- `defineGameMode.test.ts` 10→19 tests (+9): valid ffa/voxel、invalid id/type/source/slug/min/max/world/map、hooks preserved、parentGenre/genres/tags/subModes/category/display/stats/empty array/Sandbox official extension/voxel survival/後方互換 (PH4-A)
 - `ctx.test.ts` 5 tests: LCG determinism、randomInt inclusive、min>max throw、random 0..1
 - PH3-B: `GameModeTimer.test.ts` 8 tests (after/every/cancel tick基準、setTimeout禁止、例外安全、size/clear)、`ModeMessageRateLimiter.test.ts` 8 tests (40/s burst20、超過時false、player別独立、remove、持続許可)、`GameModeRuntime.test.ts` 11 tests (onTick/onRoomCreate/onPlayerJoin例外でroom落ちない、timer例外で他cb継続、after/every/cancel tick、tickWithCtx、40/s burst20超過false、broadcastで超過者は送らない、Uint8Array/string両対応、Room.setGameModeBinding+leaveクリーンアップ、onPlayerLeaveクリーンアップ) — 計27 tests
-- PH3-C: ffa spawn/score/round lifecycle
-- PH3-D: gameserver integration mode exceptionでroomが落ちない
+- PH3-C: ffa spawn/score/round lifecycle 11 tests
+- PH3-D: gameserver integration mode exceptionでroomが落ちない 13 tests
+- PH4-B: Header 5 tests
+- PH4-C: LeftSidebar 5 tests
+- PH4-D: sandbox.test 7 tests + SandboxModal 8 tests
+- PH4-E: SandboxDetailPage 7 tests + RoomSelectionModal 6 tests
+- PH4-F: VoteOverlay 9 tests
+- Total: 44 files 311 tests (PH3-D 37/255 → PH4-F 44/311 +7 files +56 tests)
 
 ## 監査コマンド
 
