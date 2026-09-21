@@ -19,26 +19,44 @@ git log -5 --oneline
 ### 2. 知識のピンポイント読込（本 hook の核心）
 
 [`../skills/index.md`](../skills/index.md) の「読み方ガイド」で**該当スキルだけ**を読む。
-- 全スキルを常に読まない（コンテキスト浪費）。
+- 全スキルを常に読まない（コンテキスト浪費）。11スキルあるがタスクに必要な1-2個だけ読む。
 - 初回/全体把握が必要な時だけ `project-overview/SKILL.md` + `tech-stack/SKILL.md`。
 - 設計仕様 → **仕様書 [`docs/arch/`](../../docs/arch/README.md)**（product / protocol / engineering / adr / milestones）。環境制約 → `sandbox-constraints/SKILL.md`。
 - 計画書は [`docs/planning/`](../../docs/planning/)。進捗は [`docs/task-list.md`](../../docs/task-list.md)。欠ファイル `tech-stack.md` / `networking.md` / `game-engineering-principles.md` は正本ではない。
+- タスク別の読み分け:
+  - Bun/WS/Channel/Input/backpressure → `networking/SKILL.md` + `bun-runtime/SKILL.md`
+  - SimProfile/決定論/same-input → `deterministic-sim/SKILL.md`
+  - ゼロアロケ/GC/Memoryリーク → `zero-alloc/SKILL.md` + `memory-leak/SKILL.md`
+  - import境界/Biome → `import-boundaries/SKILL.md`
+  - coverage/handlers/babylonDeps → `testing/SKILL.md`
+  - E2E/Playwright → `e2e/SKILL.md`
+  - CI/quality-gates → `ci-quality-gates/SKILL.md`
+  - docs整理/URL検証 → `docs-maintenance/SKILL.md`
+  - Babylon/R3F排除 → `babylon-engine/SKILL.md`
+  - PointerLock/InputController → `input-accumulation/SKILL.md`
+  - BVH/kinematic → `physics-collision/SKILL.md`
 
 ### 3. docs/ と実コードの優先順位（AGENTS.md §6.8）
 
 - 計画書（`docs/planning/*PLAN.md`）と AGENTS.md/skills が矛盾 → **計画書が正**。
 - 計画書に無い事項 → 仕様書 docs/arch/ → AGENTS.md（特に §6）→ skills の順。
 - 現行コード（R3F FPS）と arch（Babylon プラットフォーム）が食い違う間は、**新規コードは arch**。フェーズ 0 の穴埋めだけ現行ツリーを直す。
+- `.github/workflows/quality-gates.yml` がCI正本、`docs/ops/github-actions-proposal.yml` は2026-09-22削除済み（`ci-quality-gates/SKILL.md`）。
 
 ### 4. タスク粒度の確認（AGENTS.md §1.2）
 
 1 タスク = 1 つの意味のある論理的単位。「ついでに」スコープを広げない。
 - 新しい問題を見つけたら現在のタスクに混ぜず、`docs/task-list.md` に新タスクとして登録（AGENTS.md §6.9）。
+- EMフェーズのようにPhase2とPhase3の間にバグ修正を挿入する場合、依存を `PH2-E -> PLAT-EM -> EM1-A〜F -> PLAT-3` と明確にし、task-listのロードマップとHANDOFFの次タスクを更新して次セッションが迷わないようにする（PLAT-EM知見）。
 
 ### 5. ゲームプロジェクト固有の心構え
 
 - **React とシムの分離**・**ゼロアロケーション**・**`SimProfile.step` の決定論**（[`docs/arch/engineering.md`](../../docs/arch/engineering.md)）を実装前から意識。
-- ネットワーク実結合・3D 目視・E2E は Sandbox で検証不可（[`../skills/sandbox-constraints/SKILL.md`](../skills/sandbox-constraints/SKILL.md)）。該当機能では検証範囲を事前にユーザーへ伝える（AGENTS.md §7.7）。
+- **メモリリーク**: `Room.leave` で `simulation.removePlayer` / `lagCompStore.clear` / `snapshotBroadcaster.removePlayer` / `rateLimiter.remove` を必ず呼ぶ（`memory-leak/SKILL.md`）。
+- **ゼロアロケ**: `getPlayersIterable()` / encode once / head indexリング / Map再利用（`zero-alloc/SKILL.md`）。
+- **決定論**: smoke 100x10はunit常時、heavy 1000x100は `scripts/determinism-heavy.ts` 0.8s（`deterministic-sim/SKILL.md`）。
+- ネットワーク実結合・3D 目視・E2E browser実行は Sandbox で検証不可（[`../skills/sandbox-constraints/SKILL.md`](../skills/sandbox-constraints/SKILL.md)）。該当機能では検証範囲を事前にユーザーへ伝える（AGENTS.md §7.7）。E2Eは `test:e2e -- --list` discoveryまでならSandboxでも実行可（`e2e/SKILL.md`）。
+- **coverage**: include-all方針、難しいfileをexcludeして数字を作らない、テスト可能にリファクタ（handlers.ts / babylonDeps.ts分離）（`testing/SKILL.md`）。
 
 ## 完了後
 

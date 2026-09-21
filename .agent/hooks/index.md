@@ -20,11 +20,11 @@
 
 | ファイル | 実行トリガー | 対象 / 内容 |
 | :--- | :--- | :--- |
-| [pre-task.md](./pre-task.md) | タスク開始時 | 現状把握（git status/branch/log）→ `.agent/skills/index.md` から必要スキルをピンポイント読込 → ゲームループ分離・ゼロアロケーション・Sandbox 制約の意識 |
-| [verify-before-commit.md](./verify-before-commit.md) | commit 直前 | 4 検証（typecheck/biome/test:unit/build）+ 意図しない差分の確認 + dist バンドル確認 |
-| [log-task.md](./log-task.md) | タスク完了時 | `.agent/logs/YYYY-MM-DD_<summary>.md` 作成（4 セクション）→ 重要知見を `.agent/skills/` へ同期 → `skills/index.md` + 本 index の「最終更新」更新 |
-| [sandbox-rebuild-recovery.md](./sandbox-rebuild-recovery.md) | Sandbox 再構築検知時 | `git fetch` → `reset --hard FETCH_HEAD`（例外的許可）→ `restore-sandbox-env.sh` で依存再構築 → 健全性確認 |
-| [restore-sandbox-env.sh](./restore-sandbox-env.sh) | 上記から呼出 | npm 経由で bun を導入 + `bun install --frozen-lockfile` |
+| [pre-task.md](./pre-task.md) | タスク開始時 | 現状把握（git status/branch/log）→ `.agent/skills/index.md` から必要スキルをピンポイント読込（11スキル、タスクに必要な1-2個だけ）→ ゲームループ分離・ゼロアロケーション・決定論・メモリリーク・coverage方針の意識 |
+| [verify-before-commit.md](./verify-before-commit.md) | commit 直前 | 4+3 検証（typecheck/biome/test:unit/build + check:determinism/test:coverage/test:e2e -- --list）+ ゼロアロケ/メモリリーク/proposal残存監査 + 意図しない差分の確認 + dist バンドル確認 |
+| [log-task.md](./log-task.md) | タスク完了時 | `.agent/logs/YYYY-MM-DD_<summary>.md` 作成（4 セクション）→ 重要知見を `.agent/skills/` へ同期（deterministic-sim/zero-alloc/networking/testing/e2e/ci-quality-gates/docs-maintenance/import-boundaries/bun-runtime/babylon-engine/input-accumulation/memory-leak/physics-collision）→ `skills/index.md` + 本 index の「最終更新」更新 |
+| [sandbox-rebuild-recovery.md](./sandbox-rebuild-recovery.md) | Sandbox 再構築検知時 | `git fetch` → `reset --hard FETCH_HEAD`（例外的許可）→ `restore-sandbox-env.sh` で依存再構築 → 健全性確認（復旧後はgit logでb3dd3edまで戻っているか確認） |
+| [restore-sandbox-env.sh](./restore-sandbox-env.sh) | 上記から呼出 | npm 経由で bun を導入（package.json devDependencies.bunからversion読む）+ `bun install --frozen-lockfile` |
 | [settings.json](./settings.json) | — （Claude Code 準拠の登録マニフェスト） | `hooks.<event>` にトリガー → コマンドを登録。本表の手順/スクリプトと対応。 |
 
 ## 運用ルール

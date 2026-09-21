@@ -111,3 +111,26 @@ Babylon / noa / Bun WS は公式ドキュメントを検索する（AGENTS.md §
 - Game Type は `fps` / `voxel` の 2 種類。`official` / `ugc` は type ではなく Content Source。URL は `/fps/official/pvp`, `/fps/ugc/athletic`, `/voxel/official/survival`, `/voxel/ugc/athletic` の形。
 - FPS/voxel のエディタは Babylon.js。FPS エディタは GLB 読み込み対応。Babylon 公式は glTF loader に `@babylonjs/loaders` と module-level loader functions を推奨。
 - voxel 公式は Minecraft 風 terrain generation を独自実装し、Noa 系（`noa-engine`, `voxel-physics-engine`, `ent-comp`, `micro-game-shell`, `game-inputs`, `nipplejs`）を候補として扱う。
+
+### EM01 ゼロアロケ / メモリリーク（2026-09-20）
+
+- EM01で潜在バグ発見: `LagCompStore` / `inputQueues` / `paused` Set / `RateLimiter` が `leave` 時にclearされずメモリリーク。`Room.leave` で `simulation.removePlayer` / `lagCompStore.clear` / `snapshotBroadcaster.removePlayer` / `rateLimiter.remove` を必ず呼ぶ。
+- ゼロアロケ違反: `Room.getPlayers()` 毎tick配列確保 → `getPlayersIterable()` 追加。`SnapshotBroadcaster` はループ内毎回encode → ループ外1回 + per-peer patch。`shift()`/`splice()` はhead indexリングに置換。`GameClient.remotes` Mapは毎フレームnew → clear+set再利用。`players.map` → forループ直接書き。
+- 監査: `grep -R "getPlayers()" packages/engine-core --include="*.ts"` 0件、`shift()` 0件、`slice` は互換1件のみ。
+
+### EM02 coverage 85%達成（2026-09-21）
+
+- **include-all方針**: `gameserver/index.ts` 0% / `BabylonGame.ts` 2% / `App.tsx` 0% も含めて85%を目指す。難しいfileをexcludeして数字を作らない、テスト可能にリファクタして意味あるテストを書く。
+- **handlers.ts分離**: `apps/gameserver/src/index.ts` は副作用（Bun.serve / setInterval）でテスト不可。純粋関数 `createHandlers()` を `handlers.ts` に分離、unitで `vi.stubGlobal('Bun', {serve})` モックしてopen/message/drain/close/fetch分岐をカバー（97.29% stmts）。
+- **babylonDeps.tsファサード**: `BabylonGame.ts` はWebGL依存でjsdomで2%。`babylonDeps.ts` にEngine/Scene作成を分離、`vi.mock`でWebGL非依存モック + lifecycle/remote mesh/grace/camera/resizeテストで96.9%達成。
+- **App.tsx 0%→100%**: `GameCanvas/HUD/TouchControls/StartOverlay` をモックしてApp統合テスト。
+- **InputController 72%→95%**: WASD/矢印/Space/joystick deadzone/normalize/pitch clamp/touch-ui/pointer up/PointerLock/attach/detach。
+- **閾値**: 85/85/85/85（Statements 95.12% / Branches 87.97% / Functions 90.7% / Lines 96.8% 実績）。
+- **any禁止**: biome-ignore + anyはprivate accessテストのみ許容、prodではany禁止。意味あるテストのみ（数字稼ぎの浅いsnapshot/render存在確認禁止）。
+
+### Docs / CI / URL検証（2026-09-22）
+
+- **proposal yml削除**: `docs/ops/github-actions-proposal.yml` は2026-09-22削除、`.github/workflows/quality-gates.yml` が唯一正本。docsがproposalを参照している箇所は全て正本へ書き換え。
+- **公式URL**: Biome `https://biomejs.dev/linter/rules/no-restricted-imports/javascript/` / `no-private-imports/`、Playwright `https://playwright.dev/docs/api/class-websocket` / `mock#mock-websockets` / `ci` / `test-webserver`、Vitest `https://vitest.dev/config/coverage`（v2.vitest.devは404）、Bun `https://bun.com/docs/pm/cli/install`、setup-bun `https://github.com/oven-sh/setup-bun`、workflow syntax `https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax`。ミラー `aidoczh/w3cub` は非公式、primary usageから排除。
+- **内部リンク**: 1階層深くすると `../` / `../../` がずれる、自動リンクチェッカーで回す。コードスパン内の `[id](url)` は実リンクとして誤検出しないようfenced/inline code除外。
+- **CI**: `quality-gates.yml` は `inputs.job` all/quality/e2e + `workflow_dispatch` 手動実行対応。`oven-sh/setup-bun@v2` + `bun install --frozen-lockfile` + `bunx playwright install --with-deps chromium`。

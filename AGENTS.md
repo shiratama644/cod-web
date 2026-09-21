@@ -54,18 +54,21 @@
 ### 3.1 検証コマンドの実行
 - `package.json` に定義されたスクリプトのみを使用する（存在しないコマンドを捏造・実行しない）。
 - **パッケージ管理・スクリプトランナーは bun**（`bun install` / `bun run` / `bunx`）。ロックファイルは `bun.lock`。
-- 原則として commit 前に以下 4 種を全て pass させる：
+- 原則として commit 前に以下 4+3 種を全て pass させる：
   ```bash
   bun run typecheck             # tsc --noEmit および tsc -p tsconfig.server.json
   bunx biome lint .             # Biome 直接呼び出し（bun run lint より起動が速い）
   bun run test:unit             # vitest run（watch モードではない）
   bun run build                 # vite build（production）
+  bun run check:determinism     # SimProfile.step禁止API検出（EM01〜）
+  bun run test:coverage         # threshold 85/85/85/85（EM02〜、実績95.12%/87.97%/90.7%/96.8%）
+  bun run test:e2e -- --list    # E2E discovery、browser起動なし（PH1.5-C〜、Sandboxでも実行可）
   ```
 - **テストランナーは Vitest を使う。`bun test`（bun:test）は使わない**（jsdom + @testing-library/react の DOM テスト資産との互換を優先。bun はあくまでパッケージ管理・ランナーとして使用）。
 - **`vitest` を watch モードで起動しないこと**。commit 前検証には必ず `test:unit`（`vitest run`）を使う。
-- **E2E（Playwright）は Sandbox で実行不可**（§6.2 参照）。`package.json` に `test:e2e` が無い限り捏造しない。CI 上のみ実行。
+- **E2E（Playwright）は Sandbox でbrowser実行不可**（§6.2 参照）。`test:e2e -- --list` discoveryはSandboxでも実行可、browser実行はCIのみ。`package.json` に `test:e2e` が無い限り捏造しない。
 - ビルドサイズは `bun run build` 後の `dist/assets/` を `ls -lh dist/assets` 等で直接確認する（3D エンジンはバンドルが大きい。chunk 分割・依存の重複に注意）。
-- ドキュメントのみの変更（コード無変更）では 4 検証はスキップ可。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。
+- ドキュメントのみの変更（コード無変更）では 4+3 検証はスキップ可。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。内部リンクはfenced/inline code除外、外部URLは公式URLをfetch_pageで200確認、proposal yml参照残存チェック（`docs-maintenance/SKILL.md`）。
 
 ### 3.2 エラー対応と品質維持
 - エラー発生時はエラーメッセージやスタックトレースから根本原因を特定し、最小限の範囲で修正する。
@@ -188,16 +191,25 @@ bash .agent/hooks/restore-sandbox-env.sh
 | 外部ネットワークの一部到達不可 | 実 WS 結合は限定的。純粋関数・モックでユニットテスト。実結合は「実環境検証待ち」。 |
 | 3D のヘッドレス差 | 描画の目視はプレビュー依存。`SimProfile.step` 等は DOM/GPU 非依存でテスト。 |
 
-### 6.3 GitHub App 権限制約（2026-09-19 許可に変更）
+### 6.3 GitHub App 権限制約（2026-09-19 許可に変更、2026-09-22 proposal削除）
 
-- **`.github/workflows/` への直接書き込みは許可**。CI は `docs/ops/` の提案を元に `.github/workflows/` に配置してよい。
+- **`.github/workflows/` への直接書き込みは許可**。CI は `.github/workflows/quality-gates.yml` が唯一正本。
 - 旧ルールでは「書き込み不可、CI は `docs/ops/` に保管しユーザーが配置する」としていたが、2026-09-19 にユーザー許可により解除。以降は Agent が直接 `.github/workflows/quality-gates.yml` 等を作成・更新してよい。
+- **2026-09-22に `docs/ops/github-actions-proposal.yml` は削除済み**、再作成禁止。docsがproposalを参照している箇所は全て `.github/workflows/quality-gates.yml` へ書き換え。`docs/ops/` は `README.md` + `quality-gates.md` のみ（`ci-quality-gates/SKILL.md`）。
 - 変更前の表記が残っているドキュメントは本節を正とし、順次更新する。
 
 ### 6.4 ゲームループ・決定論・ゼロアロケ
-- **React とシミュレーションを分離する。** 座標は React State にしない。
-- **`SimProfile.step` に `Math.random` / `Date.now` / `performance.now` / `setTimeout` / I/O を書かない**（[`docs/arch/engineering.md`](docs/arch/engineering.md)）。
-- **ホットパスでゼロアロケーション。** ティック内の `new`、`.slice()`、都度 `{x,y,z}` を禁止。送信は `subarray()`。
+- **React とシミュレーションを分離する。** 座標は React State にしない。低頻度HUD値はZustand可、座標・回転・リモートplayer mapはReact stateに入れず `GameClient` / Babylon meshが直接持つ（PH1-F）。
+- **`SimProfile.step` に `Math.random` / `Date.now` / `performance.now` / `setTimeout` / I/O を書かない**（[`docs/arch/engineering.md`](docs/arch/engineering.md)）。決定論は `check:determinism` で監査、same-inputテストとheavy 1000x100 0.8sで固定（`deterministic-sim/SKILL.md`）。
+- **ホットパスでゼロアロケーション。** ティック内の `new`、`.slice()`、都度 `{x,y,z}`、`.map/.filter`、クロージャ生成を禁止。送信は `subarray()`。現行の毎送信 `buffer.slice()` は置換対象。
+  - `Room.getPlayers()` 毎tick配列確保 → `getPlayersIterable()` 追加、Iterableをfor...ofで回す（EM01 B4）。
+  - `SnapshotBroadcaster` はループ内毎回encode → ループ外1回 + per-peer patch（EM01 B5）。
+  - `shift()`/`splice()` はhead indexリングに置換（EM01 B6,B9,B10）。
+  - `GameClient.remotes` Mapは毎フレームnew → clear+set再利用、interpolator out Map再利用（EM01 B11）。
+  - `players.map` → forループ直接書き（EM01 B12）。
+  - `prediction.ts pending filter` → in-place削除（EM01 B13）。
+  - 監査: `grep -R "getPlayers()" packages/engine-core --include="*.ts"` 0件、`shift()` 0件。
+- **メモリリーク防止**: `Room.leave` 時に必ず `simulation.removePlayer` / `lagCompStore.clear` / `snapshotBroadcaster.removePlayer` / `rateLimiter.remove` / `paused` Set削除を呼ぶ（EM01 B1-B3,B14、`memory-leak/SKILL.md`）。
 - **L1（engine-core）に `if (type === 'voxel' | 'fps')` を書かない。** 書いたくなったら境界を見直して人間に確認する。
 - **Rules of Hooks 厳守**（早期 return の前に全 hook）。
 - **JSX 内で日本語と `{式}` を汚く混ぜない**。
@@ -207,14 +219,20 @@ bash .agent/hooks/restore-sandbox-env.sh
 - **`biome-ignore` は対象コードの直前の行**。
 - `<span>` に `aria-label` を付ける時は `role="img"`。
 - テスト（`_tests_/**` / `*.test.{ts,tsx}`）の non-null 緩和は biome.json の `overrides` で行う。プロダクションでは non-null assertion 禁止。overrides が未設定なら勝手に緩めない。
+- **`noConsole`**: `apps/web/src/game/babylon/**/*` と `apps/web/src/game/net/**/*` でerrorレベル（EM01-B）。`console.log` 3件はgameserver運用ログとして許容、BabylonGameのクライアント側はHUD代替で削除。Biomeで将来の残留を防止。
+- **`noRestrictedImports` / `noPrivateImports`**: レイヤー境界を守る。`linter.rules.style.noRestrictedImports` 配下、scope packageは `**` で捕捉。`@cod/engine-core` 直接importはwebで禁止、`@cod/profile-fps` はengine-coreで禁止、詳細は `import-boundaries/SKILL.md`。
+- **any禁止**: biome-ignore + anyはprivate accessテストのみ許容、prodではany禁止（EM02）。
 
 ### 6.6 ネットワーク / ゲームサーバー
 - **権威サーバー。** 位置・体力・スコア・ヒット確定はサーバ。クライアントは入力と意図だけ送る。
 - **トランスポートは今 WebSocket のみ**（[`docs/arch/protocol.md`](docs/arch/protocol.md)）。UDP / WebRTC DataChannel / geckos.io / WebTransport は**実装しない**。`NetTransport` 抽象と Channel 区分は維持する。ゲームコードから `WebSocket` を直接参照しない。
-- **レートはタイプごと**（`TYPE_SPECS`）。fps: シム 60 / 入力 60 / スナップショット 30。voxel: 30 / 30 / 15。描画は可変 FPS。
-- **高頻度は手書きバイナリ。** Input は理想 16 バイト固定（長さ不一致は切断）。msgpack は高頻度に使わない。制御のみ JSON。
-- **`ws.send()` の戻り値を見る**（-1 バックプレッシャ、0 破棄、1+ バイト）。存在しない `bufferedAmount` に頼らない。`perMessageDeflate: false`。
-- 実結合は Sandbox で不可。純粋関数でテストし、実機は「実環境検証待ち」。
+- **Bun.serve正しい使い方**: `websocket.data` に型を置く、generic引数ではない。`maxPayloadLength` 64KB、`idleTimeout` 30、`backpressureLimit` 1MB、`closeOnBackpressureLimit` true、`sendPings` true、`perMessageDeflate` false必須（`networking/SKILL.md`）。
+- **レートはタイプごと**（`TYPE_SPECS`）。fps: シム 60 / 入力 60 / スナップショット 30。voxel: 30 / 30 / 15。描画は可変 FPS。トークンバケット、超過時はInputは即切断、他はfalse。トークンはdecode成功後に消費（壊れたパケットでバーストを削らない）。
+- **高頻度は手書きバイナリ。** Input は理想 16 バイト固定（長さ不一致は切断）。msgpack は高頻度に使わない。制御のみ JSON。Channel 1B + payload 16B = WS frame 17B（PH1-C）。ブラウザ送信はpayload viewの1B前に余白を持たせtransportがChannelを書くとコピー回避。
+- **`ws.send()` の戻り値を見る**（-1 バックプレッシャ、0 破棄、1+ バイト）。存在しない `bufferedAmount` に頼らない。`perMessageDeflate: false`。-1は「今回キュー済み」なので以降をpausedにしてdrainまで送らない。
+- **テスト可能化**: `apps/gameserver/src/index.ts` は副作用でテスト不可、`handlers.ts` に純粋関数分離して `vi.stubGlobal('Bun', {serve})` でモック（EM02-A 97.29%）。
+- **Room / Tick**: Room自身は `setInterval` を持たない、`RoomManager` の5ms単一タイマーから `tickIfDue(nowMs)`。遅延が `tickInterval*5` 超えたら追いつかずスキップ（スパイラルオブデス回避）。例外は1ルームのみcatch。
+- 実結合は Sandbox で不可。純粋関数でテストし、実機は「実環境検証待ち」。E2Eは `test:e2e -- --list` discoveryまでSandbox可、browser実行はCIのみ。
 
 ### 6.7 ドキュメント運用
 - **仕様書** = `docs/arch/`（[`docs/arch/README.md`](docs/arch/README.md) が目次）。

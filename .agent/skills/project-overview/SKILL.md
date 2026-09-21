@@ -44,15 +44,23 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 | **0** | 現行コードの穴（長さ検証・fuzz・backpressure・slice） | 完了（PH0-A〜F） |
 | **1** | モノレポ + Babylon 移行（fps 系のみ。Channel 1B） | PH1-F ローカル検証済み |
 | **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-D ローカル検証済み（E2E browser は実環境検証待ち） |
-| **2** | Sim Profile 分離 | PH2-E ローカル検証済み。Phase 2 完了。次は Phase 3 計画 |
-| **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
+| **2** | Sim Profile 分離 | PH2-E ローカル検証済み。Phase 2 完了（same-input + determinism 1000x100 0.8s） |
+| **EM** | ゼロアロケ / メモリリーク / console.log / GC削減 / shift改善 + coverage 85% | EM01/EM02完了。Statements 95.12%/Branches 87.97%/Functions 90.7%/Lines 96.8% |
+| **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手（次はPLAT-3計画） |
 | **4–9** | ハブ / official/UGC 一覧 / モード追加 / API 再設計 / チャンク / エディタ・UGC / WT | 未着手 |
 
 旧 P0/P1 タスク ID は `.archive/docs/task-list.md`。再利用しない。
 
 ## 規模
 
-bun workspaces。`packages/protocol` / `packages/engine-core` / `packages/profile-fps` と `apps/gameserver` / `apps/web` に分割済み。テストは `_tests_/` にワークスペース構造をミラーする。
+bun workspaces。`packages/protocol` / `packages/engine-core` / `packages/profile-fps` と `apps/gameserver` / `apps/web` に分割済み。テストは `_tests_/` にワークスペース構造をミラーする。coverageはinclude-all方針で85/85/85/85 threshold、handlers.ts / babylonDeps.ts分離で達成。
+
+## EMフェーズ知見（2026-09-20〜22）
+
+- **ゼロアロケ**: `getPlayersIterable()` / encode once / head indexリング / Map再利用でGC削減、詳細は `zero-alloc/SKILL.md`。
+- **メモリリーク**: `Room.leave` で `simulation.removePlayer` / `lagCompStore.clear` / `snapshotBroadcaster.removePlayer` / `rateLimiter.remove` 必須、詳細は `memory-leak/SKILL.md`。
+- **決定論**: smoke 100x10はunit常時、heavy 1000x100は `scripts/determinism-heavy.ts` 0.8s、詳細は `deterministic-sim/SKILL.md`。
+- **CI**: `.github/workflows/quality-gates.yml` が唯一正本、proposal ymlは2026-09-22削除、詳細は `ci-quality-gates/SKILL.md`。
 
 ## 関連
 
