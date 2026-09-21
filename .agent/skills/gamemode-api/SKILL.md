@@ -149,7 +149,7 @@ export default ffa;
 - static-arena再利用、three-mesh-bvh衝突はprofile側維持、gamemodeはルールのみ
 - kill判定簡易、巻き戻しヒットスキャンは将来
 
-## 統合（PH3-D未着手）
+## 統合（PH3-D完了）
 
 - `apps/gameserver/src/runtime.ts` が `createFpsSimProfile()` + `fps-official-ffa` を組み立てて Room へ注入
 - `biome.json` に `gamemodes/* → @cod/gamemode-sdkのみ` 制限追加済み（本タスクで先行追加）
@@ -168,9 +168,11 @@ export default ffa;
 ```bash
 grep -R "profile-fps\|profile-voxel" packages/gamemode-api --include="*.ts" # 0件
 grep -R "from.*gamemode" gamemodes --include="*.ts" | grep -v "gamemode-sdk" # 0件 (ffaはsdkのみ)
-grep -R "Math.random\|Date.now\|setTimeout" packages/gamemode-api packages/engine-core/src/gamemode gamemodes --include="*.ts" # 0件 (TimerはsetTimeout不使用, ffaはctx経由)
-grep -R "setTimeout" packages/engine-core/src/gamemode gamemodes --include="*.ts" # 0件
-bun run test:unit # 36 files 242 tests (PH3-Cで+1 file +11 tests, 計+4 files +38 tests from PH3-A)
+grep -R "Math.random\|Date.now\|setTimeout" packages/gamemode-api packages/engine-core/src/gamemode gamemodes --include="*.ts" # 0件 (TimerはsetTimeout不使用, ffaはctx経由, runtimeはLCG)
+grep -R "setTimeout" packages/engine-core/src/gamemode gamemodes apps/gameserver --include="*.ts" # 0件 (runtimeはsetIntervalのみprofile simHz基準)
+# gamemode exception safety
+grep -R "safeCall\|try.*catch" packages/engine-core/src/gamemode apps/gameserver/src --include="*.ts" | wc -l # 例外安全確認
+bun run test:unit # 37 files 255 tests (PH3-Dで+1 file +13 tests, 計+5 files +51 tests from PH3-A)
 ```
 
 ## 関連

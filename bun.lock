@@ -39,6 +39,8 @@
       "version": "0.0.0",
       "dependencies": {
         "@cod/engine-core": "workspace:*",
+        "@cod/gamemode-api": "workspace:*",
+        "@cod/gamemode-sdk": "workspace:*",
         "@cod/profile-fps": "workspace:*",
         "@cod/protocol": "workspace:*",
       },
@@ -65,6 +67,20 @@
       "version": "0.0.0",
       "dependencies": {
         "@cod/protocol": "workspace:*",
+      },
+    },
+    "packages/gamemode-api": {
+      "name": "@cod/gamemode-api",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cod/protocol": "workspace:*",
+      },
+    },
+    "packages/gamemode-sdk": {
+      "name": "@cod/gamemode-sdk",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cod/gamemode-api": "workspace:*",
       },
     },
     "packages/profile-fps": {
@@ -126,6 +142,10 @@
     "@bramus/specificity": ["@bramus/specificity@2.4.2", "", { "dependencies": { "css-tree": "^3.0.0" }, "bin": { "specificity": "bin/cli.js" } }, "sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw=="],
 
     "@cod/engine-core": ["@cod/engine-core@workspace:packages/engine-core"],
+
+    "@cod/gamemode-api": ["@cod/gamemode-api@workspace:packages/gamemode-api"],
+
+    "@cod/gamemode-sdk": ["@cod/gamemode-sdk@workspace:packages/gamemode-sdk"],
 
     "@cod/gameserver": ["@cod/gameserver@workspace:apps/gameserver"],
 

@@ -5,7 +5,7 @@
  * world specはmap名のみ、spawnPointsはFpsCtx.getSpawnPoints()経由
  */
 
-import { defineGameMode } from '@cod/gamemode-sdk'
+import { defineGameMode, type FpsCtx } from '@cod/gamemode-sdk'
 
 const COUNTDOWN_TICKS = 60 * 3 // 3秒
 const RESPAWN_TICKS = 60 * 3 // 3秒
@@ -32,8 +32,8 @@ export default defineGameMode({
   },
 
   onPlayerJoin(ctx, player) {
+    const fps = ctx as FpsCtx
     ctx.broadcastHud({ type: 'playerJoin', id: player.id, name: player.name })
-    // waiting中にminPlayers以上ならcountdownへ
     if (ctx.getState() === 'waiting' && ctx.players.length >= 2) {
       ctx.setState('countdown')
       ctx.broadcastHud({ type: 'countdown', duration: COUNTDOWN_TICKS })
@@ -41,11 +41,10 @@ export default defineGameMode({
         if (ctx.getState() === 'countdown') {
           ctx.setState('playing')
           ctx.broadcastHud({ type: 'roundStart' })
-          // 全員スポーン
           for (const p of ctx.players) {
-            const spawns = ctx.getSpawnPoints()
+            const spawns = fps.getSpawnPoints()
             if (spawns.length > 0) {
-              const idx = ctx.randomInt(0, spawns.length - 1)
+              const idx = fps.randomInt(0, spawns.length - 1)
               const sp = spawns[idx]
               ctx.broadcastHud({
                 type: 'spawn',
@@ -79,13 +78,13 @@ export default defineGameMode({
   },
 
   onPlayerSpawn(ctx, player) {
-    const spawns = ctx.getSpawnPoints()
+    const fps = ctx as FpsCtx
+    const spawns = fps.getSpawnPoints()
     if (spawns.length === 0) return
-    const idx = ctx.randomInt(0, spawns.length - 1)
+    const idx = fps.randomInt(0, spawns.length - 1)
     const sp = spawns[idx]
-    // FFAではスポーン時に武器付与と弾薬リセット
-    ctx.giveWeapon(player.id, 'rifle')
-    ctx.setAmmo(player.id, 30)
+    fps.giveWeapon(player.id, 'rifle')
+    fps.setAmmo(player.id, 30)
     ctx.broadcastHud({
       type: 'spawn',
       playerId: player.id,
@@ -97,6 +96,7 @@ export default defineGameMode({
   },
 
   onPlayerDeath(ctx, player, killer) {
+    const fps = ctx as FpsCtx
     ctx.broadcastHud({
       type: 'death',
       playerId: player.id,
@@ -106,7 +106,6 @@ export default defineGameMode({
       const newScore = ctx.getScore(killer.id) + 1
       ctx.setScore(killer.id, newScore)
       ctx.broadcastHud({ type: 'score', playerId: killer.id, score: newScore })
-      // 勝利条件
       if (newScore >= WIN_SCORE && ctx.getState() === 'playing') {
         ctx.setState('ended')
         ctx.broadcastHud({ type: 'roundEnd', winner: killer.id, reason: 'scoreLimit' })
@@ -121,16 +120,15 @@ export default defineGameMode({
         })
       }
     }
-    // リスポーン
     ctx.after(RESPAWN_TICKS, () => {
       const p = ctx.getPlayer(player.id)
       if (p && ctx.getState() === 'playing') {
-        const spawns = ctx.getSpawnPoints()
+        const spawns = fps.getSpawnPoints()
         if (spawns.length > 0) {
-          const sIdx = ctx.randomInt(0, spawns.length - 1)
+          const sIdx = fps.randomInt(0, spawns.length - 1)
           const sp = spawns[sIdx]
-          ctx.giveWeapon(p.id, 'rifle')
-          ctx.setAmmo(p.id, 30)
+          fps.giveWeapon(p.id, 'rifle')
+          fps.setAmmo(p.id, 30)
           ctx.broadcastHud({
             type: 'respawn',
             playerId: p.id,
@@ -144,12 +142,9 @@ export default defineGameMode({
     })
   },
 
-  onPlayerDamage(_ctx, _player, _damage, _attacker) {
-    // ダメージ処理はprofile側、ここではHUD通知のみ
-  },
+  onPlayerDamage(_ctx, _player, _damage, _attacker) {},
 
   onTick(ctx, _dtMs) {
-    // playing中の定期チェック (例: 残り時間など、最小では何もしない)
     if (ctx.getState() === 'playing') {
       // 将来: 時間切れ判定等
     }
@@ -166,20 +161,16 @@ export default defineGameMode({
       victimId: victim.id,
       damage,
     })
-    // 簡易ダメージ→死亡判定はprofile側、ここではスコアはonPlayerDeathで
   },
 
   onNetworkMessage(ctx, player, msg) {
-    // 最小ではchatのみ
     try {
       const text = typeof msg === 'string' ? msg : new TextDecoder().decode(msg as Uint8Array)
       const parsed = JSON.parse(text)
       if (parsed && parsed.type === 'chat' && typeof parsed.text === 'string') {
-        const chatText = parsed.text.slice(0, 200) // 200文字制限
+        const chatText = parsed.text.slice(0, 200)
         ctx.broadcast(JSON.stringify({ type: 'chat', from: player.id, text: chatText }))
       }
-    } catch {
-      // 無視
-    }
+    } catch {}
   },
 })

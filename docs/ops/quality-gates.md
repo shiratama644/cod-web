@@ -1,8 +1,8 @@
-# Quality Gates（EM02 完了・Phase 3 準備）
+# Quality Gates（Phase 3 完了・Phase 4 準備）
 
-> 対応タスク: `EM2-E`（EM02 完了）  
-> 目的: EM02 カバレッジ85%達成後の品質ゲートを明確化する。  
-> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可。2026-09-20 EM01 で memory leak / zero-alloc / GC / shift 改善を追加。2026-09-21 EM02 で coverage 85%達成 + Playwright フルE2E複数webServer。2026-09-22 ドキュメント整理で `docs/ops/github-actions-proposal.yml` 重複提案を削除し、正本は `.github/workflows/quality-gates.yml` のみに統一。
+> 対応タスク: `PH3-D`（Phase 3 完了）  
+> 目的: Phase 3 gamemode API第1版 + fps-ffa最小完了後の品質ゲートを明確化する。  
+> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可。2026-09-20 EM01 で memory leak / zero-alloc / GC / shift 改善を追加。2026-09-21 EM02 で coverage 85%達成 + Playwright フルE2E複数webServer。2026-09-22 ドキュメント整理で `docs/ops/github-actions-proposal.yml` 重複提案を削除し、正本は `.github/workflows/quality-gates.yml` のみに統一。2026-09-22 Phase 3完了で gamemode-api/sdk + GameModeRuntime + fps-ffa + gameserver統合。
 
 ## 1. 公式確認した根拠
 
@@ -50,12 +50,12 @@ bun run test:e2e -- --list
 
 EM02 で thresholds を 85% に引き上げ、意味あるテストで達成。
 
-| Metric | PH1.5-A baseline | PH1.5-B after | EM01 after | EM02 after | Current threshold |
-|---|---:|---:|---:|---:|---:|
-| Statements | 66.82% (725/1085) | 79.17% (859/1085) | 81.22% (965/1188) | 95.12% (1151/1210) | 85 |
-| Branches | 57.10% (225/394) | 73.85% (291/394) | 76.02% (333/438) | 87.97% (395/449) | 85 |
-| Functions | 64.43% (125/194) | 79.38% (154/194) | 81.9% (172/210) | 90.7% (205/226) | 85 |
-| Lines | 68.97% (696/1009) | 80.77% (815/1009) | 82.8% (915/1105) | 96.8% (1091/1127) | 85 |
+| Metric | PH1.5-A baseline | PH1.5-B after | EM01 after | EM02 after | PH3-D after | Current threshold |
+|---|---:|---:|---:|---:|---:|---:|
+| Statements | 66.82% (725/1085) | 79.17% (859/1085) | 81.22% (965/1188) | 95.12% (1151/1210) | 93.34% (1486/1592) | 85 |
+| Branches | 57.10% (225/394) | 73.85% (291/394) | 76.02% (333/438) | 87.97% (395/449) | 86.82% (547/630) | 85 |
+| Functions | 64.43% (125/194) | 79.38% (154/194) | 81.9% (172/210) | 90.7% (205/226) | 86.72% (281/324) | 85 |
+| Lines | 68.97% (696/1009) | 80.77% (815/1009) | 82.8% (915/1105) | 96.8% (1091/1127) | 94.83% (1413/1490) | 85 |
 
 運用ルール:
 
@@ -153,28 +153,31 @@ bun run typecheck && bunx biome lint . && bun run check:determinism && bun run t
 bunx playwright install --with-deps chromium && bun run test:e2e
 ```
 
-## 6. EM02 完了確認と Phase 3 へ進む前の確認
+## 6. Phase 3 完了確認と Phase 4 へ進む前の確認
 
-- `bun run test:unit` 30 files / 189 tests pass
-- `bun run test:coverage` が thresholds（85/85/85/85）を満たす。EM02後: 95.12%/87.97%/90.7%/96.8%
-- `bun run check:determinism` pass
-- `bun run scripts/determinism-heavy.ts` pass（1000 ticks x100 scenarios 0.9s）
+- `bun run test:unit` 37 files / 255 tests pass (PH3-C 36/242 → PH3-D 37/255)
+- `bun run test:coverage` が thresholds（85/85/85/85）を満たす。PH3-D後: 93.34%/86.82%/86.72%/94.83%
+- `bun run check:determinism` pass (no forbidden patterns)
 - `bun run test:e2e -- --list` で 11 tests discovered
-- import boundary audit: 0 violations
+- import boundary audit: 0 violations (engine-core→profile-*, gamemodes→sdkのみ)
 - `grep console.log` client 0件、server 3件（運用ログ許容）
 - `grep getPlayers()` hot path 0件
 - `grep shift()` hot path 0件
-- memory leak: 0件
+- `grep setTimeout` in gamemode 0件 (tick基準)
+- memory leak: 0件 (removePlayer/clear + rateLimiter remove)
 - zero-alloc: 0件 hot path
+- gamemode exception safety: roomが落ちない (GameModeRuntime safeCall + timer try/catch + runtime-gamemode.test.ts)
 - CI または実環境で `bun run test:e2e` を一度実行し、結果を記録する
 
-### EM02 追加ゲート
+### Phase 3 追加ゲート
 
 | 項目 | 検証 | 証拠 |
 |---|---|---:|
-| Coverage 85% | 全メトリクス85%以上 | 95.12%/87.97%/90.7%/96.8% |
-| gameserver/index.ts | 0%→~80% | handlers分離 + index.test.ts |
-| BabylonGame.ts | 2%→96.9% | babylonDeps分離 + mock test |
-| App.tsx | 0%→100% | App2.test.tsx |
-| InputController | 72%→~95% | 13 tests |
+| Coverage 85% | 全メトリクス85%以上 | 93.34%/86.82%/86.72%/94.83% (PH3-D) |
+| gamemode-api | L1 core, protocolのみ依存 | defineGameMode 10 tests + ctx 5 tests |
+| GameModeRuntime | 例外安全, tick基準timer, rate limit 40/s burst20 | Timer 8 + RateLimiter 8 + Runtime 11 tests |
+| fps-ffa | waiting→countdown→playing→ended, spawn, score, respawn 3s, chat 200 | 11 tests + runtime-gamemode統合 |
+| gameserver統合 | profile+gamemode注入, FpsCtx実装, RoomState管理, 例外安全 | runtime.ts 77% + handlers.ts 98% + runtime-gamemode 13 tests |
+| Room | sendTo/sendBinaryTo/broadcastExcept public | runtime-gamemode.test.ts |
 | Playwright full-e2e | 複数webServer + 11 tests | webServer配列化 + game-shell.spec.ts |
+| Import boundary | engine-core→profile-* 0, gamemodes→sdkのみ 0 | Biome + check-determinism |

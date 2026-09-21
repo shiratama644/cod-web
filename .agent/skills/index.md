@@ -50,7 +50,7 @@
 | [babylon-engine/SKILL.md](./babylon-engine/SKILL.md) | Babylon Engine初期化とR3F排除、thinEngine.pure型解決、Depsファサード | 2026-09-22（PH1-D + EM02） |
 | [input-accumulation/SKILL.md](./input-accumulation/SKILL.md) | Pointer Lock/raw mouse、InputController蓄積/消費、joystick deadzone | 2026-09-22（PH1-E + EM02 95%） |
 | [physics-collision/SKILL.md](./physics-collision/SKILL.md) | BVH衝突とkinematic controllerをSimProfileへ分離 | 2026-09-22（PH2-B seam + voxel契約） |
-| [gamemode-api/SKILL.md](./gamemode-api/SKILL.md) | gamemode-api core + sdk facade、define検証、RoomCtx、hybrid async、ctx spawn、Runtime/Timer/RateLimiter例外安全、ffa最小+pvpエイリアス | 2026-09-22（PH3-C ffa最小+pvpエイリアス 11 tests + lifecycle） |
+| [gamemode-api/SKILL.md](./gamemode-api/SKILL.md) | gamemode-api core + sdk facade、define検証、RoomCtx、hybrid async、ctx spawn、Runtime/Timer/RateLimiter例外安全、ffa最小+pvpエイリアス、gameserver統合例外安全 | 2026-09-22（PH3-D 統合 profile+gamemode注入 FpsCtx実装 13 tests + coverage 93%） |
 
 ## 設計仕様の正本（スキルではなく docs/arch/）
 

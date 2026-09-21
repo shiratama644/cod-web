@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@cod/engine-core": "workspace:*",
+    "@cod/gamemode-api": "workspace:*",
+    "@cod/gamemode-sdk": "workspace:*",
     "@cod/profile-fps": "workspace:*",
     "@cod/protocol": "workspace:*"
   },

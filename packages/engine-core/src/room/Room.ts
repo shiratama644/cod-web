@@ -33,7 +33,10 @@ export interface GameModeRoomBinding {
 
 export interface RoomOptions {
   /** L2 profile から player spawn と maxPlayers を注入する。 */
-  readonly profile?: Pick<SimProfile<unknown, PlayerState, unknown>, 'typeSpec' | 'createPlayerState'>
+  readonly profile?: Pick<
+    SimProfile<unknown, PlayerState, unknown>,
+    'typeSpec' | 'createPlayerState'
+  >
   /** テスト / adapter 用の直接差し替え。profile 指定時もこちらを優先する。 */
   readonly createPlayerState?: (playerId: number) => PlayerState
   /** テスト / adapter 用の直接差し替え。profile 指定時もこちらを優先する。 */
@@ -53,7 +56,8 @@ export class Room {
 
   constructor(options: RoomOptions = {}) {
     this.maxPlayers = options.maxPlayers ?? options.profile?.typeSpec.maxPlayers ?? MAX_PLAYERS
-    this.createPlayer = options.createPlayerState ?? options.profile?.createPlayerState ?? createPlayerState
+    this.createPlayer =
+      options.createPlayerState ?? options.profile?.createPlayerState ?? createPlayerState
   }
 
   /** gamemode 統合: GameModeRuntime の rateLimiter 等をバインド */
@@ -141,10 +145,34 @@ export class Room {
     for (const peer of this.peers.values()) peer.sendText(data)
   }
 
-  /** 指定プレイヤー以外にテキスト送信。 */
-  private broadcastExcept(exceptId: number, data: string): void {
+  /** 指定プレイヤー以外にテキスト送信。PH3-Dでpublic化 (gamemode ctx broadcastExcept用)。 */
+  broadcastExcept(exceptId: number, data: string): void {
     for (const [id, peer] of this.peers) {
       if (id !== exceptId) peer.sendText(data)
+    }
+  }
+
+  /** 指定プレイヤーへテキスト送信 (gamemode ctx send用)。 */
+  sendTo(playerId: number, data: string): boolean {
+    const peer = this.peers.get(playerId)
+    if (!peer) return false
+    try {
+      peer.sendText(data)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /** 指定プレイヤーへバイナリ送信 (gamemode ctx send用)。 */
+  sendBinaryTo(playerId: number, data: Uint8Array | ArrayBufferView): boolean {
+    const peer = this.peers.get(playerId)
+    if (!peer) return false
+    try {
+      const res = peer.sendBinary(data as ArrayBufferView)
+      return res !== 0
+    } catch {
+      return false
     }
   }
 }
