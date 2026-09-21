@@ -26,7 +26,9 @@
   },
   "overrides": [
     {
-      "includes": ["packages/protocol/src/**/*.{ts,tsx}"],
+      "includes": [
+        "packages/protocol/src/**/*.{ts,tsx}"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -59,7 +61,9 @@
       }
     },
     {
-      "includes": ["packages/engine-core/src/**/*.{ts,tsx}"],
+      "includes": [
+        "packages/engine-core/src/**/*.{ts,tsx}"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -83,7 +87,12 @@
                     "message": "@cod/engine-core はタイプ非依存の L1 です。profile / app 実装はコンストラクタ注入や公開インターフェース経由にしてください。"
                   },
                   {
-                    "group": ["three", "three/**", "three-mesh-bvh", "@react-three/fiber"],
+                    "group": [
+                      "three",
+                      "three/**",
+                      "three-mesh-bvh",
+                      "@react-three/fiber"
+                    ],
                     "message": "@cod/engine-core に描画・物理実装詳細を持ち込まないでください。"
                   }
                 ]
@@ -94,7 +103,9 @@
       }
     },
     {
-      "includes": ["packages/profile-fps/src/**/*.{ts,tsx}"],
+      "includes": [
+        "packages/profile-fps/src/**/*.{ts,tsx}"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -123,7 +134,9 @@
       }
     },
     {
-      "includes": ["packages/profile-voxel/src/**/*.{ts,tsx}"],
+      "includes": [
+        "packages/profile-voxel/src/**/*.{ts,tsx}"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -152,7 +165,9 @@
       }
     },
     {
-      "includes": ["gamemodes/**/*.{ts,tsx}"],
+      "includes": [
+        "gamemodes/**/*.{ts,tsx}"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -185,7 +200,9 @@
       }
     },
     {
-      "includes": ["apps/web/src/**/*.{ts,tsx}"],
+      "includes": [
+        "apps/web/src/**/*.{ts,tsx}"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -220,7 +237,9 @@
       }
     },
     {
-      "includes": ["apps/web/src/game/net/websocket.ts"],
+      "includes": [
+        "apps/web/src/game/net/websocket.ts"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -230,7 +249,12 @@
       }
     },
     {
-      "includes": ["apps/web/src/components/**/*.{ts,tsx}", "apps/web/src/store/**/*.{ts,tsx}", "apps/web/src/hub/**/*.{ts,tsx}", "apps/web/src/shell/**/*.{ts,tsx}"],
+      "includes": [
+        "apps/web/src/components/**/*.{ts,tsx}",
+        "apps/web/src/store/**/*.{ts,tsx}",
+        "apps/web/src/hub/**/*.{ts,tsx}",
+        "apps/web/src/shell/**/*.{ts,tsx}"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -239,7 +263,12 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@babylonjs/core", "@babylonjs/core/**", "@babylonjs/loaders", "@babylonjs/loaders/**"],
+                    "group": [
+                      "@babylonjs/core",
+                      "@babylonjs/core/**",
+                      "@babylonjs/loaders",
+                      "@babylonjs/loaders/**"
+                    ],
                     "message": "hub / store / components は Babylon.js を直接 import しないでください。Babylon は game/babylon 層のみで使用します。"
                   }
                 ]
@@ -250,11 +279,104 @@
       }
     },
     {
-      "includes": ["apps/web/src/game/babylon/**/*.{ts,tsx}", "apps/web/src/game/net/**/*.{ts,tsx}"],
+      "includes": [
+        "apps/web/src/game/babylon/**/*.{ts,tsx}",
+        "apps/web/src/game/net/**/*.{ts,tsx}"
+      ],
       "linter": {
         "rules": {
           "suspicious": {
             "noConsole": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/gamemode-api/src/**/*.{ts,tsx}"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cod/engine-core",
+                      "@cod/engine-core/**",
+                      "@cod/profile-fps",
+                      "@cod/profile-fps/**",
+                      "@cod/profile-voxel",
+                      "@cod/profile-voxel/**",
+                      "@cod/gamemode-sdk",
+                      "@cod/gamemode-sdk/**",
+                      "@cod/gameserver",
+                      "@cod/gameserver/**",
+                      "@cod/web",
+                      "@cod/web/**",
+                      "three",
+                      "three/**",
+                      "three-mesh-bvh"
+                    ],
+                    "message": "@cod/gamemode-api は L1 core です。protocol のみ依存、profile/app/sdk へ依存しないでください。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/gamemode-sdk/src/**/*.{ts,tsx}"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@cod/protocol",
+                      "@cod/protocol/**",
+                      "@cod/engine-core",
+                      "@cod/engine-core/**",
+                      "@cod/profile-fps",
+                      "@cod/profile-fps/**",
+                      "@cod/profile-voxel",
+                      "@cod/profile-voxel/**",
+                      "@cod/gameserver",
+                      "@cod/gameserver/**",
+                      "@cod/web",
+                      "@cod/web/**",
+                      "three",
+                      "three/**",
+                      "three-mesh-bvh"
+                    ],
+                    "message": "@cod/gamemode-sdk は gamemode-api の facade です。api 以外の @cod package へ直接依存しないでください。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "_tests_/**/*.{ts,tsx}",
+        "**/*.test.{ts,tsx}",
+        "**/*.spec.{ts,tsx}"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
           }
         }
       }
