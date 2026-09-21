@@ -14,6 +14,7 @@ import { create } from 'zustand'
 
 export type RendererBackend = 'babylon-webgl'
 export type GameConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
+export type OfficialTab = 'fps' | 'voxel'
 
 export interface GameState {
   /** 描画バックエンド（Babylon Engine 初期化時に 1 回決定）。 */
@@ -25,10 +26,14 @@ export interface GameState {
   /** 残弾数（低頻度・UI 表示用）。 */
   ammo: number
 
+  /** Official FPS/Voxel切替タブ — 改訂版 (PH4-B) */
+  activeTab: OfficialTab
+
   setRenderer: (backend: RendererBackend) => void
   setConnectionStatus: (status: GameConnectionStatus) => void
   setHp: (hp: number) => void
   setAmmo: (ammo: number) => void
+  setActiveTab: (tab: OfficialTab) => void
 }
 
 const MAX_HP = 100
@@ -38,11 +43,13 @@ export const useGameStore = create<GameState>((set) => ({
   connectionStatus: 'disconnected',
   hp: MAX_HP,
   ammo: 30,
+  activeTab: 'fps',
 
   setRenderer: (renderer) => set({ renderer }),
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
   setHp: (hp) => set({ hp: Math.max(0, Math.min(MAX_HP, hp)) }),
   setAmmo: (ammo) => set({ ammo: Math.max(0, ammo) }),
+  setActiveTab: (activeTab) => set({ activeTab }),
 }))
 
 /** ループ等の React 外からストアを読むための非フック API（getState/subscribe をラップ）。 */
