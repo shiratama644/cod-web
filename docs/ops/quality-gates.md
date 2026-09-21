@@ -120,6 +120,39 @@ Sandbox 方針:
 | `quality` | `bun ci` → typecheck → lint → determinism → unit → coverage → build → E2E discovery | PR の基本 gate |
 | `e2e` | Playwright browser install → `bun run test:e2e` → report artifact upload | Browser 実行可能な runner 用 |
 
+### 手動実行（2026-09-21 追加）
+
+`workflow_dispatch` に `inputs.job` を追加し、GitHub Actions UI から2ジョブを個別に手動実行可能にしました。
+
+```yaml
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Select job to run manually (all/quality/e2e)'
+        type: choice
+        default: 'all'
+        options: [all, quality, e2e]
+```
+
+- `quality` job: `if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == 'all' || inputs.job == 'quality' }}`
+- `e2e` job: `if: ${{ always() && (github.event_name != 'workflow_dispatch' || inputs.job == 'all' || inputs.job == 'e2e') && (needs.quality.result == 'success' || needs.quality.result == 'skipped' || github.event_name == 'workflow_dispatch') }}`
+  - `job=all` (default): quality → e2e の順に2ジョブ実行
+  - `job=quality`: qualityのみ
+  - `job=e2e`: e2eのみ（qualityがskippedでも `always()` で実行）
+
+GitHub UIでの操作:
+1. Actions → Quality Gates → Run workflow → `Select job to run manually` で選択 → Run workflow
+2. ログは Actions の各 run で確認、artifacts に `playwright-report` / `test-results` が保存される
+
+ローカル同等:
+```bash
+# quality
+bun run typecheck && bunx biome lint . && bun run check:determinism && bun run test:unit && bun run test:coverage && bun run build && bun run test:e2e -- --list
+# e2e
+bunx playwright install --with-deps chromium && bun run test:e2e
+```
+
 ## 6. EM02 完了確認と Phase 3 へ進む前の確認
 
 - `bun run test:unit` 30 files / 189 tests pass

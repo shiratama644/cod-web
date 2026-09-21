@@ -26,8 +26,32 @@
 | Typecheck | `bun run typecheck` | Local / CI | client + server tsconfig |
 | Lint | `bunx biome lint .` | Local / CI | Biome 直接実行 |
 | Determinism | `bun run check:determinism` | Local / CI | SimProfile決定論ガード |
-| Unit | `bun run test:unit` | Local / CI | Vitest run |
-| Coverage | `bun run test:coverage` | Local / CI | PH1.5-B thresholds: statements 79 / branches 73 / functions 79 / lines 80 |
+| Unit | `bun run test:unit` | Local / CI | Vitest run (30 files / 189 tests) |
+| Coverage | `bun run test:coverage` | Local / CI | EM2 thresholds: statements 85 / branches 85 / functions 85 / lines 85 (95.12%/87.97%/90.7%/96.8%) |
 | Build | `bun run build` | Local / CI | Vite chunk-size warning は既存 |
-| E2E discovery | `bun run test:e2e -- --list` | Local / CI | Browser 不要。spec discovery 確認 |
+| E2E discovery | `bun run test:e2e -- --list` | Local / CI | Browser 不要。spec discovery 確認 (11 tests) |
 | E2E browser | `bun run test:e2e` | CI / 実環境 | Sandbox では Chromium 制約により未実行扱い |
+
+## 手動実行（2026-09-21 追加）
+
+GitHub Actions UI から `Quality Gates` workflow を手動実行できます。
+
+- `workflow_dispatch` に `inputs.job` を追加:
+  - `all` (default): quality + e2e の2ジョブを順に実行
+  - `quality`: Typecheck/Lint/Unit/Coverage/Build/discovery のみ
+  - `e2e`: Playwright E2E のみ (quality が skipped でも `always()` で実行)
+
+実行方法:
+1. GitHub → Actions → Quality Gates → Run workflow
+2. `Select job to run manually` で `all` / `quality` / `e2e` を選択
+3. Run workflow
+
+ローカルでの同等実行:
+```bash
+# quality 相当
+bun run typecheck && bunx biome lint . && bun run check:determinism && bun run test:unit && bun run test:coverage && bun run build && bun run test:e2e -- --list
+
+# e2e 相当 (要: bun run server + bun run preview 別ターミナル or CI環境)
+bunx playwright install --with-deps chromium
+bun run test:e2e
+```
