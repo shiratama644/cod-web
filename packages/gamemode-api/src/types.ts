@@ -3,11 +3,109 @@
  *
  * L1なので type非依存、pure types + ctx contractのみ。
  * protocolのみ依存、profile-* / three / three-mesh-bvh 依存禁止。
+ * 2026-09-22改訂版: Official FPS 1ゲーム複数モード + Voxel 1モード永続、Sandboxは公式拡張+UGC、親ジャンル FPS/Voxel + サブタグ。
  */
 
 export type GameType = 'fps' | 'voxel';
 export type ContentSource = 'official' | 'ugc';
-export type RoomState = 'waiting' | 'countdown' | 'playing' | 'ended';
+export type RoomState = 'waiting' | 'countdown' | 'playing' | 'ended' | 'voting';
+
+// --- 親ジャンル / サブタグ / タグ / カテゴリ — 改訂版 ---
+
+export type ParentGenre = 'fps' | 'voxel';
+export type SubTag =
+  | 'ffa'
+  | 'tdm'
+  | 'dom'
+  | 'zombie'
+  | 'bedwars'
+  | 'athletic'
+  | 'survival'
+  | 'pvp'
+  | 'pve'
+  | string;
+export type Genre = SubTag; // 後方互換: 旧 genres はサブタグ
+export type Tag = 'official' | 'ugc' | 'fps' | 'voxel' | 'pvp' | 'pve' | string;
+export type GameCategory = 'Official' | 'Sandbox';
+export type PlatformCategory = 'fps' | 'voxel' | 'sandbox';
+export type ParentGenreFilter = 'all' | ParentGenre;
+export type SubTagFilter = 'all' | SubTag;
+export type SandboxSortKey = 'totalPlays' | 'activePlayers' | 'detailViews';
+
+// --- 表示 / 統計 ---
+
+export interface GameModeDisplay {
+  readonly title?: string;
+  readonly description?: string;
+  readonly thumbnail?: string;
+  readonly creator?: string;
+  readonly creatorId?: string;
+}
+
+export interface GameModeStats {
+  readonly totalPlays?: number;
+  readonly activePlayers?: number;
+  readonly detailViews?: number;
+}
+
+// --- Sandbox ハブ型 — 改訂版 ---
+
+export interface SandboxCard {
+  readonly id: string;
+  readonly type: GameType;
+  readonly source: ContentSource; // official (公式拡張) | ugc
+  readonly slug: string;
+  readonly parentGenre: ParentGenre;
+  readonly genres: SubTag[]; // サブタグ
+  readonly tags: Tag[];
+  readonly title: string;
+  readonly creator: string; // Official または ユーザー名
+  readonly thumbnail: string;
+  readonly totalPlays: number;
+  readonly activePlayers: number;
+  readonly detailViews: number;
+  readonly description: string;
+  readonly category: 'Sandbox';
+}
+
+export interface SandboxQuery {
+  parentGenre: ParentGenreFilter;
+  subTag: SubTagFilter;
+  sort: SandboxSortKey;
+  order: 'desc' | 'asc';
+  search?: string;
+}
+
+// --- 投票 — Official FPS 1ゲーム複数モード用 ---
+
+export interface VoteOption {
+  readonly subMode: SubTag; // ffa, tdm, dom
+  readonly label: string;
+  readonly votes: number;
+}
+
+export interface VoteSession {
+  readonly roomId: string;
+  readonly gameId: string; // fps-official
+  readonly options: VoteOption[]; // 同一FPSゲーム内のサブモード一覧
+  readonly endsAtMs: number;
+  readonly voters: Set<string>;
+}
+
+export type VoteEvent =
+  | { kind: 'voteStart'; session: VoteSession }
+  | { kind: 'voteCast'; playerId: string; subMode: SubTag }
+  | { kind: 'voteEnd'; winnerSubMode: SubTag };
+
+// --- Official Voxel 永続サバイバル ---
+
+export interface VoxelSurvivalSpec {
+  readonly mode: 'survival';
+  readonly finish_game: false;
+  readonly respawn: true;
+}
+
+// --- 共通 ---
 
 export interface Vec3 {
   readonly x: number;
@@ -104,13 +202,31 @@ export type FpsWorld = FpsWorldSpec;
 export type VoxelWorld = VoxelWorldSpec;
 
 export interface GameModeDefinition<T extends GameType = GameType> {
-  readonly id: string; // /^[a-z][a-z0-9-]{2,31}$/ 例: fps-official-ffa
+  readonly id: string; // /^[a-z][a-z0-9-]{2,31}$/ 例: fps-official-ffa, fps-official (本体)
   readonly type: T;
   readonly source: ContentSource;
   readonly slug: string; // URL用 例: ffa
   readonly minPlayers: number; // 1..64
   readonly maxPlayers: number; // 1..64
   readonly world: T extends 'fps' ? FpsWorldSpec : VoxelWorldSpec;
+
+  // --- Official FPS 1ゲーム複数モード用 — 改訂版 ---
+  readonly subModes?: SubTag[]; // Official FPSのみ: [FFA,TDM,DOM,etc.] 内部サブモード一覧
+  readonly currentSubMode?: SubTag; // 現在のサブモード
+
+  // --- 親ジャンル/サブタグ (Sandboxフィルタ用) — 改訂版 ---
+  readonly parentGenre?: ParentGenre; // 親ジャンル: FPS / Voxel
+  readonly genres?: SubTag[]; // サブタグ: Bedwars/Zombie/Athletic等 (旧名称維持)
+  readonly tags?: Tag[];
+
+  // --- 表示メタ ---
+  readonly display?: GameModeDisplay;
+
+  // --- 統計 ---
+  readonly stats?: GameModeStats;
+
+  // --- カテゴリ ---
+  readonly category?: GameCategory; // Official | Sandbox
 
   // hooks: hybrid async — 初期化・破棄・イベントのみasync、ゲームループはsync (2026-09-22確認)
   onRoomCreate?(ctx: RoomCtx): void | Promise<void>; // async許可

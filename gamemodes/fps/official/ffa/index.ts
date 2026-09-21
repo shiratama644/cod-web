@@ -1,6 +1,7 @@
 /**
- * fps-ffa minimal mode — ID集約 ffa主、pvpエイリアス
+ * fps-ffa minimal mode — Official FPSのFFAサブモード
  *
+ * 2026-09-22改訂版: Official FPSは1ゲーム複数モード [FFA,TDM,DOM]投票、FFAはその中の1サブモード。
  * L3 gamemode: @cod/gamemode-sdk のみ import (Biome境界)
  * world specはmap名のみ、spawnPointsはFpsCtx.getSpawnPoints()経由
  */
@@ -21,6 +22,25 @@ export default defineGameMode({
   maxPlayers: 16,
   world: {
     map: 'static-arena',
+  },
+
+  // --- 改訂版: 親ジャンル / サブタグ / subModes / カテゴリ / 表示 / 統計 ---
+  parentGenre: 'fps',
+  genres: ['ffa'], // サブタグ
+  tags: ['official', 'pvp', 'fps'],
+  subModes: ['ffa', 'tdm', 'dom'], // Official FPSは1ゲーム複数モード
+  currentSubMode: 'ffa',
+  category: 'Official',
+  display: {
+    title: 'FFA',
+    description: 'Free For All - Official FPS subMode',
+    thumbnail: '/thumbnails/ffa.png',
+    creator: 'Official',
+  },
+  stats: {
+    totalPlays: 1234,
+    activePlayers: 12,
+    detailViews: 567,
   },
 
   onRoomCreate(ctx) {

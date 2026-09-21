@@ -88,7 +88,7 @@ function createMockCtx(overrides: Partial<FpsCtx> = {}): FpsCtx & {
 }
 
 describe('fps-ffa minimal mode', () => {
-  it('idがfps-official-ffaでtype fps, source official, slug ffa, map static-arena', () => {
+  it('idがfps-official-ffaでtype fps, source official, slug ffa, map static-arena + 改訂版 parentGenre/genres/subModes/category/display/stats', () => {
     expect(ffaMode.id).toBe('fps-official-ffa')
     expect(ffaMode.type).toBe('fps')
     expect(ffaMode.source).toBe('official')
@@ -96,6 +96,16 @@ describe('fps-ffa minimal mode', () => {
     expect(ffaMode.minPlayers).toBe(2)
     expect(ffaMode.maxPlayers).toBe(16)
     expect((ffaMode.world as { map: string }).map).toBe('static-arena')
+    // 改訂版
+    expect(ffaMode.parentGenre).toBe('fps')
+    expect(ffaMode.genres).toEqual(['ffa'])
+    expect(ffaMode.tags).toContain('official')
+    expect(ffaMode.subModes).toEqual(['ffa', 'tdm', 'dom'])
+    expect(ffaMode.currentSubMode).toBe('ffa')
+    expect(ffaMode.category).toBe('Official')
+    expect(ffaMode.display?.title).toBe('FFA')
+    expect(ffaMode.display?.creator).toBe('Official')
+    expect(ffaMode.stats?.totalPlays).toBe(1234)
   })
 
   it('pvpはffaのエイリアスで同じid', () => {
