@@ -15,6 +15,9 @@ import { create } from 'zustand'
 export type RendererBackend = 'babylon-webgl'
 export type GameConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 export type OfficialTab = 'fps' | 'voxel'
+export type ParentGenreFilter = 'all' | 'fps' | 'voxel'
+export type SubTagFilter = 'all' | string
+export type SandboxSortKey = 'totalPlays' | 'activePlayers' | 'detailViews'
 
 export interface GameState {
   /** 描画バックエンド（Babylon Engine 初期化時に 1 回決定）。 */
@@ -32,12 +35,24 @@ export interface GameState {
   /** Sandboxモーダル開閉 — 改訂版 (PH4-C) 公式拡張+UGC */
   sandboxOpen: boolean
 
+  /** Sandboxフィルタ/ソート — 改訂版 (PH4-D) 親ジャンル+サブタグ */
+  sandboxParentGenre: ParentGenreFilter
+  sandboxSubTag: SubTagFilter
+  sandboxSort: SandboxSortKey
+  sandboxSearch: string
+  selectedSandboxCardId: string | null
+
   setRenderer: (backend: RendererBackend) => void
   setConnectionStatus: (status: GameConnectionStatus) => void
   setHp: (hp: number) => void
   setAmmo: (ammo: number) => void
   setActiveTab: (tab: OfficialTab) => void
   setSandboxOpen: (open: boolean) => void
+  setSandboxParentGenre: (parent: ParentGenreFilter) => void
+  setSandboxSubTag: (tag: SubTagFilter) => void
+  setSandboxSort: (sort: SandboxSortKey) => void
+  setSandboxSearch: (search: string) => void
+  setSelectedSandboxCardId: (id: string | null) => void
 }
 
 const MAX_HP = 100
@@ -49,6 +64,11 @@ export const useGameStore = create<GameState>((set) => ({
   ammo: 30,
   activeTab: 'fps',
   sandboxOpen: false,
+  sandboxParentGenre: 'all',
+  sandboxSubTag: 'all',
+  sandboxSort: 'totalPlays',
+  sandboxSearch: '',
+  selectedSandboxCardId: null,
 
   setRenderer: (renderer) => set({ renderer }),
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
@@ -56,6 +76,11 @@ export const useGameStore = create<GameState>((set) => ({
   setAmmo: (ammo) => set({ ammo: Math.max(0, ammo) }),
   setActiveTab: (activeTab) => set({ activeTab }),
   setSandboxOpen: (sandboxOpen) => set({ sandboxOpen }),
+  setSandboxParentGenre: (sandboxParentGenre) => set({ sandboxParentGenre }),
+  setSandboxSubTag: (sandboxSubTag) => set({ sandboxSubTag }),
+  setSandboxSort: (sandboxSort) => set({ sandboxSort }),
+  setSandboxSearch: (sandboxSearch) => set({ sandboxSearch }),
+  setSelectedSandboxCardId: (selectedSandboxCardId) => set({ selectedSandboxCardId }),
 }))
 
 /** ループ等の React 外からストアを読むための非フック API（getState/subscribe をラップ）。 */

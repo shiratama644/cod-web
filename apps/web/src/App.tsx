@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Header } from './components/Header.tsx'
 import { LeftSidebar } from './components/LeftSidebar.tsx'
+import { SandboxModal } from './components/SandboxModal.tsx'
 import { RendererHud } from './components/RendererHud.tsx'
 import { StartOverlay } from './components/StartOverlay.tsx'
 import { TouchControls } from './components/TouchControls.tsx'
@@ -22,6 +23,7 @@ export function App() {
           <RendererHud />
           <TouchControls input={input} />
           <StartOverlay />
+          <SandboxModal />
         </div>
       </div>
     </main>

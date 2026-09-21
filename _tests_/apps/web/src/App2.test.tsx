@@ -26,6 +26,10 @@ vi.mock('@/components/LeftSidebar', () => ({
   LeftSidebar: () => <div data-testid="sidebar">sidebar</div>,
 }))
 
+vi.mock('@/components/SandboxModal', () => ({
+  SandboxModal: () => <div data-testid="sandbox-modal">sandbox</div>,
+}))
+
 describe('App', () => {
   beforeEach(() => {
     useGameStore.setState({
@@ -35,6 +39,11 @@ describe('App', () => {
       ammo: 30,
       activeTab: 'fps',
       sandboxOpen: false,
+      sandboxParentGenre: 'all',
+      sandboxSubTag: 'all',
+      sandboxSort: 'totalPlays',
+      sandboxSearch: '',
+      selectedSandboxCardId: null,
     })
   })
 
