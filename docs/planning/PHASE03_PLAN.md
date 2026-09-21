@@ -24,7 +24,9 @@
 
 ## 2. 目的 (Why)
 
-Phase 3 の目的は、**ゲームモードを L3 として分離し、L1 `engine-core` + L1 `gamemode-api` の上で `fps-ffa` 最小モードを動かすこと**。
+Phase 3 の目的は、**ゲームモードを L3 として分離し、L1 `engine-core` + L1 `gamemode-api` (core) + L1 `gamemode-sdk` (facade) の上で `fps-ffa` 最小モードを動かすこと**。
+
+ユーザー確認 (2026-09-22): `gamemode-api` を L1 core、`gamemode-sdk` を L3 が import する facade とする。architecture の `gamemode-sdk` は `api` を re-export。`gamemodes/* → @cod/gamemode-sdk` のみ許可。
 
 現状（PH2-E + EM02）は:
 
@@ -44,20 +46,26 @@ Phase 3 完了時点では:
 
 変更対象:
 
-- `packages/gamemode-api/` 新規
+- `packages/gamemode-api/` 新規 (L1 core)
   - `@cod/gamemode-api` package.json、 `workspace:*` 依存は `protocol` のみ
   - `src/defineGameMode.ts` : `id` / `type` / `source` / `slug` 検証（`id` `/^[a-z][a-z0-9-]{2,31}$/`、 `type` `fps|voxel`、 `source` `official|ugc`、 `slug` URL用）
-  - `src/types.ts` : `GameModeDefinition` / `ContentSource` / `RoomState` / `PlayerRef` / `BaseCtx` / `FpsCtx` / `VoxelCtx` / `RoomCtx` / hook signatures
+  - `src/types.ts` : `GameModeDefinition` / `ContentSource` / `RoomState` / `PlayerRef` / `BaseCtx` / `FpsCtx` / `VoxelCtx` / `RoomCtx` / hook signatures（hybrid async: onRoomCreate/Destroyのみ async許可、onTick等はsync）
   - `src/ctx.ts` : `BaseCtx` 実装の最小面（random/randomInt seed welcome配布、player操作、inventory、score、HUD、send/broadcastレート制限、after/every/cancel tick基準、getState/setState）
   - `src/index.ts` barrel export
   - `package.json` exports `./` と `./define`
+- `packages/gamemode-sdk/` 新規 (L1 facade、architecture.md理想)
+  - `@cod/gamemode-sdk` package.json、 `workspace:*` 依存は `@cod/gamemode-api` のみ（protocolはapi経由）
+  - `src/index.ts` : `export * from '@cod/gamemode-api'` + 追加ヘルパー（将来 UGC 向け sanitized API）
+  - gamemodes/* は `@cod/gamemode-sdk` のみ import 許可（Biome）
 - `packages/engine-core/src/gamemode/` 新規
   - `GameModeRuntime.ts` : gamemode hooks を例外安全に実行（try/catchで1ルームのみcatch、他ルーム巻き込まない）、 `onRoomCreate/Destroy` / `onRoundStart/End` / `onPlayerJoin/Leave/Spawn/Death/Damage` / `onTick` / `onNetworkMessage` / fps用 `onWeaponFire/onHit` / voxel用 `onBlockPlace/onBlockBreak` の dispatcher
   - `TickScheduler.ts` 拡張 or `GameModeTimer.ts` : after/every/cancel を tick基準で実装（setTimeout禁止）、 `Map<timerId, {dueTick, interval, cb}>` + head indexリング（EM01知見）
   - `RateLimiter.ts` 拡張: gamemode message rate limit 40/s burst 20 を追加（protocol.md既存 rate limit表）
   - `Room.ts` 拡張: `GameModeRuntime` を保持、 `doTick` 内で `onTick` / `drainEvents` 後に gamemode tick timer消化、例外は1ルームのみcatch
-- `gamemodes/fps/official/ffa/` 新規
-  - `index.ts` : `defineGameMode({ id: 'fps-official-ffa', type: 'fps', source: 'official', slug: 'ffa', minPlayers: 2, maxPlayers: 16, world: { map: 'static-arena', spawnPoints: [...] } })` + hooks実装
+- `gamemodes/fps/official/ffa/` 新規 (ID集約 ffa主、pvpエイリアス)
+  - `index.ts` : `defineGameMode({ id: 'fps-official-ffa', type: 'fps', source: 'official', slug: 'ffa', minPlayers: 2, maxPlayers: 16, world: { map: 'static-arena' } })` + hooks実装
+    - ユーザー確認: IDを `fps-official-ffa` に集約、`fps-official-pvp` はエイリアス（re-export）として両方提供。URLは `/fps/official/ffa` 主、`/fps/official/pvp` は同じモードが動くエイリアス。types.md例 `fps-official-pvp` と milestones `fps-ffa` の両立
+    - world specはmap名のみ、spawnPointsは `FpsCtx.getSpawnPoints()` 経由で profile-fps から取得（ユーザー確認）
   - `ffa.ts` or hooks分割: `onRoomCreate` で world spec 適用、 `onPlayerSpawn` で spawn point 選択、 `onPlayerDeath` で score 加算、 `onTick` で round状態遷移、 `onNetworkMessage` は最小（chatのみ）
   - 現行 `profile-fps` の static arena を再利用、 `three-mesh-bvh` 衝突は profile側で維持
 - `apps/gameserver/src/runtime.ts` 拡張
@@ -71,7 +79,7 @@ Phase 3 完了時点では:
   - `gamemodes/fps-official-ffa` spawn/score/round lifecycle tests
   - `gameserver` integration: mode exceptionでroomが落ちないテスト
 - `docs/` / `biome.json` / `docs/task-list.md` / `docs/planning/HANDOFF.md` / `.agent/skills/` / `.agent/logs/`
-  - `biome.json` に `gamemodes/* → gamemode-apiのみ` 制限追加（architecture.md理想）
+  - `biome.json` に `gamemodes/* → @cod/gamemode-sdkのみ` 制限追加（ユーザー確認: sdk facade、api core）（architecture.md理想）
   - `docs/arch/types.md` と本計画の整合確認（既存 types.mdは仕様正本、本実装はそれを踏まえる）
   - task-list に PLAT-3 / PH3-A〜D 追加
   - HANDOFF 更新
@@ -121,12 +129,14 @@ Phase 3 完了時点では:
 - [ ] `defineGameMode` が `id` / `type` / `source` / `slug` / `minPlayers`/`maxPlayers` を検証し、不正でthrowする（`/^[a-z][a-z0-9-]{2,31}$/`、type fps|voxel、source official|ugc）
 - [ ] `GameModeDefinition` が `onRoomCreate/Destroy` / `onRoundStart/End` / `onPlayerJoin/Leave/Spawn/Death/Damage` / `onTick` / `onNetworkMessage` + fps用 `onWeaponFire/onHit` + voxel用 `onBlockPlace/onBlockBreak` をoptional hookとして持つ
 - [ ] `RoomCtx` / `BaseCtx` / `FpsCtx` / `VoxelCtx` が `random`/`randomInt`（seed welcome配布）、player操作、inventory、score、HUD、`send`/`broadcast`（レート制限、超過時false）、`after`/`every`/`cancel`（tick基準、setTimeout禁止）を仕様通りに提供する
+- [ ] hooksのasyncがhybridである: `onRoomCreate/Destroy`, `onPlayerJoin/Leave`, `onNetworkMessage` のみ `void | Promise<void>`、他 `onTick/onSpawn/onDeath/onDamage/onWeaponFire/onHit/onBlock*` は `void` syncのみ（ユーザー確認）
 - [ ] `GameModeRuntime` が L1 `engine-core` に存在し、gamemode hooksを例外安全に実行する（1ルーム例外で他ルーム巻き込まない、mode例外でルームが落ちないテストがある）
 - [ ] Tick timer `after`/`every`/`cancel` が tick基準で動作し、`setTimeout` を使わないテストがある（`Map<timerId, {dueTick, interval}>` + head indexリング）
 - [ ] Rate limit: gamemode message 40/s burst 20、超過時false、Input 90/s超過で切断は維持（protocol.md表）
-- [ ] `gamemodes/fps/official/ffa` が存在し、`fps-official-ffa` idで `defineGameMode` をexportし、最小FFA（waiting→playing→ended、spawn point選択、kill→score、death→respawn）が動く
+- [ ] `gamemodes/fps/official/ffa` が存在し、`fps-official-ffa` idで `defineGameMode` をexportし、最小FFA（waiting→playing→ended、spawn point選択 via `FpsCtx.getSpawnPoints()`、kill→score、death→respawn）が動く
+- [ ] `gamemodes/fps/official/pvp` が `ffa` のエイリアスとして存在し、`/fps/official/pvp` でも同じモードが動く（ユーザー確認: ffa主、pvpエイリアス、IDはfps-official-ffaに集約）
 - [ ] `apps/gameserver` が `createFpsSimProfile()` + `fps-official-ffa` を組み立てて `Room` へ注入し、既存 snapshot 16B + Channel 17B経路を維持する
-- [ ] `biome.json` に `gamemodes/* → gamemode-apiのみ` 制限が追加され、違反でlintが落ちる
+- [ ] `biome.json` に `gamemodes/* → @cod/gamemode-sdkのみ` 制限が追加され、違反でlintが落ちる（ユーザー確認: sdkがfacade、apiがcore）
 - [ ] 既存 quality gateが維持される: `typecheck` / `lint` 0 warnings / `test:unit` 30 files 189 tests以上 / `test:coverage` 85/85/85/85以上 / `build` / `test:e2e -- --list` 11以上 / `check:determinism` / `check:determinism:heavy` 0.8s pass
 - [ ] `engine-core` から `@cod/profile-fps` / `@cod/profile-voxel` へのimportがBiomeで引き続き禁止される（0 violations）
 - [ ] `profile-voxel` / voxel dependency は追加されていない
@@ -273,24 +283,24 @@ export interface GameModeDefinition<T extends GameType = GameType> {
   readonly minPlayers: number; // 1..64
   readonly maxPlayers: number; // 1..64
   readonly world: T extends 'fps' ? FpsWorldSpec : VoxelWorldSpec;
-  // hooks: all optional, exception safe
-  onRoomCreate?(ctx: RoomCtx): void | Promise<void>;
-  onRoomDestroy?(ctx: RoomCtx): void | Promise<void>;
-  onRoundStart?(ctx: RoomCtx): void | Promise<void>;
-  onRoundEnd?(ctx: RoomCtx): void | Promise<void>;
-  onPlayerJoin?(ctx: RoomCtx, player: PlayerRef): void | Promise<void>;
-  onPlayerLeave?(ctx: RoomCtx, player: PlayerRef): void | Promise<void>;
-  onPlayerSpawn?(ctx: RoomCtx, player: PlayerRef): void | Promise<void>;
-  onPlayerDeath?(ctx: RoomCtx, player: PlayerRef, killer?: PlayerRef): void | Promise<void>;
-  onPlayerDamage?(ctx: RoomCtx, player: PlayerRef, damage: number, attacker?: PlayerRef): void | Promise<void>;
-  onTick?(ctx: RoomCtx, dtMs: number): void | Promise<void>;
-  onNetworkMessage?(ctx: RoomCtx, player: PlayerRef, msg: Uint8Array | string): void | Promise<void>;
-  // fps only
-  onWeaponFire?(ctx: FpsCtx, player: PlayerRef, weaponId: string): void | Promise<void>;
-  onHit?(ctx: FpsCtx, attacker: PlayerRef, victim: PlayerRef, damage: number): void | Promise<void>;
-  // voxel only
-  onBlockPlace?(ctx: VoxelCtx, player: PlayerRef, pos: Vec3, blockId: number): void | Promise<void>;
-  onBlockBreak?(ctx: VoxelCtx, player: PlayerRef, pos: Vec3, blockId: number): void | Promise<void>;
+  // hooks: hybrid async — 初期化・破棄・イベントのみasync、ゲームループはsync (ユーザー確認 2026-09-22)
+  onRoomCreate?(ctx: RoomCtx): void | Promise<void>; // async許可
+  onRoomDestroy?(ctx: RoomCtx): void | Promise<void>; // async許可
+  onRoundStart?(ctx: RoomCtx): void; // syncのみ
+  onRoundEnd?(ctx: RoomCtx): void; // syncのみ
+  onPlayerJoin?(ctx: RoomCtx, player: PlayerRef): void | Promise<void>; // async許可 (イベント)
+  onPlayerLeave?(ctx: RoomCtx, player: PlayerRef): void | Promise<void>; // async許可
+  onPlayerSpawn?(ctx: RoomCtx, player: PlayerRef): void; // sync
+  onPlayerDeath?(ctx: RoomCtx, player: PlayerRef, killer?: PlayerRef): void; // sync
+  onPlayerDamage?(ctx: RoomCtx, player: PlayerRef, damage: number, attacker?: PlayerRef): void; // sync
+  onTick?(ctx: RoomCtx, dtMs: number): void; // syncのみ、決定論
+  onNetworkMessage?(ctx: RoomCtx, player: PlayerRef, msg: Uint8Array | string): void | Promise<void>; // async許可 (イベント)
+  // fps only — ゲームループはsync
+  onWeaponFire?(ctx: FpsCtx, player: PlayerRef, weaponId: string): void;
+  onHit?(ctx: FpsCtx, attacker: PlayerRef, victim: PlayerRef, damage: number): void;
+  // voxel only — ゲームループはsync
+  onBlockPlace?(ctx: VoxelCtx, player: PlayerRef, pos: Vec3, blockId: number): void;
+  onBlockBreak?(ctx: VoxelCtx, player: PlayerRef, pos: Vec3, blockId: number): void;
 }
 
 export function defineGameMode<T extends GameType>(def: GameModeDefinition<T>): GameModeDefinition<T>;
@@ -376,8 +386,8 @@ export class GameModeTimer {
 ### 10.3 `fps-ffa` 最小モード
 
 ```ts
-// gamemodes/fps/official/ffa/index.ts
-import { defineGameMode } from '@cod/gamemode-api';
+// gamemodes/fps/official/ffa/index.ts — map名のみ、spawnPointsはctx経由
+import { defineGameMode } from '@cod/gamemode-sdk'; // facade経由（ユーザー確認）
 
 export default defineGameMode({
   id: 'fps-official-ffa',
@@ -387,15 +397,15 @@ export default defineGameMode({
   minPlayers: 2,
   maxPlayers: 16,
   world: {
-    map: 'static-arena',
-    spawnPoints: [
-      { x: 0, y: 2, z: 0, yaw: 0 },
-      { x: 10, y: 2, z: 10, yaw: 90 },
-      // ...
-    ],
+    map: 'static-arena', // map名のみ、spawnPointsはFpsCtx.getSpawnPoints()経由（ユーザー確認）
   },
 
-  onRoomCreate(ctx) {
+// gamemodes/fps/official/pvp/index.ts — ffaのエイリアス
+import ffa from '../ffa/index.ts';
+export default ffa; // pvpはffaのエイリアス、IDはfps-official-ffaに集約（ユーザー確認）
+
+
+  async onRoomCreate(ctx) { // async許可: 初期化・破棄・イベントのみasync、ゲームループはsync (ユーザー確認 hybrid)
     ctx.setState('waiting');
   },
 
@@ -416,13 +426,13 @@ export default defineGameMode({
     }
   },
 
-  onPlayerSpawn(ctx, player) {
-    const spawns = ctx.getSpawnPoints();
+  onPlayerSpawn(ctx, player) { // syncのみ
+    const spawns = ctx.getSpawnPoints(); // profile-fpsから取得（ユーザー確認）
     const idx = Math.floor(ctx.random() * spawns.length);
     // spawn logic via ctx
   },
 
-  onPlayerDeath(ctx, player, killer) {
+  onPlayerDeath(ctx, player, killer) { // syncのみ
     if (killer) {
       ctx.setScore(killer.id, ctx.getScore(killer.id) + 1);
     }
@@ -432,11 +442,11 @@ export default defineGameMode({
     });
   },
 
-  onTick(ctx, dtMs) {
+  onTick(ctx, dtMs) { // syncのみ、決定論
     // round lifecycle, score check
   },
 
-  onNetworkMessage(ctx, player, msg) {
+  async onNetworkMessage(ctx, player, msg) { // async許可: イベント
     // chat only for minimal
   },
 });
@@ -453,7 +463,8 @@ export default defineGameMode({
 ```ts
 import { createFpsSimProfile } from '@cod/profile-fps';
 import { GameModeRuntime, GameModeTimer } from '@cod/engine-core/gamemode';
-import ffaMode from '../../../gamemodes/fps/official/ffa';
+import ffaMode from '../../../gamemodes/fps/official/ffa'; // map名のみ、spawnPointsはctx経由
+// pvpエイリアスも同じモードが動く: import pvpMode from '../../../gamemodes/fps/official/pvp'; // ffaのre-export
 
 export function createDefaultServerRuntime() {
   const profile = createFpsSimProfile();
@@ -465,7 +476,7 @@ export function createDefaultServerRuntime() {
 
 - `RoomManager` が `GameModeRuntime` を生成、例外は1ルームのみcatch
 - Snapshot 16B + Channel 17B経路維持
-- `biome.json` に `gamemodes/* → gamemode-apiのみ` 制限追加
+- `biome.json` に `gamemodes/* → @cod/gamemode-sdkのみ` 制限追加（ユーザー確認: sdk facade、api core）
 
 ### 10.5 `TYPE_SPECS` との関係
 
