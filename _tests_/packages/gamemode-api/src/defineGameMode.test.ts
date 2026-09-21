@@ -40,20 +40,22 @@ describe('defineGameMode', () => {
       const v = {
         id: 'FPS-OFFICIAL-FFA',
         ...base,
+      };
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
-      } as any;
-      return defineGameMode(v);
+      return (defineGameMode as any)(v);
     }).toThrow(/id must match/);
 
     expect(() =>
-      defineGameMode({
+      // biome-ignore lint/suspicious/noExplicitAny: invalid input test
+      (defineGameMode as any)({
         id: 'ab',
         ...base,
       }),
     ).toThrow();
 
     expect(() =>
-      defineGameMode({
+      // biome-ignore lint/suspicious/noExplicitAny: invalid input test
+      (defineGameMode as any)({
         id: 'a'.repeat(33),
         ...base,
       }),
@@ -64,15 +66,15 @@ describe('defineGameMode', () => {
     expect(() => {
       const v = {
         id: 'fps-official-ffa',
-        // biome-ignore lint/suspicious/noExplicitAny: invalid input test
-        type: 'racing' as any,
+        type: 'racing',
         source: 'official',
         slug: 'ffa',
         minPlayers: 2,
         maxPlayers: 16,
         world: { map: 'static-arena' },
       };
-      return defineGameMode(v);
+      // biome-ignore lint/suspicious/noExplicitAny: invalid input test
+      return (defineGameMode as any)(v);
     }).toThrow(/type must be one of/);
   });
 
@@ -81,20 +83,21 @@ describe('defineGameMode', () => {
       const v = {
         id: 'fps-official-ffa',
         type: 'fps',
-        // biome-ignore lint/suspicious/noExplicitAny: invalid input test
-        source: 'custom' as any,
+        source: 'custom',
         slug: 'ffa',
         minPlayers: 2,
         maxPlayers: 16,
         world: { map: 'static-arena' },
       };
-      return defineGameMode(v);
+      // biome-ignore lint/suspicious/noExplicitAny: invalid input test
+      return (defineGameMode as any)(v);
     }).toThrow(/source must be one of/);
   });
 
   it('rejects invalid slug', () => {
     expect(() =>
-      defineGameMode({
+      // biome-ignore lint/suspicious/noExplicitAny: invalid input test
+      (defineGameMode as any)({
         id: 'fps-official-ffa',
         type: 'fps',
         source: 'official',
@@ -108,7 +111,8 @@ describe('defineGameMode', () => {
 
   it('rejects invalid min/max players', () => {
     expect(() =>
-      defineGameMode({
+      // biome-ignore lint/suspicious/noExplicitAny: invalid input test
+      (defineGameMode as any)({
         id: 'fps-official-ffa',
         type: 'fps',
         source: 'official',
@@ -120,7 +124,8 @@ describe('defineGameMode', () => {
     ).toThrow(/minPlayers must be 1..64/);
 
     expect(() =>
-      defineGameMode({
+      // biome-ignore lint/suspicious/noExplicitAny: invalid input test
+      (defineGameMode as any)({
         id: 'fps-official-ffa',
         type: 'fps',
         source: 'official',
@@ -141,10 +146,10 @@ describe('defineGameMode', () => {
         slug: 'ffa',
         minPlayers: 2,
         maxPlayers: 16,
-        // biome-ignore lint/suspicious/noExplicitAny: invalid input test
-        world: undefined as any,
+        world: undefined,
       };
-      return defineGameMode(v);
+      // biome-ignore lint/suspicious/noExplicitAny: invalid input test
+      return (defineGameMode as any)(v);
     }).toThrow(/world must be defined/);
   });
 
@@ -157,10 +162,10 @@ describe('defineGameMode', () => {
         slug: 'ffa',
         minPlayers: 2,
         maxPlayers: 16,
-        // biome-ignore lint/suspicious/noExplicitAny: invalid input test
-        world: {} as any,
+        world: {},
       };
-      return defineGameMode(v);
+      // biome-ignore lint/suspicious/noExplicitAny: invalid input test
+      return (defineGameMode as any)(v);
     }).toThrow(/fps world.map must be non-empty string/);
   });
 

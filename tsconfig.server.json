@@ -1,9 +1,13 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "jsx": "preserve",
-    "types": ["bun"],
+    "types": [
+      "bun"
+    ],
     "noUncheckedSideEffectImports": false
   },
   "include": [
@@ -14,6 +18,9 @@
     "scripts",
     "_tests_/packages/protocol",
     "_tests_/packages/profile-fps",
-    "_tests_/packages/engine-core"
+    "_tests_/packages/engine-core",
+    "packages/gamemode-api/src",
+    "packages/gamemode-sdk/src",
+    "_tests_/packages/gamemode-api"
   ]
 }

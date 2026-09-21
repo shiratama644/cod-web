@@ -32,7 +32,7 @@ function makeWs(): WsLike & { sent: (string | Uint8Array)[]; closed: { code?: nu
       sent.push(data)
       return typeof data === 'string' ? data.length : data.byteLength
     },
-    close(code, reason) {
+    close(code?: number, reason?: string) {
       closed.push({ code, reason })
     },
   } as unknown as WsLike & { sent: (string | Uint8Array)[]; closed: { code?: number; reason?: string }[] }

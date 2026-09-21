@@ -78,28 +78,36 @@ export interface FpsCtx extends BaseCtx {
 - async hooksは Room の doTick 外で実行、例外は safeCall で catch、他ルーム巻き込まない
 - sync hooksは決定論、Math.random/Date.now/setTimeout禁止
 
-## GameModeRuntime（PH3-B予定）
+## GameModeRuntime（PH3-B完了）
 
 ```ts
-class GameModeRuntime {
-  async safeCall(hook,...args) {
-    try { await this.def[hook]?.(this.ctx,...args); } catch(e) { console.warn(`[gamemode] ${hook} error`, e); }
-  }
-  tick(dtMs,tick) { this.timer.tick(tick); this.safeCall('onTick',dtMs); }
-  sendGameModeMessage(id,data) { if (!rateLimiter.consume(id,'modeMessage')) return false; return ctx.send(id,data); }
-}
+// packages/engine-core/src/gamemode/GameModeTimer.ts
 class GameModeTimer {
-  timers = new Map<number,{dueTick,interval?,cb}>();
-  after(ticks,cb,nowTick) { id=nextId++; timers.set(id,{dueTick:nowTick+ticks,cb}); return id; }
-  every(ticks,cb,nowTick) { ... interval ... }
+  timers = new Map<number,{dueTick,interval?,cb}>(); nextId=1;
+  after(ticks,cb,nowTick) { const id=nextId++; timers.set(id,{dueTick:nowTick+Math.max(0,Math.floor(ticks)),cb}); return id; }
+  every(ticks,cb,nowTick) { const id=nextId++; timers.set(id,{dueTick:nowTick+Math.max(1,Math.floor(ticks)),interval:Math.max(1,Math.floor(ticks)),cb}); return id; }
   cancel(id) { timers.delete(id); }
-  tick(nowTick) { for (const [id,t] of timers) if (nowTick>=t.dueTick) { try{t.cb()}catch{}; if(t.interval) t.dueTick=nowTick+t.interval; else timers.delete(id); } }
+  tick(nowTick) { const due=[]; for(const [id,e] of timers) if(nowTick>=e.dueTick) due.push({id,entry:e}); for(const {id,entry} of due){ try{entry.cb()}catch{}; if(entry.interval){ const cur=timers.get(id); if(cur) cur.dueTick=nowTick+entry.interval; } else timers.delete(id); } }
+}
+// packages/engine-core/src/net/rate-limit.ts
+const MODE_MESSAGE_RATE_PER_SEC=40, MODE_MESSAGE_RATE_BURST=20;
+class ModeMessageRateLimiter { buckets=Map<string,TokenBucket>; allow(id,nowMs){ let b=buckets.get(id); if(!b){ b=new TokenBucket(40,20,nowMs); buckets.set(id,b);} return b.tryConsume(nowMs); } remove(id){buckets.delete(id);} }
+// packages/engine-core/src/gamemode/GameModeRuntime.ts
+class GameModeRuntime {
+  timer=GameModeTimer; rateLimiter=ModeMessageRateLimiter;
+  async safeCall(hook,...args){ try{ const fn=this.def[hook] as any; if(fn){ const r=fn(...args); if(r instanceof Promise) await r.catch(()=>{}); } }catch{} }
+  safeCallSync(hook,...args){ try{ const fn=this.def[hook] as any; if(fn){ const r=fn(...args); if(r instanceof Promise) r.catch(()=>{}); } }catch{} }
+  tick(dtMs,nowTick){ timer.tick(nowTick); if(def.onTick){ const ctx=createMinimalCtx(nowTick); safeCallSync('onTick',ctx,dtMs); } }
+  sendGameModeMessage(id,data){ if(!rateLimiter.allow(id,nowMs())) return false; return options.send(id,data); }
+  broadcastGameModeMessage(data,exceptId?){ const now=nowMs(); for(const p of getPlayers()){ if(exceptId&&p.id===exceptId) continue; if(!rateLimiter.allow(p.id,now)) continue; options.send(p.id,data); } }
+  async onPlayerLeave(player,ctx){ await safeCall('onPlayerLeave',ctx,player); rateLimiter.remove(player.id); }
 }
 ```
 
-- Tick timerは head indexリング（EM01知見、zero-alloc/SKILL.md）
-- Rate limit: modeMessage 40/s burst 20、超過時false、Input 90/s超過で切断維持（server.md表）
-- 例外安全: 1ルームのみcatch、他ルーム巻き込まない、mode例外でroomが落ちないテスト
+- Tick timerは tick基準、setTimeout禁止、Map+期限収集で安全、例外は握りつぶし、after 0即時、everyは1以上
+- Rate limit: modeMessage 40/s burst 20、超過時false、Input 90/s超過で切断維持（server.md表）、ModeMessageRateLimiterはstring id、allowNumber/removeNumber互換
+- 例外安全: safeCall/safeCallSyncでtry/catch、asyncはcatch、1ルームのみcatch、他ルーム巻き込まない、mode例外でroomが落ちないテスト、timer例外でも他cb継続
+- Room統合: Room.setGameModeBinding({rateLimiter})でバインド、leaveでrateLimiter.remove(String(id))クリーンアップ、GameModeRuntime.onPlayerLeaveでもremove、メモリリーク防止
 
 ## ffa最小モード（PH3-C予定）
 
@@ -151,7 +159,7 @@ export default ffa;
 
 - `defineGameMode.test.ts` 10 tests: valid ffa/voxel、invalid id/type/source/slug/min/max/world/map、hooks preserved
 - `ctx.test.ts` 5 tests: LCG determinism、randomInt inclusive、min>max throw、random 0..1
-- PH3-B: exception safety / after/every/cancel tick / rate limit / broadcast false
+- PH3-B: `GameModeTimer.test.ts` 8 tests (after/every/cancel tick基準、setTimeout禁止、例外安全、size/clear)、`ModeMessageRateLimiter.test.ts` 8 tests (40/s burst20、超過時false、player別独立、remove、持続許可)、`GameModeRuntime.test.ts` 11 tests (onTick/onRoomCreate/onPlayerJoin例外でroom落ちない、timer例外で他cb継続、after/every/cancel tick、tickWithCtx、40/s burst20超過false、broadcastで超過者は送らない、Uint8Array/string両対応、Room.setGameModeBinding+leaveクリーンアップ、onPlayerLeaveクリーンアップ) — 計27 tests
 - PH3-C: ffa spawn/score/round lifecycle
 - PH3-D: gameserver integration mode exceptionでroomが落ちない
 
@@ -160,8 +168,9 @@ export default ffa;
 ```bash
 grep -R "profile-fps\|profile-voxel" packages/gamemode-api --include="*.ts" # 0件
 grep -R "from.*gamemode" gamemodes --include="*.ts" | grep -v "gamemode-sdk" # 0件
-grep -R "Math.random\|Date.now\|setTimeout" packages/gamemode-api packages/engine-core/src/gamemode --include="*.ts" # 0件
-bun run test:unit # 32 files 204 tests
+grep -R "Math.random\|Date.now\|setTimeout" packages/gamemode-api packages/engine-core/src/gamemode --include="*.ts" # 0件 (GameModeTimerはsetTimeout不使用)
+grep -R "setTimeout" packages/engine-core/src/gamemode --include="*.ts" # 0件
+bun run test:unit # 35 files 231 tests (PH3-Bで+3 files +27 tests)
 ```
 
 ## 関連

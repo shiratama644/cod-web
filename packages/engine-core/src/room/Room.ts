@@ -26,6 +26,11 @@ export interface Peer {
   disconnect?: (code: number, reason: string) => void
 }
 
+/** gamemode 統合用の最小インターフェース (循環参照回避のため) */
+export interface GameModeRoomBinding {
+  rateLimiter?: { remove(id: string): void; removeNumber?(id: number): void }
+}
+
 export interface RoomOptions {
   /** L2 profile から player spawn と maxPlayers を注入する。 */
   readonly profile?: Pick<SimProfile<unknown, PlayerState, unknown>, 'typeSpec' | 'createPlayerState'>
@@ -42,12 +47,22 @@ export class Room {
   private readonly peers = new Map<number, Peer>()
   private nextPlayerId = 1
   private readonly createPlayer: (playerId: number) => PlayerState
+  private gameModeBinding?: GameModeRoomBinding
 
   readonly maxPlayers: number
 
   constructor(options: RoomOptions = {}) {
     this.maxPlayers = options.maxPlayers ?? options.profile?.typeSpec.maxPlayers ?? MAX_PLAYERS
     this.createPlayer = options.createPlayerState ?? options.profile?.createPlayerState ?? createPlayerState
+  }
+
+  /** gamemode 統合: GameModeRuntime の rateLimiter 等をバインド */
+  setGameModeBinding(binding: GameModeRoomBinding): void {
+    this.gameModeBinding = binding
+  }
+
+  getGameModeBinding(): GameModeRoomBinding | undefined {
+    return this.gameModeBinding
   }
 
   /** 現在の参加人数。 */
@@ -102,6 +117,17 @@ export class Room {
     if (!this.players.has(playerId)) return
     this.players.delete(playerId)
     this.peers.delete(playerId)
+    // gamemode rate limiter のクリーンアップ (メモリリーク防止)
+    if (this.gameModeBinding?.rateLimiter) {
+      const rl = this.gameModeBinding.rateLimiter
+      // string id と number id 両方で削除を試みる
+      try {
+        rl.remove(String(playerId))
+      } catch {}
+      try {
+        rl.removeNumber?.(playerId)
+      } catch {}
+    }
     this.broadcast(JSON.stringify({ kind: 'leave', playerId }))
   }
 

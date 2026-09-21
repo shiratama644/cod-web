@@ -15,13 +15,45 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
-      "@cod/protocol": ["./packages/protocol/src/index.ts"],
-      "@cod/protocol/*": ["./packages/protocol/src/*"],
-      "@cod/engine-core": ["./packages/engine-core/src/index.ts"],
-      "@cod/engine-core/*": ["./packages/engine-core/src/*"],
-      "@cod/profile-fps": ["./packages/profile-fps/src/index.ts"],
-      "@cod/profile-fps/*": ["./packages/profile-fps/src/*"],
-      "@/*": ["./apps/web/src/*"]
+      "@cod/protocol": [
+        "./packages/protocol/src/index.ts"
+      ],
+      "@cod/protocol/*": [
+        "./packages/protocol/src/*"
+      ],
+      "@cod/engine-core": [
+        "./packages/engine-core/src/index.ts"
+      ],
+      "@cod/engine-core/*": [
+        "./packages/engine-core/src/*"
+      ],
+      "@cod/profile-fps": [
+        "./packages/profile-fps/src/index.ts"
+      ],
+      "@cod/profile-fps/*": [
+        "./packages/profile-fps/src/*"
+      ],
+      "@/*": [
+        "./apps/web/src/*"
+      ],
+      "@cod/gamemode-api": [
+        "./packages/gamemode-api/src/index.ts"
+      ],
+      "@cod/gamemode-api/*": [
+        "./packages/gamemode-api/src/*"
+      ],
+      "@cod/gamemode-sdk": [
+        "./packages/gamemode-sdk/src/index.ts"
+      ],
+      "@cod/gamemode-sdk/*": [
+        "./packages/gamemode-sdk/src/*"
+      ],
+      "@cod/gameserver": [
+        "./apps/gameserver/src/index.ts"
+      ],
+      "@cod/gameserver/*": [
+        "./apps/gameserver/src/*"
+      ]
     }
   }
 }
