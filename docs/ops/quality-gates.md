@@ -1,8 +1,8 @@
-# Quality Gates（Phase 3 完了・Phase 4 準備）
+# Quality Gates（Phase 3 完了・Phase 4 計画作成中 PLAT-4）
 
-> 対応タスク: `PH3-D`（Phase 3 完了）  
-> 目的: Phase 3 gamemode API第1版 + fps-ffa最小完了後の品質ゲートを明確化する。  
-> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可。2026-09-20 EM01 で memory leak / zero-alloc / GC / shift 改善を追加。2026-09-21 EM02 で coverage 85%達成 + Playwright フルE2E複数webServer。2026-09-22 ドキュメント整理で `docs/ops/github-actions-proposal.yml` 重複提案を削除し、正本は `.github/workflows/quality-gates.yml` のみに統一。2026-09-22 Phase 3完了で gamemode-api/sdk + GameModeRuntime + fps-ffa + gameserver統合。
+> 対応タスク: `PLAT-4`（Phase 4 計画作成中）  
+> 目的: Phase 3 gamemode API第1版 + fps-ffa最小完了後、Phase 4 ハブ+Sandboxモーダル+投票+マッチメイカー骨組み計画作成中の品質ゲートを明確化する。  
+> 更新: 2026-09-19 に `.github/workflows/` への直接書き込みが許可。2026-09-20 EM01 で memory leak / zero-alloc / GC / shift 改善を追加。2026-09-21 EM02 で coverage 85%達成 + Playwright フルE2E複数webServer。2026-09-22 ドキュメント整理で `docs/ops/github-actions-proposal.yml` 重複提案を削除し、正本は `.github/workflows/quality-gates.yml` のみに統一。2026-09-22 Phase 3完了で gamemode-api/sdk + GameModeRuntime + fps-ffa + gameserver統合。2026-09-22 ユーザー理想 FPS/Voxel/Sandbox 3カテゴリ確定、product.md/editor.md/types.md/matchmaker.md/client.md/architecture.md更新、PHASE04_PLAN.md作成。
 
 ## 1. 公式確認した根拠
 

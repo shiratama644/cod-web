@@ -4,9 +4,60 @@
 
 PH1-D で旧 R3F scene / renderer / loop は破棄済み。PH1-F で React 側は `<canvas>` host / HUD / touch UI / start overlay に限定し、ネットコード（`apps/web/src/game/net/*`）は Babylon の描画ループから呼ぶ経路を unit test で固定した。
 
+> 2026-09-22 更新: FPS/Voxel/Sandbox 3カテゴリ UI、Header タブ、Left Sidebar (Krunker風) Sandbox ボタン、Sandbox モーダル、詳細ページ、投票 UI を本ファイルに追記。
+
+## ハブ UI レイアウト（Phase 4）
+
+### Header
+
+```
+[Logo] [FPS] [Voxel] [Search] [User]
+```
+
+- `[FPS]` / `[Voxel]` タブ切替。デフォルト FPS。`/?type=fps` 等で URL 同期。
+- FPS タブ: `fps-official-*` (FFA/TDM/DOM等) をメイン表示。
+- Voxel タブ: `voxel-official-survival` 等をメイン表示。
+
+### Left Sidebar (Krunker.io風)
+
+```
+[Play]
+[Sandbox]  <- 押下で Sandbox モーダル
+[Settings]
+[Shop]
+```
+
+- 縦ボタン群。Sandbox ボタンで UGC ハブモーダルを開く。
+
+### メイン画面 (デフォルト FPS)
+
+- 初期表示は FPS ゲーム画面 (`GameCanvas` + HUD)。
+- Phase 3 時点は `fps-official-ffa` 単一。Phase 4 で FFA/TDM/DOM 投票入口を追加。
+
+### Sandbox モーダル
+
+- トリガー: Left Sidebar 「Sandbox」ボタン。
+- カード: thumbnail / title / creator / totalPlays / description。
+- フィルタ: カテゴリ別 (Bedwars/Zombie/Athletic 等 = `genres`)。
+- ソート: totalPlays / activePlayers / detailViews。
+- クリックで詳細ページ `/sandbox/{id}` へ。
+
+### 詳細ページ & 参加フロー
+
+- `/sandbox/{id}`: カード詳細 + `[Play Now]` + `[ルーム選択]`。
+- Play Now: 空きルーム自動マッチ (`POST /v1/seek-game` 相当)。
+- Room Selection: ルーム一覧モーダル (`GET /v1/game-list` 相当) → 手動選択参加。
+
+### 投票 UI
+
+- トリガー: 1マッチ終了時 (`onRoundEnd` 後)。
+- 表示: 全プレイヤーに次の試合形式候補 (FFA/TDM/DOM等) を表示。
+- 動作: 多数決で次モード決定。`VoteSession` / `VoteEvent` 型は `types.md` 参照。
+- 実装: React HUD 側で `VoteOverlay` コンポーネント。tick 基準タイマー (`after`/`every`) で管理。
+
 ## バンドル
 
-### 理想（目標 &lt; 300 KB gzip）
+### 理想（目標 < 300 KB gzip）
 
 初期: shell / hub / net。Babylon を載せない。ルーム参加時に動的 import: `client-voxel`（@babylonjs/core + noa-engine + profile-voxel）または `client-fps`（@babylonjs/core + profile-fps）。Vite が `@babylonjs/core` を共有チャンクに切り出すのは望ましい。
 
@@ -20,7 +71,7 @@ PH1-D で旧 R3F scene / renderer / loop は破棄済み。PH1-F で React 側�
 
 低遅延の `desynchronized: true` と、ちらつき対策の `preserveDrawingBuffer: true` は Chrome の Canvas/WebGL context attributes として公式確認済み。ただし 2026-09-06 時点の Babylon typedoc `EngineOptions` property 一覧には出ていない（[api-sources.md](./api-sources.md)）。実装時は導入した `@babylonjs/core` の `.d.ts` と public API を確認し、**型にある `EngineOptions` だけを使う**。型に無い場合、`desynchronized` / `preserveDrawingBuffer` は渡さず、低遅延 canvas hint は後続最適化タスクへ回す。型に無い key を invent しない。Babylon の private field（例: `_gl`）には依存しない。
 
-解像度は `setHardwareScalingLevel`。動的解像度: 平均フレーム &gt;20ms なら scale を下げ、&lt;13ms ならゆっくり上げる。下限 0.5。
+解像度は `setHardwareScalingLevel`。動的解像度: 平均フレーム >20ms なら scale を下げ、<13ms ならゆっくり上げる。下限 0.5。
 
 ## 入力
 
