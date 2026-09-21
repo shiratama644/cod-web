@@ -1,24 +1,41 @@
-# クライアント
+# クライアント — 改訂版
 
 描画は **Babylon.js**（ADR-003）。3D に React を使わない。React はハブ・HUD・設定・メニュー（DOM）のみ。
 
 PH1-D で旧 R3F scene / renderer / loop は破棄済み。PH1-F で React 側は `<canvas>` host / HUD / touch UI / start overlay に限定し、ネットコード（`apps/web/src/game/net/*`）は Babylon の描画ループから呼ぶ経路を unit test で固定した。
 
-> 2026-09-22 更新: FPS/Voxel/Sandbox 3カテゴリ UI、Header タブ、Left Sidebar (Krunker風) Sandbox ボタン、Sandbox モーダル、詳細ページ、投票 UI を本ファイルに追記。
+> 2026-09-22 改訂版: OfficialはFPS 1ゲーム複数モード (FFA/TDM/DOM投票) + Voxel 1モード永続 (Survival)、Sandboxは標準FPS/Voxel以外の公式ゲーム + UGC、親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athletic。
 
-## ハブ UI レイアウト（Phase 4）
+## ゲーム種別・階層構造 — 改訂版
 
-### Header
+```
+Official (公式ゲーム):
+  FPS: 1ゲーム複数モード [FFA,TDM,DOM,etc.] — 投票で次ルール決定
+  Voxel: 1モードのみ [Survival] — 永続サバイバル、死んだらリスポーン
+
+Sandbox (公式拡張+UGC):
+  FPS: examples [TDM,DOM,Zombie,etc.] — 公式拡張 + UGCのFPS
+  Voxel: examples [Bedwars,Athletic,etc.] — 公式拡張 + UGCのVoxel
+```
+
+- Official FPSは1ゲーム複数モード、Official Voxelは1モード永続。
+- SandboxはUGCだけでなく、標準FPS/Voxel以外の公式ゲームも含む。
+
+## ハブ UI レイアウト — 改訂版 (Official切替 + Sandbox)
+
+### Header / Navigation Tabs (Officialゲームの切り替え)
 
 ```
 [Logo] [FPS] [Voxel] [Search] [User]
+  FPSタブ: 公式FPS画面を表示
+  Voxelタブ: 公式Voxel画面を表示
 ```
 
-- `[FPS]` / `[Voxel]` タブ切替。デフォルト FPS。`/?type=fps` 等で URL 同期。
-- FPS タブ: `fps-official-*` (FFA/TDM/DOM等) をメイン表示。
-- Voxel タブ: `voxel-official-survival` 等をメイン表示。
+- [FPS]タブ: 公式FPS画面を表示。1ゲーム複数モード [FFA,TDM,DOM]、投票で次決定。
+- [Voxel]タブ: 公式Voxel画面を表示。1モードのみ [Survival]、永続サバイバル。
+- Officialゲームの切り替え。デフォルト Official FPS。
 
-### Left Sidebar (Krunker.io風)
+### Left Sidebar (Krunker.io風UI)
 
 ```
 [Play]
@@ -27,33 +44,43 @@ PH1-D で旧 R3F scene / renderer / loop は破棄済み。PH1-F で React 側�
 [Shop]
 ```
 
-- 縦ボタン群。Sandbox ボタンで UGC ハブモーダルを開く。
+- 縦ボタン群。Sandboxボタンで拡張ゲーム群モーダルを開く。
+- SandboxはUGCだけでなく、標準FPS/Voxel以外の公式ゲームも含む。
 
-### メイン画面 (デフォルト FPS)
+### メイン画面仕様 (デフォルト: Official FPS) — 改訂版
 
-- 初期表示は FPS ゲーム画面 (`GameCanvas` + HUD)。
-- Phase 3 時点は `fps-official-ffa` 単一。Phase 4 で FFA/TDM/DOM 投票入口を追加。
+- 初期表示は Official FPSゲーム画面 (`GameCanvas` + HUD)。
+- Official FPSは1つのゲームに複数モード [FFA,TDM,DOM] を持つ。現行 `fps-official-ffa` はFFAサブモード最小実装。
+- Official Voxelは1モードのみ [Survival]、永続サバイバル、死んだらリスポーン。
+- 1マッチ終了時、次マッチのゲーム形式（FFA,TDM等）を投票で決定。Official FPSのみ。
+- ヘッダータブで Official Voxel (Survival) への切り替えが可能。
 
-### Sandbox モーダル
+### Sandbox モーダル — 改訂版 (親ジャンル+サブタグ)
 
-- トリガー: Left Sidebar 「Sandbox」ボタン。
-- カード: thumbnail / title / creator / totalPlays / description。
-- フィルタ: カテゴリ別 (Bedwars/Zombie/Athletic 等 = `genres`)。
-- ソート: totalPlays / activePlayers / detailViews。
-- クリックで詳細ページ `/sandbox/{id}` へ。
+- トリガー: Left Sidebar [Sandbox]ボタン。
+- 一覧表示 (カード形式): サムネイル、タイトル、作者名、累計プレイ数、簡易説明文。SandboxはUGCだけでなく公式拡張も含むため、作者名は Official または ユーザー名。
+- フィルター機能:
+  - 親ジャンル (FPS / Voxel など)
+  - サブタグ (Bedwars, Zombie, Athletic など)
+- ソート機能:
+  - 累計プレイ数順
+  - 現在のプレイ人数順（アクティブ数）
+  - 詳細ページ閲覧数順
+- カードクリックで詳細ページ `/sandbox/{id}` へ。
 
-### 詳細ページ & 参加フロー
+### Sandbox 詳細ページ & ルーム参加フロー — 改訂版
 
-- `/sandbox/{id}`: カード詳細 + `[Play Now]` + `[ルーム選択]`。
-- Play Now: 空きルーム自動マッチ (`POST /v1/seek-game` 相当)。
-- Room Selection: ルーム一覧モーダル (`GET /v1/game-list` 相当) → 手動選択参加。
+- 遷移: カードクリックで各ゲームの詳細ページへ。`/sandbox/{id}` → 内部 `/{type}/{source}/{slug}` 解決。公式拡張 (例: /fps/official/zombie) もUGCも対象。
+- アクション:
+  - [Play Now] ボタン: 自動で空きルームを検索して即時参加。
+  - [ルーム選択] ボタン: ルーム一覧モーダルを開き、手動でサーバーを選択して参加。
 
-### 投票 UI
+### 投票 UI — Official FPS 1ゲーム複数モード用
 
-- トリガー: 1マッチ終了時 (`onRoundEnd` 後)。
-- 表示: 全プレイヤーに次の試合形式候補 (FFA/TDM/DOM等) を表示。
-- 動作: 多数決で次モード決定。`VoteSession` / `VoteEvent` 型は `types.md` 参照。
-- 実装: React HUD 側で `VoteOverlay` コンポーネント。tick 基準タイマー (`after`/`every`) で管理。
+- トリガー: Official FPSで1マッチ終了時 (`onRoundEnd` 後)。
+- 表示: 全プレイヤーに次の試合形式候補 (同一FPSゲーム内のサブモード FFA/TDM/DOM等) を表示。
+- 動作: 多数決で次サブモード決定。Official Voxelは投票対象外 (Survival永続)。
+- 実装: React HUD 側で `VoteOverlay` コンポーネント。`VoteSession` の `subMode` が ffa/tdm/dom。
 
 ## バンドル
 

@@ -7,58 +7,78 @@
 | **タイプ（Game Type）** | `voxel` または `fps`。シミュレーションの根本的なパラダイム |
 | **Sim Profile** | タイプごとのシミュレーション実装 |
 | **コンテンツソース（Content Source）** | `official` または `ugc`。タイプではなく、運営/ユーザー作成の区分 |
-| **ゲームモード** | ルールの単位。1つのタイプと1つの source に属する。例: `/fps/official/pvp`, `/voxel/ugc/athletic`。`genres`/`tags`/`display`/`stats` は optional 拡張 |
-| **プラットフォームカテゴリ** | 表示上の 3 カテゴリ: FPS (公式対戦) / Voxel (公式サバイバル) / Sandbox (UGCハブ) |
-| **Sandbox ハブ** | `source=ugc` のゲームを集めた表示上のハブ。L1 type分岐は増やさない |
+| **ゲーム種別** | `Official` (公式ゲーム) と `Sandbox` (公式+UGCの拡張ゲーム群) の2階層 |
+| **ゲームモード** | Official FPSは1ゲームに複数モード [FFA,TDM,DOM] を持つ。Official Voxelは1モード [Survival] のみ。Sandboxは各ゲームが1モードで genre/tag で分類 |
+| **プラットフォームカテゴリ** | 表示上の Official FPS / Official Voxel / Sandbox |
+| **Sandbox ハブ** | FPS/Voxel以外の公式ゲーム + UGC を含む拡張ゲーム群。L1 type分岐は増やさない |
 | **ルーム** | 1つのゲームモードのインスタンス |
 | **ゲームノード** | ルームをホストする Bun プロセス。1プロセス = 1 CPU コア |
-| **マッチメイカー** | ルーム一覧と入室チケットを扱うステートレス HTTP サービス。genre/tagフィルタ、ソート、Play Now/Room Selection対応 |
-| **ハブ** | ルーム閲覧・参加の Web UI。Header FPS/Voxelタブ、Left Sidebar Sandboxボタン、Sandboxモーダル、詳細ページ、投票UI |
+| **マッチメイカー** | ルーム一覧と入室チケットを扱うステートレス HTTP サービス。親ジャンル/サブタグフィルタ、ソート、Play Now/Room Selection対応 |
+| **ハブ** | ルーム閲覧・参加の Web UI。Header [FPS][Voxel]タブ (Official切替)、Left Sidebar [Sandbox]ボタン |
 | **ティック** | サーバのシミュレーション更新 1 回 |
 | **スナップショット** | サーバ→クライアントの状態同期パケット |
-| **投票** | 1マッチ終了時に全プレイヤーが次モードを投票で決定 |
+| **投票** | Official FPSで1マッチ終了時に全プレイヤーが次サブモードを投票で決定 |
+| **永続サバイバル** | Official Voxel Survivalは永遠続くMinecraftサバイバル、死んだらリスポーン可能 |
 
 ## 作るもの
 
 ブラウザで動作するマルチプレイヤーゲームプラットフォーム。
 
-- **ハブ**から稼働中ルームを一覧・検索して参加できる。Header [FPS][Voxel]タブ切替、Left Sidebar (Krunker風) Sandboxボタン
+- **ハブ**から稼働中ルームを一覧・検索して参加できる。Header [FPS][Voxel]タブはOfficialゲーム切替、Left Sidebar [Sandbox]ボタン
 - ルームは **2 タイプ**のいずれかに属する（L1分岐は fps|voxel の2つのまま）
-  - `voxel` — Minecraft / bloxd.io 的。編集可能なボクセル世界。公式 survival / bedwars と UGC world
-  - `fps` — Krunker.io 的。静的/編集可能アリーナ。公式 pvp / zombie と UGC map
-- 各タイプ内に `official` と `ugc` の **コンテンツソース**がある。`official` / `ugc` を 3 種類目の type にしない。**Sandbox は `source=ugc` の表示集約**
-- 表示上は **3カテゴリ**: FPS (公式対戦) FFA/TDM/DOM等、Voxel (公式サバイバル) Survival、Sandbox (UGC) Bedwars/Zombie/Athletic等
+  - `voxel` — Minecraft / bloxd.io 的。編集可能なボクセル世界
+  - `fps` — Krunker.io 的。静的/編集可能アリーナ
+- **Official (公式ゲーム)**: 運営が公式に提供するゲーム群
+  - FPS: 1つのゲームに複数モード [FFA,TDM,DOM,etc.]。投票システムで次ルール決定
+  - Voxel: モード1つのみ [Survival]。永遠続くMinecraftサバイバル、死んだらリスポーン可能
+- **Sandbox**: 標準FPS/Voxel以外の公式ゲーム + UGC。親ジャンル FPS/Voxel、サブタグ Bedwars/Zombie/Athletic等
 - Krunker.io のようなエディタで、誰でも FPS マップや voxel ワールドを作れるようにする。エディタは Babylon.js で書き、FPS エディタは `.glb` 読み込みに対応する
 - **モバイルは両タイプ対象**（タッチ入力は後続フェーズ）
 - **ボイスチャットは理想に含める**（ゲーム同期には使わない。WebRTC メディアは別チャネル。着手時期は未定）
 - **ライセンスは MIT**
 
-## プラットフォームカテゴリ（FPS / Voxel / Sandbox） — 2026-09-22 理想確定
+## ゲーム種別・階層構造 — 2026-09-22 改訂版確定
 
-> ユーザー提供「ゲームプラットフォーム 仕様定義書」に基づく 3 カテゴリ構成。L1 type 分岐は `fps | voxel` の 2 つのまま。Sandbox は表示上の UGC ハブ。
+> ユーザー提供「ゲームプラットフォーム 仕様定義書 (改訂版)」正本。Officialは運営提供、SandboxはUGCだけでなく標準FPS/Voxel以外の公式ゲームも含む。
 
-| 表示カテゴリ | 内部マッピング | 説明 | 例 |
+```
+Official (公式ゲーム) — 運営が公式に提供するゲーム群
+  ├ FPS: 1つのゲームに複数モード [FFA,TDM,DOM,etc.]
+  │     voting_system: 試合終了時に全プレイヤーの投票で次のルールを決定
+  │     現行: fps-official-ffa はFFAサブモードの最小実装
+  └ Voxel: モード1つのみ [Survival]
+        finish_game: 永遠続くMinecraftサバイバル (死んだらリスポーン可能)
+
+Sandbox — 標準FPS/Voxel以外の公式ゲーム + UGC
+  ├ FPS: examples [TDM,DOM,Zombie,etc.] (公式の拡張FPSやUGCのFPS)
+  └ Voxel: examples [Bedwars,Athletic,etc.] (公式の拡張VoxelやUGCのVoxel)
+```
+
+| 表示種別 | 内部マッピング | 説明 | 例 |
 |---|---|---|---|
-| **FPS (公式対戦)** | `type=fps`, `source=official` | 公式対戦 FPS。FFA/TDM/DOM 等 | `/fps/official/ffa`, `/fps/official/tdm`, `/fps/official/dom`, `/fps/official/pvp` |
-| **Voxel (公式サバイバル)** | `type=voxel`, `source=official` | 公式サバイバル voxel | `/voxel/official/survival` |
-| **Sandbox (UGC)** | `source=ugc` (type は `fps` / `voxel` 両方) | ユーザー生成コンテンツハブ。Bedwars/Zombie/Athletic 等 | `/fps/ugc/*`, `/voxel/ugc/*` をまとめて Sandbox として表示。内部 URL は `/{type}/ugc/{slug}` |
+| **Official FPS** | **1ゲーム複数モード** `type=fps`, `source=official`, `modes=[FFA,TDM,DOM,etc.]` | 公式FPSの単一ゲーム。内部にFFA/TDM/DOM等のサブモード。投票で次サブモード決定 | `/fps/official` がFPS公式本体。サブモード `ffa`, `tdm`, `dom` を内包 |
+| **Official Voxel** | **1モードのみ** `type=voxel`, `source=official`, `modes=[Survival]` | 公式Voxel。永続サバイバル、死んだらリスポーン | `/voxel/official/survival` が唯一モード |
+| **Sandbox** | **公式拡張+UGC** `source=official|ugc` かつ `slug` が標準FPS/Voxel以外。親ジャンル `FPS/Voxel`、サブタグ `Bedwars/Zombie/Athletic` | 標準FPS/Voxel以外の公式ゲーム + ユーザー作成ゲーム。親ジャンルとサブタグでフィルタ | `/fps/official/zombie` (公式拡張), `/voxel/official/bedwars` (公式拡張), `/fps/ugc/*`, `/voxel/ugc/*` をSandboxとして表示 |
 
-- 過去の議論で `boxel` と記載があった箇所は `voxel` のタイポ。`voxel` に訂正する。
-- Sandbox の `fps / zombie / athletic / bedwars` という表現は、Sandbox UGC の genre フィルタを指す。`official` タグは `source=official` を表す。
+- Official FPSは1ゲーム複数モード: `fps-official` が1つのGameModeDefinitionで内部に `subModes: ['ffa','tdm','dom']` を持ち、投票で次サブモード決定。
+- Official Voxelは1モードのみ: `voxel-official-survival` のみ。永続サバイバル。
+- SandboxはOfficial拡張+UGC: 標準FPS/Voxel以外の公式ゲーム (例: Zombie, Bedwars) もSandboxに含まれる。UGCも含む。親ジャンル FPS/Voxel とサブタグ Bedwars/Zombie/Athletic でフィルタ。
 
-## ナビゲーション & レイアウト
+## ナビゲーション & レイアウト — 改訂版
 
-### Header / Navigation Tabs
+### Header / Navigation Tabs (Officialゲームの切り替え)
 
 ```
 [Logo] [FPS] [Voxel] [Search] [User]
+  FPSタブ: 公式FPS画面を表示
+  Voxelタブ: 公式Voxel画面を表示
 ```
 
-- `[FPS]` タブと `[Voxel]` タブの切り替えが可能。クライアントの表示切替で、URL は `/?type=fps` 等でも可。
-- FPS タブ: `/fps/official/*` をメイン表示（デフォルト）。
-- Voxel タブ: `/voxel/official/survival` 等をメイン表示。
+- [FPS]タブ: 公式FPS画面を表示。デフォルト。
+- [Voxel]タブ: 公式Voxel画面を表示。Survival永続。
+- Officialゲームの切り替え。SandboxはSidebarから。
 
-### Left Sidebar (Krunker.io風)
+### Left Sidebar (Krunker.io風UI)
 
 ```
 [Play]
@@ -68,28 +88,28 @@
 ```
 
 - Krunker.io 風の縦ボタン群。
-- 「Sandbox」ボタンを配置。押下で Sandbox モーダルをオープン。
+- [Sandbox] ボタンを配置。押下で Sandbox モーダルをオープン。
 
-## メイン画面仕様 (デフォルト: FPS)
+## メイン画面仕様 (デフォルト: Official FPS) — 改訂版
 
-- サイトアクセス時の初期表示（ホームページ）は FPS ゲーム画面。
-- 現状は `fps-official-ffa` 単一だが、将来は FFA/TDM/DOM 等へ拡張。
-- **1マッチ終了時、全プレイヤーによる投票システムで「次の試合形式（ゲームモード）」を決定する。**
-  - `onRoundEnd` 後に投票 UI を表示。候補は `type=fps, source=official` の一覧。
-  - 多数決で次モード決定。詳細は `types.md` の `Voting` 仕様と Phase 4 計画。
+- ホーム画面の初期表示は Official FPS。
+- **Official FPSは1つのゲームに複数モード**: 現行 `fps-official-ffa` はFFAサブモードの最小実装。将来TDM/DOM等を同一ゲーム内サブモードとして追加。
+- **Official Voxelは1モードのみ** [Survival]。永遠続くMinecraftサバイバル、死んだらリスポーン可能。
+- **1マッチ終了時、次マッチのゲーム形式（FFA,TDM等）を投票で決定**。Official FPSのみ。候補は同一FPS公式ゲーム内のサブモード一覧。
+- ヘッダータブで Official Voxel (Survival) への切り替えが可能。
 
-## Sandbox (UGC) ハブ仕様
+## Sandbox モーダル仕様 — 改訂版
 
-### モーダル トリガー
+### トリガー
 
-- 左サイドバーの「Sandbox」ボタン押下時にオープン。
+- 左サイドバーの [Sandbox] ボタンをクリック。
 
-### コンテンツリスト (カード形式)
+### 一覧表示 (カード形式)
 
 ```
 +---------------------------------------------+
-| Sandbox (UGC)                          [X]  |
-| Filter: [All][Bedwars][Zombie][Athletic]    |
+| Sandbox                                [X]  |
+| Filter: Parent [FPS][Voxel] Sub [Bedwars][Zombie][Athletic] |
 | Sort: [Plays][Active][Views] v              |
 |  +----------------+ +----------------+       |
 |  | [Thumbnail]    | | [Thumbnail]    |       |
@@ -101,52 +121,58 @@
 +---------------------------------------------+
 ```
 
-- 各カード表示項目: サムネイル画像 / タイトル / 作者名 (Creator) / 累計プレイ数 / 簡易説明文。
-- クリックで詳細ページへ遷移。
+- 表示項目: サムネイル、タイトル、作者名、累計プレイ数、簡易説明文。
+- SandboxはUGCだけでなく、標準FPS/Voxel以外の公式ゲームも含む。例: 公式Zombie、公式Bedwars等もSandboxに表示。
 
-### フィルター機能
+### フィルター機能 — 改訂版
 
-- カテゴリ別フィルタリング: `Bedwars`, `Zombie`, `Athletic` 等（= `genres`）。
-- 実装は `GameModeDefinition.genres` を利用。`source=ugc` のみを対象。
+- **親ジャンル (FPS / Voxel など)**: `type=fps|voxel` でフィルタ。Official拡張もUGCも対象。
+- **サブタグ (Bedwars, Zombie, Athletic など)**: `genres` / `tags` でフィルタ。例: Bedwars, Zombie, Athletic。
 
 ### ソート機能
 
-- 累計プレイ人数順 (`totalPlays` DESC)
-- 現在の同時接続 (アクティブ) プレイヤー数順 (`activePlayers` DESC)
+- 累計プレイ数順 (`totalPlays` DESC)
+- 現在のプレイ人数順（アクティブ数） (`activePlayers` DESC)
 - 詳細ページ閲覧数順 (`detailViews` DESC)
 
-ソート元データは Phase 4 では mock、Phase 6 以降 RDB 永続化（ランキング・統計）。
+ソート元データは Phase 4 では mock、Phase 6 以降 RDB 永続化。
 
-### 詳細ページ & ルーム参加フロー
+### Sandbox 詳細ページ & ルーム参加フロー — 改訂版
 
-- 遷移: Sandbox モーダル内の各ゲームカードクリックで `/sandbox/{id}` 詳細ページへ（例: `/sandbox/voxel-ugc-bedwars-abc`）。内部的には `/{type}/ugc/{slug}` に解決。
-- アクションボタン:
-  - **[Play Now]**: 空き枠のある既存ルームへ自動マッチングして即時参加 (`POST /v1/seek-game` 相当)。
-  - **[ルーム選択]**: ルーム一覧モーダルを表示し、プレイヤーが任意のサーバー/ルームを手動選択して参加可能 (`GET /v1/game-list` 相当)。
+- 遷移: カードをクリックして各ゲームの詳細ページへ遷移。`/sandbox/{id}` → 内部 `/{type}/{source}/{slug}` 解決。
+- アクション:
+  - **[Play Now] ボタン**: 自動で空きルームを検索して即時参加 (`POST /v1/seek-game` 相当)。
+  - **[ルーム選択] ボタン**: ルーム一覧モーダルを開き、手動でサーバーを選択して参加 (`GET /v1/game-list` 相当)。
 
-## ゲームモードの想定例（更新）
+## ゲームモードの想定例（改訂版: Official 1ゲーム複数モード、Sandboxは公式拡張+UGC）
 
 ```
-fps タイプ (FPSカテゴリ = official)
-  ├ /fps/official/ffa        公式 FFA (現行実装 fps-official-ffa, pvpはエイリアス)
-  ├ /fps/official/tdm        公式 TDM (将来)
-  ├ /fps/official/dom        公式 DOM (将来)
-  ├ /fps/official/zombie     公式 PvE / Zombie (将来)
+Official (公式ゲーム)
+  ├ FPS公式: /fps/official (1ゲーム複数モード) — type=fps, source=official, modes=[FFA,TDM,DOM]
+  │   ├ subMode: ffa  <- 現行実装 fps-official-ffa (FFAサブモード)
+  │   ├ subMode: tdm  <- TDM (将来、同一ゲーム内)
+  │   ├ subMode: dom  <- DOM (将来)
+  │   └ voting: FFA→TDM→DOMを投票で決定
+  └ Voxel公式: /voxel/official/survival (1モードのみ) — type=voxel, source=official, modes=[Survival]
+        finish_game: 永続サバイバル、死んだらリスポーン
 
-voxel タイプ (Voxelカテゴリ = official)
-  ├ /voxel/official/survival 公式 Survival (将来)
-  └ /voxel/official/bedwars  公式 Bedwars (将来: Sandboxでも再分類可能だが公式はVoxelタブ)
+Sandbox (標準FPS/Voxel以外の公式ゲーム + UGC) — 親ジャンル FPS/Voxel、サブタグ Bedwars/Zombie/Athletic
+  ├ FPSカテゴリ:
+  │   ├ /fps/official/zombie   <- 公式拡張: Zombie (Sandbox表示)
+  │   ├ /fps/official/tdm      <- 公式拡張: TDMがSandboxにも出る場合 (Official FPSのサブモードとは別に独立ゲームとして)
+  │   ├ /fps/ugc/zombie        <- UGC: Zombie
+  │   └ /fps/ugc/athletic      <- UGC: Athletic
+  └ Voxelカテゴリ:
+      ├ /voxel/official/bedwars <- 公式拡張: Bedwars (Sandbox表示)
+      ├ /voxel/ugc/bedwars      <- UGC: Bedwars
+      └ /voxel/ugc/athletic     <- UGC: Athletic
 
-UGC = Sandboxカテゴリ (typeはfps/voxel両方)
-  ├ /fps/ugc/athletic        UGC Athletic (Sandbox表示)
-  ├ /fps/ugc/zombie          UGC Zombie (Sandbox表示)
-  ├ /voxel/ugc/bedwars       UGC Bedwars (Sandbox表示)
-  └ /voxel/ugc/athletic      UGC Athletic (Sandbox表示)
+表示上の /sandbox は公式拡張+UGCの集約ビュー:
+  /sandbox                   -> 全 Sandbox 一覧 (公式拡張+UGC)
+  /sandbox?parent=fps&tag=zombie -> 親ジャンルFPS + サブタグZombieフィルタ
+  /sandbox/{id}              -> 詳細ページ
 
-表示上の /sandbox は source=ugc の集約ビュー:
-  /sandbox                   -> 全 UGC 一覧 (Sandboxモーダル)
-  /sandbox?genre=bedwars     -> genre=bedwars フィルタ
-  /sandbox/{id}              -> 詳細ページ (内部 /{type}/ugc/{slug} に解決)
+投票: Official FPSゲーム内で FFA→TDM→DOM 等を投票で決定。Official Voxelは投票対象外 (Survivalのみ、永続)。
 ```
 
 詳細な階層・エディタ方針は [`editor.md`](./editor.md)。型定義は [`types.md`](./types.md)。
@@ -167,7 +193,7 @@ UGC = Sandboxカテゴリ (typeはfps/voxel両方)
 当初リポジトリは React Three Fiber ベースの単一ルーム FPS だった。PH1 で Bun workspaces モノレポ（`apps/*`, `packages/*`）へ移行済み。PH1-D で apps/web の描画は Babylon.js へ移行済み。現行は理想形への段階移植途中。
 
 | 資産（旧パス → 現行パス） | 判定 | 備考 |
-|---|---|---|
+|---|---|---:|
 | `shared/protocol/*` → `packages/protocol/src/protocol/*` | **移植済み** | タイプ非依存部分。PH1-Aで `@cod/protocol` へ |
 | `shared/sim/movement.ts` → `packages/profile-fps/src/sim/movement.ts` | **移植済み** | FPS Profile基礎。PH2-Bで `FpsSimProfile` として分離 |
 | `src/game/net/*` → `apps/web/src/game/net/*` + `packages/engine-core/src/net/*` | **移植済み** | レンダラ非依存。PH1-CでChannel framing、PH1-FでHUD分離 |

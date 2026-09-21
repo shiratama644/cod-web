@@ -1,51 +1,68 @@
-# マッチメイカー
+# マッチメイカー — 改訂版
 
 > **現状: 未実装（PH4以降）**。本ファイルは理想形。`apps/matchmaker/` は存在せず、`docs/task-list.md` で PH4以降として管理。
-> 2026-09-22 更新: FPS/Voxel/Sandbox 3カテゴリ、genre/tag フィルタ、Sandbox ソート、Play Now / Room Selection フロー対応。
+> 2026-09-22 改訂版: OfficialはFPS 1ゲーム複数モード (FFA/TDM/DOM投票) + Voxel 1モード永続 (Survival)、Sandboxは標準FPS/Voxel以外の公式ゲーム + UGC、親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athletic。
 
 ゲームサーバとは **別プロセス・別デプロイ**。ステートレスで水平スケール。
 
-責務: ルーム一覧、入室チケット（座席予約）、ゲームモード一覧、ノード生死。ゲームモード一覧は `type`（`fps` / `voxel`）と `source`（`official` / `ugc`）と `genres`/`tags` で絞れる。
+責務: ルーム一覧、入室チケット（座席予約）、ゲームモード一覧、ノード生死。OfficialとSandboxの一覧を提供。
 
-## プラットフォームカテゴリ対応
+## ゲーム種別・階層構造 — 改訂版
 
-| 表示カテゴリ | 内部クエリ |
+```
+Official (公式ゲーム):
+  FPS: 1ゲーム複数モード [FFA,TDM,DOM,etc.] — 投票で次モード決定。例: /fps/official (subModes ffa/tdm/dom)
+  Voxel: 1モードのみ [Survival] — 永続サバイバル、死んだらリスポーン。例: /voxel/official/survival
+
+Sandbox (公式拡張+UGC):
+  FPS: examples [TDM,DOM,Zombie,etc.] — 公式拡張 + UGCのFPS。例: /fps/official/zombie (公式拡張), /fps/ugc/zombie
+  Voxel: examples [Bedwars,Athletic,etc.] — 公式拡張 + UGCのVoxel。例: /voxel/official/bedwars (公式拡張), /voxel/ugc/bedwars
+```
+
+| 表示種別 | 内部クエリ |
 |---|---|
-| FPS (公式) | `type=fps&source=official` |
-| Voxel (公式) | `type=voxel&source=official` |
-| Sandbox (UGC) | `source=ugc` (+ `genre=bedwars|zombie|athletic` 等) |
+| Official FPS (1ゲーム複数モード) | `type=fps&source=official&category=Official` — 1ゲーム `fps-official`、subModes ffa/tdm/dom、投票 |
+| Official Voxel (1モード永続) | `type=voxel&source=official&category=Official` — Survival永続 |
+| Sandbox (公式拡張+UGC) | `category=Sandbox` — 親ジャンル FPS/Voxel + サブタグ。公式拡張 (zombie, bedwars) + UGC |
 
-- Sandbox は `source=ugc` の集約ビュー。`/sandbox` 表示は `GET /v1/gamemodes?source=ugc` 相当。
-- 過去の議論で `boxel` と記載があった箇所は `voxel` のタイポ。`voxel` に訂正済み。
+- SandboxはUGCだけでなく、標準FPS/Voxel以外の公式ゲームも含む。例: 公式Zombie、公式Bedwars等はSandbox表示。
+- Official FPSは1ゲーム複数モード、投票で次サブモード決定。
+- Official Voxelは1モードのみ、永続サバイバル。
 
-## HTTP
+## HTTP — 改訂版
 
-- `GET /v1/gamemodes` — 長期キャッシュ可。query: `type`, `source`, `genre`, `tag`, `search`, `sort` (`totalPlays|activePlayers|detailViews`), `order` (`desc|asc`)。Sandbox モーダルのフィルタ/ソート/検索に使用。
-- `GET /v1/game-list` — query: region, type, source, mode, genre, hasSpace, limit（既定 100、最大 500）。`games` はタプル配列。`v` はビルドハッシュ。不一致ならクライアントはリロード、ノードは Hello で拒否。Room Selection モーダル用。
-- `POST /v1/seek-game` — roomId 省略時は自動選択。`createIfNone`。200 で `wss` URL + ticket（expires 15s）。409 room_full。**Play Now ボタン**はこれで空きルーム自動マッチ。
+- `GET /v1/gamemodes` — query: `category` (Official|Sandbox), `type` (fps|voxel), `source` (official|ugc), `parentGenre` (fps|voxel), `subTag` (bedwars|zombie|athletic|ffa|tdm|dom|survival), `search`, `sort` (totalPlays|activePlayers|detailViews), `order`。Sandboxモーダルの親ジャンル+サブタグフィルタ/ソートに使用。
+- `GET /v1/game-list` — query: region, type, source, category, mode, parentGenre, subTag, hasSpace, limit。Room Selectionモーダル用。
+- `POST /v1/seek-game` — roomId省略時は自動選択。Play Nowボタンで空きルーム自動マッチ。
 - `POST /v1/create-room`
-- `POST /v1/node/heartbeat` — ノードが 3 秒ごと。rooms スナップショット。`activePlayers` 集計元。
+- `POST /v1/node/heartbeat` — ノードが3秒ごと。roomsスナップショット。activePlayers集計元。
+- `GET /v1/official/fps/submodes` — Official FPSのサブモード一覧 [FFA,TDM,DOM,etc.]、投票用。
+- `POST /v1/official/fps/vote` — Official FPSの投票。subMode指定。
 
-アカウントは **初期匿名**（表示名 + 一時 uid）。認証方式は後続フェーズ。
+## Sandbox ハブ用 — 改訂版 (親ジャンル+サブタグ)
 
-## Sandbox ハブ用拡張
+### フィルタ — 改訂版
 
-### フィルタ
+- **親ジャンル**: `fps`, `voxel`。FPSカテゴリ、Voxelカテゴリ。
+- **サブタグ**: `bedwars`, `zombie`, `athletic`, `tdm`, `dom`, `ffa`, `survival`, `pvp`, `pve` 等。`genres`/`tags`にマッチ。
 
-- `genre`: `bedwars`, `zombie`, `athletic`, `survival`, `ffa`, `tdm`, `dom`, `pvp` 等。`GameModeDefinition.genres` にマッチ。
-- `tag`: `official`, `ugc`, `pvp`, `pve` 等。`GameModeDefinition.tags` にマッチ。
+例:
+- `parentGenre=fps&subTag=zombie` → FPSのZombieゲーム (公式拡張 + UGC)
+- `parentGenre=voxel&subTag=bedwars` → VoxelのBedwarsゲーム (公式拡張 + UGC)
 
 ### ソート
 
-- `sort=totalPlays` — 累計プレイ人数順（Sandbox モーダル）
-- `sort=activePlayers` — 現在同時接続数順（heartbeat 集計）
-- `sort=detailViews` — 詳細ページ閲覧数順（RDB、Phase 6以降）
+- `sort=totalPlays` — 累計プレイ数順
+- `sort=activePlayers` — 現在同時接続数順
+- `sort=detailViews` — 詳細ページ閲覧数順
 
-Phase 4 では mock データでソート。Phase 6 で RDB 永続化。
+Phase 4 mock、Phase 6 RDB永続化。
 
 ### カード表示項目
 
-`GET /v1/gamemodes` の各要素は `SandboxCard` 相当: `thumbnail`, `title`, `creator`, `totalPlays`, `description`, `activePlayers`, `detailViews`, `genres`, `tags`.
+`GET /v1/gamemodes?category=Sandbox` の各要素は `SandboxCard` 相当: `thumbnail`, `title`, `creator` (Officialまたはユーザー名), `totalPlays`, `description`, `parentGenre`, `genres` (サブタグ), `tags`.
+
+SandboxはUGCだけでなく公式拡張も含むため、creatorは Official または ユーザー名。
 
 ## チケット
 
@@ -53,11 +70,9 @@ Phase 4 では mock データでソート。Phase 6 で RDB 永続化。
 v1.<base64url(payload)>.<base64url(hmac-sha256)>
 ```
 
-payload: roomId, nodeId, seatId, uid, name, iat, exp。鍵は `TICKET_SECRET`。ノードはマッチメイカーへ問い合わせずに検証する。
+payload: roomId, nodeId, seatId, uid, name, iat, exp。鍵は `TICKET_SECRET`。
 
-満室への同時接続競合を防ぐため座席予約は必須（Colyseus の seat reservation と同思想）。
-
-## Redis
+## Redis — 改訂版
 
 | キー | 型 | TTL |
 |---|---|---:|
@@ -67,17 +82,31 @@ payload: roomId, nodeId, seatId, uid, name, iat, exp。鍵は `TICKET_SECRET`。
 | `rooms:{region}:{type}` | ZSet 空き人数 | — |
 | `rooms:{region}:{modeId}` | ZSet | — |
 | `rooms:{region}:{type}:{source}` | ZSet | — |
-| `rooms:{region}:genre:{genre}` | ZSet | — |
+| `rooms:{region}:category:{category}` | ZSet | — |
+| `rooms:{region}:parent:{parentGenre}` | ZSet | — |
+| `rooms:{region}:subtag:{subTag}` | ZSet | — |
 | `seat:{roomId}:{seatId}` | String uid, SET NX | 15s |
 | `roomseq:{region}` | 採番 | — |
 | `stats:{modeId}:totalPlays` | Counter | — |
 | `stats:{modeId}:detailViews` | Counter | — |
+| `official:fps:submodes` | Set | — |
+| `official:fps:currentSubMode` | String | — |
 
-空きは「残り席が少ない順」で埋める。接続したら seat TTL を外し、退出で削除。15s は未接続チケットの回収。`activePlayers` は `rooms:{region}:*` ZSet の合計で算出。
+## フロー — 改訂版
 
-初期リージョンは **1 拠点**。
+### Official FPS: 1ゲーム複数モード + 投票
 
-## フロー: Play Now / Room Selection
+- クライアント → `GET /v1/official/fps/submodes` → [FFA,TDM,DOM]一覧
+- マッチ終了 → `POST /v1/official/fps/vote { subMode }` → 集計 → winner決定 → 次サブモードで新ラウンド
+- ルームは常に `fps-official`、内部 `currentSubMode` が ffa/tdm/dom を保持
 
-- **Play Now**: クライアント → `POST /v1/seek-game { modeId, hasSpace:true }` → ticket → `wss` 接続。空きルーム自動マッチ。
-- **Room Selection**: クライアント → `GET /v1/game-list?modeId={id}&hasSpace=true` → ルーム一覧モーダル表示 → ユーザー選択 → `POST /v1/seek-game { roomId }` → ticket → `wss` 接続。
+### Official Voxel: 1モード永続
+
+- クライアント → `GET /v1/gamemodes?category=Official&type=voxel` → Survivalのみ
+- 永続サバイバル、死んだらリスポーン、finish_game無し、投票無し
+
+### Sandbox: Play Now / Room Selection (公式拡張+UGC)
+
+- **Play Now**: クライアント → `POST /v1/seek-game { category=Sandbox, parentGenre, subTag, hasSpace:true }` → ticket → `wss` 接続。自動マッチ。
+- **Room Selection**: クライアント → `GET /v1/game-list?category=Sandbox&parentGenre=fps&subTag=zombie&hasSpace=true` → ルーム一覧モーダル → 選択 → `POST /v1/seek-game { roomId }` → ticket → `wss` 接続。
+- Sandboxは公式拡張 (例: /fps/official/zombie) + UGC (例: /fps/ugc/zombie) の両方を含む。

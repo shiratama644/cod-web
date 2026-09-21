@@ -1,209 +1,226 @@
-# Sandbox + フィルター設計の整理 (議論用) — 最終訂正
+# Sandbox + フィルター設計の整理 (2026-09-22 改訂版)
 
-> Date: 2026-09-22 / Status: 議論中→合意済み / 対象: ユーザー理想 `sandbox/{fps, zombie, athletic, boxel, bedwars}` + タグフィルター `official`, `boxel` 等
-> **最終訂正 2026-09-22: ユーザー確認により `boxel` は `voxel` のタイポ。エイリアス機能としては扱わない。`voxel` に訂正済み。以下の議論中の `boxel` 表記はすべて `voxel` のタイポとして読む。**
+> Date: 2026-09-22 / Status: 合意済み改訂版 / 対象: 2026-09-22改訂版「Official FPS 1ゲーム複数モード + Voxel 1モード永続、Sandboxは公式拡張+UGC、親ジャンル+サブタグ」
+> **最終訂正 2026-09-22: `boxel` は `voxel` のタイポ。エイリアス機能としては扱わない。`voxel` に訂正済み。**
+> **改訂版 2026-09-22: SandboxはUGCだけでなく標準FPS/Voxel以外の公式ゲームも含む。Official FPSは1ゲーム複数モード、Official Voxelは1モード永続。親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athletic。**
 
-## 現状の設計 (docs/arch/editor.md)
+## 現状の設計 (docs/arch/editor.md 改訂版)
 
 ```
 /{type}/{source}/{slug}
 
 type: fps | voxel (2つだけ, L1/L2の分岐)
-source: official | ugc (運営/UGC区分)
-slug: pvp, zombie, athletic, survival, bedwars 等 (個別ゲーム)
+source: official | ugc (Sandboxは両方含む、標準FPS/Voxel以外)
+slug: ffa, tdm, dom, zombie, athletic, survival, bedwars 等 (個別ゲーム)
 
 例:
-  /fps/official/pvp
-  /fps/official/zombie
-  /fps/ugc/athletic
-  /voxel/official/bedwars
-  /voxel/official/survival
+  /fps/official (1ゲーム複数モード、subModes ffa/tdm/dom) — Official FPS本体
+  /fps/official/ffa (FFAサブモード)
+  /fps/official/zombie (公式拡張、Sandbox表示)
+  /voxel/official/survival (1モード永続) — Official Voxel
+  /voxel/official/bedwars (公式拡張、Sandbox表示)
+  /fps/ugc/zombie, /voxel/ugc/bedwars (UGC、Sandbox表示)
 ```
 
 - `type` はシミュレーション実装を決める (fps=カプセルvs三角形 60Hz, voxel=AABB vs グリッド 30Hz)
-- `source` は配信・権限を決める
+- `source` は配信・権限を決める (Sandboxは official|ugc両方含む)
 - `slug` は表示・検索上の名前
+- Official FPSは1ゲーム複数モード、Official Voxelは1モード永続、Sandboxは公式拡張+UGC
 
-## ユーザー理想の解釈 (要確認)
+## ユーザー理想の解釈 (改訂版)
 
-> `sandbox/{fps, zombie, athletic, boxel, bedwars}がある感じでsandbox画面でフィルター(tagとして)にofficialやboxelなどがあって絞り込める`
+> Official FPSは1つのゲームに複数ゲームモード [FFA,TDM,DOM,etc.] voting_system
+> Official Voxelは1つのゲームモードのみ [Survival] finish_game永遠続く
+> SandboxはUGCだけでなく標準で付いているFPS,Voxel以外の公式が作成したゲームも含む
+> 親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athleticでフィルタ
 
-解釈案:
+解釈:
 
-- `sandbox` はハブのトップ画面 (ゲーム一覧)
-- `fps, zombie, athletic, boxel, bedwars` は **ジャンル/カテゴリ** として sandbox 配下に並ぶ
-- `official, boxel, ...` は **タグ** としてフィルターに使える
+- Official FPSは1ゲーム複数モード、投票で次サブモード決定。現行 ffa はFFAサブモード最小実装。
+- Official Voxelは1モードのみ Survival永続、死んだらリスポーン、finish_game無し。
+- Sandboxは公式拡張+UGC。親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athleticでフィルタ。
+- Header [FPS][Voxel]はOfficial切替、Left Sidebar [Sandbox]は公式拡張+UGC。
 
-疑問点:
-- `boxel` は `voxel` の別名? それとも1つのゲームタイトル?
-- `fps` は type とジャンル両方に出現するが、同じ意味?
-- `bedwars` は voxel の1モードだが、独立カテゴリにしたい?
+## 提案: 親ジャンル + サブタグ + 投票 (改訂版)
 
-## 提案: 3層 + タグ (現行互換 + 拡張)
+現行の `type/source/slug` を内部IDとして維持しつつ、表示層で **parentGenre + subTag + subModes + category** を追加する。
 
-現行の `type/source/slug` を内部IDとして維持しつつ、表示層で **genre + tags** を追加する。
-
-### データモデル拡張案
+### データモデル拡張案 — 改訂版
 
 ```ts
 interface GameModeDefinition {
-  id: 'fps-official-ffa' // 現行維持, 正規表現 /^[a-z][a-z0-9-]{2,31}$/
+  id: 'fps-official' | 'fps-official-ffa' | 'voxel-official-survival' | 'fps-official-zombie'
   type: 'fps' | 'voxel'  // 現行維持, L1/L2分岐は2つのみ (fps先行+voxel契約だけ)
-  source: 'official' | 'ugc' // 現行維持
-  slug: 'ffa' | 'zombie' | 'athletic' | 'bedwars' | ... // 現行維持
+  source: 'official' | 'ugc' // Sandboxは両方含む
+  slug: 'ffa' | 'tdm' | 'dom' | 'zombie' | 'athletic' | 'bedwars' | 'survival' | ...
 
-  // 追加 (Phase 4)
-  genres: Genre[] // 例: ['fps', 'zombie'] / ['boxel', 'bedwars']
-  tags: Tag[]     // 例: ['official', 'pvp', 'pve', 'parkour', 'survival']
+  // 追加 (Phase 4) — 改訂版
+  parentGenre: ParentGenre // 'fps' | 'voxel' — 親ジャンル
+  genres: SubTag[] // サブタグ: ['bedwars'] / ['zombie'] / ['athletic'] / ['ffa'] / ['tdm'] / ['dom']
+  tags: Tag[]     // ['official','pvp'] / ['ugc','bedwars'] 等
+  subModes: SubTag[] // Official FPSのみ: [FFA,TDM,DOM]
+  currentSubMode: SubTag
+  category: GameCategory // Official | Sandbox
+  display: { title, description, thumbnail, creator }
+  stats: { totalPlays, activePlayers, detailViews }
 }
 
-type Genre = 'fps' | 'zombie' | 'athletic' | 'boxel' | 'bedwars' | 'survival' | 'pvp' | ...
-type Tag = 'official' | 'ugc' | 'fps' | 'voxel' | 'boxel' | 'zombie' | 'athletic' | 'bedwars' | 'pvp' | 'pve' | ...
+type ParentGenre = 'fps' | 'voxel'
+type SubTag = 'ffa' | 'tdm' | 'dom' | 'zombie' | 'bedwars' | 'athletic' | 'survival' | string
+type Tag = 'official' | 'ugc' | 'fps' | 'voxel' | 'zombie' | 'athletic' | 'bedwars' | 'pvp' | 'pve' | ...
+type GameCategory = 'Official' | 'Sandbox'
 
-type Boxel = 'voxel' // 互換: boxelはvoxelのエイリアスとして扱う? それとも別?
+interface VoteOption {
+  subMode: SubTag // ffa, tdm, dom
+  label: string
+  votes: number
+}
 ```
 
-### URL / ルーティング案
+### URL / ルーティング案 — 改訂版
 
-3案を比較:
-
-#### 案A: 現行維持 + sandboxはハブのクエリフィルター (最小変更)
+#### 内部正本
 
 ```
-内部ID: /fps/official/zombie (維持)
-ハブURL: /sandbox?genre=zombie&tag=official
-        /sandbox/fps (genre=fpsのエイリアス)
-        /sandbox/zombie
-        /sandbox/athletic
-        /sandbox/boxel (genre=boxel=voxel)
-        /sandbox/bedwars
+Official FPS: /fps/official (1ゲーム複数モード、subModes ffa/tdm/dom) — Header [FPS]タブ
+Official Voxel: /voxel/official/survival (1モード永続) — Header [Voxel]タブ
+Sandbox: /fps/official/zombie (公式拡張), /voxel/official/bedwars (公式拡張), /fps/ugc/*, /voxel/ugc/* (UGC) — Left Sidebar [Sandbox] → /sandbox
+```
+
+#### 表示集約
+
+```
+ハブURL: /sandbox?parent=fps&tag=zombie
+        /sandbox?parent=voxel&tag=bedwars
+        /sandbox?parent=fps&tag=athletic
 
 表示:
-  sandbox画面で [fps][zombie][athletic][boxel][bedwars] のカテゴリボタン
-  + [official][ugc][pvp][pve] 等のタグフィルター (AND/OR)
-  1ゲームが複数genre/tagを持つ (例: /fps/official/zombie は genres=[fps, zombie], tags=[official, pve, zombie])
+  Sandbox画面で親ジャンル [FPS][Voxel] + サブタグ [Bedwars][Zombie][Athletic][TDM][DOM] フィルタ
+  + [official][ugc][pvp][pve] 等のタグフィルター
+  1ゲームが親ジャンル1つ + 複数サブタグを持つ
+  Sandboxは公式拡張+UGC両方を含むため creator は Official または ユーザー名
 ```
 
-- メリット: 現行コード・import境界・SimProfile分岐を壊さない。Phase 3完了の成果を維持。
-- デメリット: URLが /fps/official/zombie と /sandbox/zombie の2つ存在 (エイリアス)
+- メリット: 現行コード・import境界・SimProfile分岐を壊さない。Phase 3完了の成果を維持。Official 1ゲーム複数モード + Voxel永続 + Sandbox公式拡張+UGCを表現可能。
+- デメリット: URLが /fps/official/zombie と /sandbox の2つ存在 (表示集約)
 
-#### 案B: 物理パスを sandbox/{genre}/{source}/{slug} に再構成
-
-```
-gamemodes/sandbox/fps/official/ffa
-gamemodes/sandbox/zombie/official/zombie
-gamemodes/sandbox/athletic/ugc/athletic
-gamemodes/sandbox/boxel/official/bedwars
-gamemodes/sandbox/bedwars/official/bedwars
-
-URL: /sandbox/fps/official/ffa
-     /sandbox/zombie/official/zombie
-```
-
-- メリット: ユーザー理想のパスに近い
-- デメリット: 現行の /{type}/{source}/{slug} 階層を捨てる、type分岐がgenreに拡散 (L1に if genre==... が入りやすい)、Phase 3の成果 (ffa最小) を再配線必要
-
-#### 案C: ハイブリッド - typeは維持、genreは表示用、boxel=voxelエイリアス
-
-```
-内部:
-  type: fps | voxel (維持, voxelはboxelの正本、boxelはエイリアス表示)
-  source: official | ugc
-  slug: ffa, zombie, athletic, bedwars, survival, ...
-
-表示拡張:
-  genres: ['fps'] | ['zombie'] | ['athletic'] | ['boxel'] | ['bedwars'] | ['fps','zombie'] 等
-  tags: ['official','pvp'] | ['official','boxel','bedwars'] 等
-
-URL:
-  正本: /fps/official/ffa (維持)
-  エイリアス: /sandbox/fps, /sandbox/zombie, /sandbox/athletic, /sandbox/boxel, /sandbox/bedwars
-  フィルター: /sandbox?genres=fps,zombie&tags=official,boxel
-
-gamemodes物理パス:
-  gamemodes/fps/official/ffa (維持)
-  gamemodes/voxel/official/bedwars (維持)
-  + 将来 gamemodes/fps/official/zombie, gamemodes/voxel/ugc/athletic 等
-  sandbox/ は物理パスではなくハブの表示グルーピング
-```
-
-- メリット: L1/L2のtype分岐2つを維持 (fps先行+voxel契約だけ)、official/ugcをタグとしても扱える、boxelをvoxelの表示エイリアスにできる、Phase 3完了を維持しつつPhase 4で拡張
-- デメリット: 内部IDと表示URLが別 (エイリアス管理が必要)
-
-### タグ設計案
+### タグ設計案 — 改訂版
 
 ```ts
-// 1ゲームが複数タグを持つ
+// Official FPS: 1ゲーム複数モード
+const fpsOfficial = {
+  id: 'fps-official',
+  type: 'fps',
+  source: 'official',
+  slug: 'official',
+  parentGenre: 'fps',
+  genres: ['ffa','tdm','dom'],
+  tags: ['official','fps','pvp'],
+  subModes: ['ffa','tdm','dom'],
+  currentSubMode: 'ffa',
+  category: 'Official',
+}
+
+// Official FPSのFFAサブモード
 const ffa = {
   id: 'fps-official-ffa',
   type: 'fps',
   source: 'official',
   slug: 'ffa',
-  genres: ['fps', 'pvp'], // sandbox/fps, sandbox/pvp に出る
-  tags: ['official', 'fps', 'pvp', 'ffa'],
+  parentGenre: 'fps',
+  genres: ['ffa'],
+  tags: ['official','pvp','fps'],
+  subModes: ['ffa','tdm','dom'],
+  currentSubMode: 'ffa',
+  category: 'Official',
 }
 
-const zombie = {
+// Official Voxel: 1モード永続
+const survival = {
+  id: 'voxel-official-survival',
+  type: 'voxel',
+  source: 'official',
+  slug: 'survival',
+  parentGenre: 'voxel',
+  genres: ['survival'],
+  tags: ['official','voxel','survival'],
+  category: 'Official',
+}
+
+// Sandbox: 公式拡張 Zombie
+const zombieOfficial = {
   id: 'fps-official-zombie',
   type: 'fps',
   source: 'official',
   slug: 'zombie',
-  genres: ['fps', 'zombie'],
-  tags: ['official', 'fps', 'zombie', 'pve'],
+  parentGenre: 'fps',
+  genres: ['zombie'],
+  tags: ['official','fps','zombie','pve'],
+  category: 'Sandbox',
 }
 
-const bedwars = {
+// Sandbox: 公式拡張 Bedwars
+const bedwarsOfficial = {
   id: 'voxel-official-bedwars',
   type: 'voxel',
   source: 'official',
   slug: 'bedwars',
-  genres: ['boxel', 'bedwars'], // boxel=voxel表示
-  tags: ['official', 'boxel', 'voxel', 'bedwars', 'pvp'],
+  parentGenre: 'voxel',
+  genres: ['bedwars'],
+  tags: ['official','voxel','bedwars','pvp'],
+  category: 'Sandbox',
 }
 
+// Sandbox: UGC Athletic
 const athletic = {
   id: 'voxel-ugc-athletic',
   type: 'voxel',
   source: 'ugc',
   slug: 'athletic',
-  genres: ['athletic', 'boxel'],
-  tags: ['ugc', 'boxel', 'athletic', 'parkour'],
+  parentGenre: 'voxel',
+  genres: ['athletic'],
+  tags: ['ugc','voxel','athletic','parkour'],
+  category: 'Sandbox',
 }
 ```
 
-sandbox画面:
+sandbox画面 — 改訂版:
 
 ```
-[Sandbox]
-  カテゴリ: [All][fps][zombie][athletic][boxel][bedwars]
-  タグフィルター: [official][ugc][pvp][pve][parkour]...
-  検索結果: genres/tagのAND/ORで絞り込み
+[Sandbox] (公式拡張+UGC)
+  親ジャンル: [All][FPS][Voxel]
+  サブタグ: [All][Bedwars][Zombie][Athletic][TDM][DOM][FFA]
+  ソート: [Plays][Active][Views]
+  検索結果: parentGenre + subTag のANDで絞り込み
 
-例: カテゴリ=boxel + タグ=official → bedwars等が表示
-    カテゴリ=zombie → zombieが表示 (officialタグ付き)
+例: 親ジャンル=FPS + サブタグ=Zombie → fps-official-zombie (公式拡張) + fps-ugc-zombie (UGC) が表示
+    親ジャンル=Voxel + サブタグ=Bedwars → voxel-official-bedwars (公式拡張) + voxel-ugc-bedwars (UGC) が表示
 ```
 
-### boxel の扱い案
+### 投票システム — 改訂版 (Official FPS 1ゲーム複数モード)
 
-- 案1: boxel = voxel の表示エイリアス (互換)。typeはvoxelが正本、UIではboxelと表示。URL /sandbox/boxel は /voxel のゲームを一覧。
-- 案2: boxelは独立したtype (typeを fps|voxel|boxel に拡張)。ただしL1分岐が増え、Phase 2の「fps先行+voxel契約だけ」に反する。
-- 案3: boxelはgenreの1つ。typeはfps|voxel維持、boxelはgenre/tagとして扱う。/sandbox/boxel は genre=boxel のゲーム一覧。
+- トリガー: Official FPSで1マッチ終了時 onRoundEnd後に全プレイヤー投票UI
+- 候補: 同一FPS公式ゲーム内のサブモード [FFA,TDM,DOM,etc.]
+- 多数決で次サブモード決定、次ラウンド開始
+- Official Voxelは投票対象外 (Survival永続)
 
-推奨: 案1 or 案3 (typeは2つのまま、boxelは表示/タグ)
+### boxel の扱い — 最終
 
-## 質問 (ユーザーへ)
+- `boxel` は `voxel` のタイポで `voxel` に訂正。エイリアス機能としては扱わない。
 
-1. sandbox はハブ画面の名前ですか? URLは /sandbox がトップで、その配下に /sandbox/fps 等がカテゴリページという理解で合っていますか?
-2. fps, zombie, athletic, boxel, bedwars はジャンル/カテゴリとして、1つのゲームが複数に属すこともありますか? 例: zombieはfpsでもある?
-3. boxel は voxel と同じ意味で使っていますか? それとも別のゲーム?
-4. official は今は source (official/ugc) ですが、タグとしてもフィルターしたいということで、sourceもタグの一種として扱うイメージですか?
-5. 他にタグとして欲しいものはありますか? (pvp, pve, parkour, survival, creative等)
-6. URLは現行の /fps/official/pvp を維持しつつ、/sandbox/fps 等をエイリアスとして追加する案 (案A/C) は許容ですか? それとも物理パス自体を sandbox/... に変えたいですか?
+## 合意 (改訂版)
 
-## 次のステップ (合意後)
+1. Sandboxはハブ画面の名前、URLは /sandbox がトップで、親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athleticでフィルタ、公式拡張+UGC両方含む。
+2. Official FPSは1つのゲームに複数モード [FFA,TDM,DOM]、投票で次決定。Official Voxelは1モードのみ [Survival]永続。
+3. Header [FPS][Voxel]はOfficial切替、Left Sidebar [Sandbox]は公式拡張+UGC。
+4. 親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athleticでフィルタ、ソート plays/active/views。
+5. URLは現行の /{type}/{source}/{slug} を維持しつつ、/sandbox を表示集約として追加。Sandboxは source=official|ugc両方含む。
+6. boxelはvoxelのタイポで訂正、エイリアス機能としては扱わない。
 
-- Phase 4計画 (PLAT-4) に genre/tag 拡張を明記
-- GameModeDefinition に genres/tags 追加 (optional, 後方互換)
-- gamemodes の物理パスは現行維持 (fps/official/ffa, voxel/official/bedwars) + 新規 zombie/athletic/bedwars を追加
-- ハブ (apps/web/src/hub) で sandbox画面 + フィルターUI実装
+## 次のステップ (合意後) — 改訂版
+
+- Phase 4計画 (PLAT-4) に Official 1ゲーム複数モード + Voxel永続 + Sandbox公式拡張+UGC + 親ジャンル+サブタグ拡張を明記
+- GameModeDefinition に parentGenre/genres(サブタグ)/tags/display/stats/subModes/currentSubMode/category 追加 (optional, 後方互換)
+- gamemodes の物理パスは現行維持 (fps-official/ffa, voxel/official/survival) + 新規 zombie/bedwars 公式拡張をSandboxとして表示
+- ハブ (apps/web/src/components) で Header Official切替 + Sidebar Sandbox (公式拡張+UGC) + Sandboxモーダル 親ジャンル+サブタグ + 投票UI Official FPS subMode
 - biome.json の gamemodes/*→sdkのみ維持、type分岐2つ維持
