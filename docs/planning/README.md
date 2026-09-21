@@ -24,13 +24,14 @@
 | [`PHASE02_PLAN.md`](./PHASE02_PLAN.md) | `PLAT-2`, `PH2-A`〜`PH2-E` | PH2-E ローカル検証済み。Phase 2 完了 | Sim Profile 分離。fps 先行＋voxel は契約だけ |
 | [`EM01_PLAN.md`](./EM01_PLAN.md) | `PLAT-EM`, `EM1-A`〜`EM1-F` | EM1-F ローカル検証済み。Emergency 完全バグ修正完了 | Emergency 完全バグ修正フェーズ（Phase2後、Phase3前） |
 | [`EM02_PLAN.md`](./EM02_PLAN.md) | `PLAT-EM2`, `EM2-A`〜`EM2-E` | EM2-E ローカル検証済み。EM02 完了（coverage 85%達成） | Emergency カバレッジ85%達成 + Playwright フルE2E |
+| [`PHASE03_PLAN.md`](./PHASE03_PLAN.md) | `PLAT-3`, `PH3-A`〜`PH3-D` | PLAT-3 ローカル検証済み（計画作成済み）。次は PH3-A | ゲームモード API第1版 + fps-ffa最小。fps先行＋voxel契約のみ継続 |
 | [`DEEP_RESEARCH_PLAN.md`](./complete/DEEP_RESEARCH_PLAN.md) | `DOC-6`, `DR-1`〜`DR-5` | 完了 | Krunker.io / bloxd.io / engine / UGC / Perplexity 差分調査の手順と禁止事項 |
 
 ## 次に着手可能なタスク
 
 | 優先 | ID | 内容 | 事前に読むもの |
 |---:|---|---|---|
-| 1 | PLAT-3 | Phase3計画作成（gamemode API+fps-ffa最小）。EM02完了後に着手 | [`HANDOFF.md`](./HANDOFF.md), [`EM02_PLAN.md`](./EM02_PLAN.md), [`PHASE02_PLAN.md`](./PHASE02_PLAN.md), [`../arch/milestones.md`](../arch/milestones.md) |
+| 1 | PH3-A | gamemode-api package作成（L1 contract）。PLAT-3完了後に着手 | [`PHASE03_PLAN.md`](./PHASE03_PLAN.md), [`HANDOFF.md`](./HANDOFF.md), [`../arch/types.md`](../arch/types.md), [`../arch/architecture.md`](../arch/architecture.md) |
 | 2 | DOC-10 | ドキュメント整理（URL検証・重複削除・索引更新） | [`../README.md`](../README.md), [`../ops/README.md`](../ops/README.md), [`../arch/api-sources.md`](../arch/api-sources.md) |
 
 ## 計画書を書く/更新する時のルール

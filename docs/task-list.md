@@ -46,8 +46,8 @@
 | **1** | モノレポ + Babylon 移行 | PH1-F ローカル検証済み |
 | **1.5** | Vitest coverage + 意味あるテスト増加 + Playwright E2E 品質ゲート | PH1.5-D ローカル検証済み（Phase 1.5 実装完了、E2E browser は実環境検証待ち） |
 | **2** | Sim Profile 分離 | PH2-E ローカル検証済み。Phase 2 完了 |
-| **EM** | 完全バグ修正フェーズ（Emergency） | EM1-F ローカル検証済み。次は PLAT-3 |
-| **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | 未着手 |
+| **EM** | 完全バグ修正フェーズ（Emergency） | EM1-F ローカル検証済み。EM02完了 |
+| **3** | ゲームモード API 第 1 版 + fps-ffa 最小 | PLAT-3 ローカル検証済み（計画作成済み）。次は PH3-A |
 | **4** | ハブ + マッチメイカー + voxel 永続化方針 | 未着手 |
 | **5** | voxel-creative / bedwars / fps-tdm | 未着手 |
 | **6** | API 再設計 | 未着手 |
@@ -140,7 +140,7 @@
 
 ### Emergency Phase 2 (EM2) — テストカバレッジ 85% 達成
 
-計画書: [`planning/EM02_PLAN.md`](./planning/EM02_PLAN.md)  
+計画書: [`planning/EM02_PLAN.md`](./planning/EM02_PLAN.md)
 目的: 意味あるテストで coverage を Statements/Branches/Functions/Lines 85%以上へ引き上げ、Playwright フルE2E（gameserver + preview の複数 webServer）を実現する。include-all 方針で gameserver/index.ts、BabylonGame.ts、App.tsx もカバー。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
@@ -151,6 +151,21 @@
 | EM2-C | Playwright E2E拡充（フルE2E複数webServer） | ローカル検証済み | 100% | PLAT-EM2 | `playwright.config.ts` webServer 配列化（gameserver + preview）、E2E 3→8+ tests、WS proxy・HUD・StartOverlay・TouchControls・multi-context・切断再接続 | 本コミット / `playwright.config.ts` webServer配列化 (gameserver 8080 + preview 4173) / `game-shell.spec.ts` 3→11 tests (HUD hp/ammo, StartOverlay hide, no console errors, TouchControls mobile, canvas resize, WS /ws proxy, multi-context 2 tabs, disconnection) / `bun run test:e2e -- --list` 11 tests discovered |
 | EM2-D | thresholds 85%更新 + docs整理 | ローカル検証済み | 100% | EM2-A〜EM2-C | `vitest.config.ts` thresholds 85/85/85/85、task-list/HANDOFF/quality-gates/skills/log 更新 | 本コミット / `vitest.config.ts` 79/73/79/80→85/85/85/85 / coverage 95.12%/87.97%/90.7%/96.8% pass / `App.tsx` 100% / `BabylonGame` 96.9% / `types` 100% / `quantize` 100% |
 | EM2-E | 最終検証（coverage 85%達成確認） | ローカル検証済み | 100% | EM2-D | 4検証 + coverage 85% + E2E discovery 8+ + determinism + heavy pass | 本コミット / typecheck pass / lint 0 warnings / test:unit 30 files 189 tests / coverage 95.12%/87.97%/90.7%/96.8% / build pass / E2E list 11 / determinism + heavy pass |
+
+### Phase 3 — ゲームモード API 第1版 + fps-ffa 最小
+
+計画書: [`planning/PHASE03_PLAN.md`](./planning/PHASE03_PLAN.md)
+橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（EM02完了。次は **Phase 3 計画作成 PLAT-3** → Phase 3 実装）
+
+目的: `engine-core` を type非依存の L1 として保ち、`gamemode-api` を L1 contractとして追加し、`fps-ffa` 最小モードを L3 として動かす。`profile-voxel` / voxel terrain / AOI / delta snapshot / matchmaker / UGC / WT は含めない。
+
+| ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
+|---|---|---|---:|---|---|---|
+| PLAT-3 | Phase 3 計画作成（gamemode API第1版 + fps-ffa最小） | ローカル検証済み | 100% | EM2-E | `_TEMPLATE.md` 準拠。`PLAT-3` と PH3-A〜D が task-list に追加され、fps先行＋voxel契約のみ継続が明記される | 本コミット / [`planning/PHASE03_PLAN.md`](./planning/PHASE03_PLAN.md) / `fps先行＋voxelは契約だけ` 継続 / docs link check・`git diff --check` pass |
+| PH3-A | `gamemode-api` package作成（L1 contract） | 未着手 | 0% | PLAT-3 | `@cod/gamemode-api` が存在し、`defineGameMode` が id/type/source/slug/min/maxPlayers検証、GameModeDefinition / RoomCtx / BaseCtx / FpsCtx / VoxelCtx が仕様通り、L1 type非依存（profile-* import 0） | 未着手 |
+| PH3-B | `GameModeRuntime` + Tick timer + RateLimiter | 未着手 | 0% | PH3-A | `GameModeRuntime` が例外安全（mode例外でroomが落ちない）、after/every/cancel tick基準（setTimeout禁止）、gamemode message rate 40/s burst 20超過時false、Room統合 | 未着手 |
+| PH3-C | `fps-ffa` 最小モード | 未着手 | 0% | PH3-B | `gamemodes/fps/official/ffa` が `fps-official-ffa` idで defineGameMode export、waiting→countdown→playing→ended、spawn選択、kill→score、death→respawn 3s、static arena再利用 | 未着手 |
+| PH3-D | 統合 + docs + import境界 + quality gate | 未着手 | 0% | PH3-C | gameserverが profile + gamemode注入、biome.json gamemodes/*→gamemode-apiのみ、coverage 85%維持、E2E discovery 11+維持、typecheck/lint/unit/build/determinism/heavy pass、task-list/HANDOFF/quality-gates更新 | 未着手 |
 
 ### ドキュメント・規約
 
