@@ -18,9 +18,24 @@ vi.mock('@/components/StartOverlay', () => ({
   StartOverlay: () => <div data-testid="overlay">overlay</div>,
 }))
 
+vi.mock('@/components/Header', () => ({
+  Header: () => <div data-testid="header">header</div>,
+}))
+
+vi.mock('@/components/LeftSidebar', () => ({
+  LeftSidebar: () => <div data-testid="sidebar">sidebar</div>,
+}))
+
 describe('App', () => {
   beforeEach(() => {
-    useGameStore.setState({ renderer: null, connectionStatus: 'disconnected', hp: 100, ammo: 30 })
+    useGameStore.setState({
+      renderer: null,
+      connectionStatus: 'disconnected',
+      hp: 100,
+      ammo: 30,
+      activeTab: 'fps',
+      sandboxOpen: false,
+    })
   })
 
   it('renders main app with canvas, hud, touch controls, and overlay', async () => {
@@ -30,6 +45,8 @@ describe('App', () => {
     expect(screen.getByRole('status')).toBeInTheDocument()
     expect(screen.getByTestId('touch')).toBeInTheDocument()
     expect(screen.getByTestId('overlay')).toBeInTheDocument()
+    expect(screen.getByTestId('header')).toBeInTheDocument()
+    expect(screen.getByTestId('sidebar')).toBeInTheDocument()
     // Check main element
     expect(document.querySelector('main.app')).toBeInTheDocument()
   })

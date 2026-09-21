@@ -29,11 +29,15 @@ export interface GameState {
   /** Official FPS/Voxel切替タブ — 改訂版 (PH4-B) */
   activeTab: OfficialTab
 
+  /** Sandboxモーダル開閉 — 改訂版 (PH4-C) 公式拡張+UGC */
+  sandboxOpen: boolean
+
   setRenderer: (backend: RendererBackend) => void
   setConnectionStatus: (status: GameConnectionStatus) => void
   setHp: (hp: number) => void
   setAmmo: (ammo: number) => void
   setActiveTab: (tab: OfficialTab) => void
+  setSandboxOpen: (open: boolean) => void
 }
 
 const MAX_HP = 100
@@ -44,12 +48,14 @@ export const useGameStore = create<GameState>((set) => ({
   hp: MAX_HP,
   ammo: 30,
   activeTab: 'fps',
+  sandboxOpen: false,
 
   setRenderer: (renderer) => set({ renderer }),
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
   setHp: (hp) => set({ hp: Math.max(0, Math.min(MAX_HP, hp)) }),
   setAmmo: (ammo) => set({ ammo: Math.max(0, ammo) }),
   setActiveTab: (activeTab) => set({ activeTab }),
+  setSandboxOpen: (sandboxOpen) => set({ sandboxOpen }),
 }))
 
 /** ループ等の React 外からストアを読むための非フック API（getState/subscribe をラップ）。 */

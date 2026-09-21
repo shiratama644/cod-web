@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Header } from './components/Header.tsx'
+import { LeftSidebar } from './components/LeftSidebar.tsx'
 import { RendererHud } from './components/RendererHud.tsx'
 import { StartOverlay } from './components/StartOverlay.tsx'
 import { TouchControls } from './components/TouchControls.tsx'
@@ -14,11 +15,14 @@ export function App() {
   return (
     <main className="app">
       <Header />
-      <div className="app-game-area">
-        <GameCanvas input={input} />
-        <RendererHud />
-        <TouchControls input={input} />
-        <StartOverlay />
+      <div className="app-body">
+        <LeftSidebar />
+        <div className="app-game-area">
+          <GameCanvas input={input} />
+          <RendererHud />
+          <TouchControls input={input} />
+          <StartOverlay />
+        </div>
       </div>
     </main>
   )
