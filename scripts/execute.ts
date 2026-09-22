@@ -86,20 +86,67 @@ function spawn(kind: Kind, cmd: string[], cwd = process.cwd()) {
   return proc
 }
 
-async function main(): Promise<number> {
-  // ── 1. 依存関係のインストール ──────────────────────────────────────────
-  logLine('install', 'Installing dependencies... (bun install)')
-  const install = Bun.spawn(['bun', 'install'], {
+async function runInstallWithLogs(args: string[], kind: Kind): Promise<{ exit: number; output: string }> {
+  // インストールの出力をキャプチャしつつ、色付きで流す。失敗時に詳細を返す。
+  let captured = ''
+  const proc = Bun.spawn(['bun', ...args], {
     cwd: process.cwd(),
     stdout: 'pipe',
     stderr: 'pipe',
     stdin: 'inherit',
   })
-  pipeOutput('install', install)
-  const installExit = await install.exited
-  if (installExit !== 0) {
-    logLine('install', `X Install failed (exit ${installExit}). Build and servers will not be started.`)
-    return installExit ?? 1
+  // pipeOutput と同時にキャプチャ
+  const decoder = new TextDecoder()
+  let buffer = ''
+  const pumpCapture = (stream: ReadableStream<Uint8Array> | null | undefined) => {
+    if (!stream) return
+    void (async () => {
+      const reader = stream.getReader()
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        captured += chunk
+        buffer += chunk
+        let nl = buffer.indexOf('\n')
+        while (nl >= 0) {
+          logLine(kind, buffer.slice(0, nl))
+          buffer = buffer.slice(nl + 1)
+          nl = buffer.indexOf('\n')
+        }
+      }
+      if (buffer.length > 0) {
+        logLine(kind, buffer)
+        buffer = ''
+      }
+    })()
+  }
+  pumpCapture(proc.stdout)
+  pumpCapture(proc.stderr)
+  const exit = await proc.exited
+  return { exit: exit ?? 1, output: captured }
+}
+
+async function main(): Promise<number> {
+  // ── 1. 依存関係のインストール ──────────────────────────────────────────
+  // まずは frozen-lockfile で決定的に。失敗したら verbose で原因を出す。
+  logLine('install', 'Installing dependencies... (bun install --frozen-lockfile)')
+  const result = await runInstallWithLogs(['install', '--frozen-lockfile'], 'install')
+  if (result.exit !== 0) {
+    logLine('install', `! First install failed (exit ${result.exit}). Retrying with --verbose to diagnose...`)
+    const verbose = await runInstallWithLogs(['install', '--verbose'], 'install')
+    logLine('install', `X Install failed (exit ${verbose.exit}). Build and servers will not be started.`)
+    logLine('install', `--- Troubleshooting ---`)
+    logLine('install', `1) Bun cache clear: bun pm cache rm`)
+    logLine('install', `2) Force reinstall: bun install --force`)
+    logLine('install', `3) If @biomejs or optional deps fail: bun install --ignore-scripts then bun run prepare`)
+    logLine('install', `4) Check network / proxy, then retry: bun run start`)
+    logLine('install', `Last output tail:`)
+    const tail = verbose.output.split('\n').slice(-30).join('\n')
+    for (const line of tail.split('\n')) {
+      if (line.trim().length > 0) logLine('install', `  ${line}`)
+    }
+    return verbose.exit ?? 1
   }
   logLine('install', 'OK Install succeeded.')
 
