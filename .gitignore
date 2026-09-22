@@ -9,6 +9,7 @@ dist-ssr/
 *.log
 npm-debug.log*
 bun-debug.log*
+logs/
 
 # editor / OS
 .vscode/*

@@ -29,6 +29,7 @@
     "test:e2e": "playwright test",
     "check:determinism": "bun run scripts/check-determinism.ts",
     "check:determinism:heavy": "bun run scripts/determinism-heavy.ts",
+    "check:all": "bun run scripts/check-all.ts",
     "prepare": "husky"
   },
   "dependencies": {
