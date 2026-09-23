@@ -207,39 +207,43 @@ describe('gameserver runtime gamemode integration PH3-D', () => {
     expect(() => timer.tick(1)).not.toThrow()
   })
 
-  it('chat 200文字制限がgamemodeで動作', async () => {
-    const runtime = createDefaultServerRuntime()
-    const handlers = createHandlersFromRuntime(runtime)
+  it(
+    'chat 200文字制限がgamemodeで動作',
+    async () => {
+      const runtime = createDefaultServerRuntime()
+      const handlers = createHandlersFromRuntime(runtime)
 
-    const ws1 = makeWs()
-    handlers.open(ws1)
-    const ws2 = makeWs()
-    handlers.open(ws2)
+      const ws1 = makeWs()
+      handlers.open(ws1)
+      const ws2 = makeWs()
+      handlers.open(ws2)
 
-    // chatメッセージを送信
-    const longText = 'a'.repeat(300)
-    const chatMsg = JSON.stringify({ type: 'chat', text: longText })
-    handlers.message(ws1, chatMsg)
+      // chatメッセージを送信
+      const longText = 'a'.repeat(300)
+      const chatMsg = JSON.stringify({ type: 'chat', text: longText })
+      handlers.message(ws1, chatMsg)
 
-    // 非同期のonNetworkMessageが処理されるのを待つ
-    await new Promise((r) => setTimeout(r, 10))
+      // 非同期のonNetworkMessageが処理されるのを待つ
+      await new Promise((r) => setTimeout(r, 10))
 
-    // broadcastされたメッセージは200文字制限
-    // ws2に届いたメッセージを確認 (welcome/join以外)
-    const chatBroadcasts = ws2.sent.filter(
-      (s) => typeof s === 'string' && (s as string).includes('"type":"chat"'),
-    )
-    if (chatBroadcasts.length > 0) {
-      const parsed = JSON.parse(chatBroadcasts[0] as string)
-      // ffaモードはbroadcast時にJSON.stringify({ type: 'chat', from, text })を送る
-      // textは200文字制限
-      if (parsed.text) {
-        expect(parsed.text.length).toBeLessThanOrEqual(200)
+      // broadcastされたメッセージは200文字制限
+      // ws2に届いたメッセージを確認 (welcome/join以外)
+      const chatBroadcasts = ws2.sent.filter(
+        (s) => typeof s === 'string' && (s as string).includes('"type":"chat"'),
+      )
+      if (chatBroadcasts.length > 0) {
+        const parsed = JSON.parse(chatBroadcasts[0] as string)
+        // ffaモードはbroadcast時にJSON.stringify({ type: 'chat', from, text })を送る
+        // textは200文字制限
+        if (parsed.text) {
+          expect(parsed.text.length).toBeLessThanOrEqual(200)
+        }
       }
-    }
-    // 少なくともroomは落ちていない
-    expect(runtime.room.playerCount).toBe(2)
-  })
+      // 少なくともroomは落ちていない
+      expect(runtime.room.playerCount).toBe(2)
+    },
+    10000,
+  )
 
   it('Room.sendTo / sendBinaryTo / broadcastExcept がpublicで使える', () => {
     const runtime = createDefaultServerRuntime()

@@ -20,12 +20,24 @@ export default defineConfig({
     },
   },
   test: {
-    // Termux Proot-Distro では forks pool が
-    // node_modules/.bun/vitest@.../dist/workers/forks.js を解決できず
+    // Termux Proot-Distro では forks / vmForks pool が
+    // node_modules/.bun/vitest@.../dist/workers/*.js を解決できず
     // MODULE_NOT_FOUND、threads pool は Worker exited unexpectedly になるため、
-    // vmForks pool を使用（child_process + vm, 11.7s で 44/311 pass）。
-    // 2026-09-23 Termuxログ: forks.js not found / Worker exited unexpectedly
-    pool: 'vmForks',
+    // vmThreads pool を試行（worker_threads + vm）。
+    // 2026-09-23 Termuxログ:
+    //   - forks.js: Cannot find module .../forks.js
+    //   - threads: Worker exited unexpectedly at cli-api.CnMVyzaz.js:3090
+    //   - vmForks.js: Cannot find module .../vmForks.js (3891522)
+    // vmThreads はローカル 43/44 pass 1 timeout (chat 200 chars) 16.24s だが
+    // Termux で唯一動作する可能性があるため採用。
+    pool: 'vmThreads',
+    poolOptions: {
+      vmThreads: {
+        // Proot-Distro で worker_threads が不安定な場合、singleThread で回避を試みる
+        // 必要なら singleThread: true に変更
+        singleThread: false,
+      },
+    },
     // 既定は jsdom（クライアント DOM コンポーネント用）。
     // packages/ と apps/gameserver の純粋ロジックはファイル先頭の
     // `// @vitest-environment node` で DOM 非依存に切り替える。
