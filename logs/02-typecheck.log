@@ -1,10 +1,13 @@
 > bun run typecheck
-> started: 2026/9/23 9:29:53 (JST)
+> started: 2026/9/23 9:33:20 (JST)
 > log: logs/02-typecheck.log
 ------------------------------------------------------------
 > use setsid: true
 $ tsc --noEmit && tsc --noEmit -p tsconfig.server.json
+
+[check:all] ABORT signal received, killing typecheck (pid 30850 pgid 30850)...
+error: script "typecheck" was terminated by signal SIGTERM (Polite quit request)
 ------------------------------------------------------------
-> finished: 2026/9/23 9:30:11 (JST)
-> duration: 18766ms
-> exit: 0   OK
+> finished: 2026/9/23 9:33:24 (JST)
+> duration: 3993ms
+> exit: 143 (ABORTED)  FAILED
