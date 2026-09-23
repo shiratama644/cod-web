@@ -1,14 +1,17 @@
 check:all summary (PARALLEL)
-date: 2026/9/23 9:30:23 (JST)
+date: 2026/9/23 9:33:24 (JST)
 mode: parallel async + abort on failure (fixed hang, setsid=true)
-total: 7 tasks, 7 passed, 0 failed, 78798ms
+total: 7 tasks, 4 passed, 3 failed, 20953ms
 ------------------------------------------------------------
-✔ install                      OK                 153ms -> 01-install.log
-✔ typecheck                    OK                 18766ms -> 02-typecheck.log
-✔ lint                         OK                 1335ms -> 03-lint.log
-✔ test:unit                    OK                 26028ms -> 04-test-unit.log
-✔ test:coverage                OK                 30542ms -> 05-test-coverage.log
-✔ check:determinism            OK                 102ms -> 06-check-determinism.log
-✔ check:determinism:heavy      OK                 1872ms -> 07-check-determinism-heavy.log
+✔ install                      OK                 2724ms -> 01-install.log
+✘ typecheck                    ABORTED            3993ms -> 02-typecheck.log
+✔ lint                         OK                 2416ms -> 03-lint.log
+✘ test:unit                    FAILED exit=1      3821ms -> 04-test-unit.log
+✘ test:coverage                ABORTED            3953ms -> 05-test-coverage.log
+✔ check:determinism            OK                 2109ms -> 06-check-determinism.log
+✔ check:determinism:heavy      OK                 1937ms -> 07-check-determinism-heavy.log
 ------------------------------------------------------------
-All checks passed.
+FAILED tasks:
+  - typecheck: logs/02-typecheck.log (aborted)
+  - test:unit: logs/04-test-unit.log 
+  - test:coverage: logs/05-test-coverage.log (aborted)

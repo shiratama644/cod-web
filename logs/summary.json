@@ -1,10 +1,10 @@
 {
-  "date": "2026/9/23 9:30:23",
+  "date": "2026/9/23 9:33:24",
   "mode": "parallel",
   "total": 7,
-  "passed": 7,
-  "failed": 0,
-  "totalMs": 78798,
+  "passed": 4,
+  "failed": 3,
+  "totalMs": 20953,
   "results": [
     {
       "id": "install",
@@ -16,9 +16,9 @@
       ],
       "logFile": "01-install.log",
       "exit": 0,
-      "durationMs": 153,
-      "startedAt": "2026/9/23 9:29:53",
-      "finishedAt": "2026/9/23 9:29:53",
+      "durationMs": 2724,
+      "startedAt": "2026/9/23 9:33:20",
+      "finishedAt": "2026/9/23 9:33:23",
       "ok": true,
       "aborted": false
     },
@@ -31,12 +31,12 @@
         "typecheck"
       ],
       "logFile": "02-typecheck.log",
-      "exit": 0,
-      "durationMs": 18766,
-      "startedAt": "2026/9/23 9:29:53",
-      "finishedAt": "2026/9/23 9:30:11",
-      "ok": true,
-      "aborted": false
+      "exit": 143,
+      "durationMs": 3993,
+      "startedAt": "2026/9/23 9:33:20",
+      "finishedAt": "2026/9/23 9:33:24",
+      "ok": false,
+      "aborted": true
     },
     {
       "id": "lint",
@@ -48,9 +48,9 @@
       ],
       "logFile": "03-lint.log",
       "exit": 0,
-      "durationMs": 1335,
-      "startedAt": "2026/9/23 9:29:53",
-      "finishedAt": "2026/9/23 9:29:54",
+      "durationMs": 2416,
+      "startedAt": "2026/9/23 9:33:20",
+      "finishedAt": "2026/9/23 9:33:22",
       "ok": true,
       "aborted": false
     },
@@ -63,11 +63,11 @@
         "test:unit"
       ],
       "logFile": "04-test-unit.log",
-      "exit": 0,
-      "durationMs": 26028,
-      "startedAt": "2026/9/23 9:29:53",
-      "finishedAt": "2026/9/23 9:30:19",
-      "ok": true,
+      "exit": 1,
+      "durationMs": 3821,
+      "startedAt": "2026/9/23 9:33:20",
+      "finishedAt": "2026/9/23 9:33:24",
+      "ok": false,
       "aborted": false
     },
     {
@@ -79,12 +79,12 @@
         "test:coverage"
       ],
       "logFile": "05-test-coverage.log",
-      "exit": 0,
-      "durationMs": 30542,
-      "startedAt": "2026/9/23 9:29:53",
-      "finishedAt": "2026/9/23 9:30:23",
-      "ok": true,
-      "aborted": false
+      "exit": 143,
+      "durationMs": 3953,
+      "startedAt": "2026/9/23 9:33:20",
+      "finishedAt": "2026/9/23 9:33:24",
+      "ok": false,
+      "aborted": true
     },
     {
       "id": "check:determinism",
@@ -96,9 +96,9 @@
       ],
       "logFile": "06-check-determinism.log",
       "exit": 0,
-      "durationMs": 102,
-      "startedAt": "2026/9/23 9:29:53",
-      "finishedAt": "2026/9/23 9:29:53",
+      "durationMs": 2109,
+      "startedAt": "2026/9/23 9:33:20",
+      "finishedAt": "2026/9/23 9:33:22",
       "ok": true,
       "aborted": false
     },
@@ -112,9 +112,9 @@
       ],
       "logFile": "07-check-determinism-heavy.log",
       "exit": 0,
-      "durationMs": 1872,
-      "startedAt": "2026/9/23 9:29:53",
-      "finishedAt": "2026/9/23 9:29:54",
+      "durationMs": 1937,
+      "startedAt": "2026/9/23 9:33:21",
+      "finishedAt": "2026/9/23 9:33:22",
       "ok": true,
       "aborted": false
     }
