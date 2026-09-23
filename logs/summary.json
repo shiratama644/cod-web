@@ -1,0 +1,122 @@
+{
+  "date": "2026/9/23 9:30:23",
+  "mode": "parallel",
+  "total": 7,
+  "passed": 7,
+  "failed": 0,
+  "totalMs": 78798,
+  "results": [
+    {
+      "id": "install",
+      "label": "bun install --frozen-lockfile",
+      "cmd": [
+        "bun",
+        "install",
+        "--frozen-lockfile"
+      ],
+      "logFile": "01-install.log",
+      "exit": 0,
+      "durationMs": 153,
+      "startedAt": "2026/9/23 9:29:53",
+      "finishedAt": "2026/9/23 9:29:53",
+      "ok": true,
+      "aborted": false
+    },
+    {
+      "id": "typecheck",
+      "label": "typecheck (tsc x2)",
+      "cmd": [
+        "bun",
+        "run",
+        "typecheck"
+      ],
+      "logFile": "02-typecheck.log",
+      "exit": 0,
+      "durationMs": 18766,
+      "startedAt": "2026/9/23 9:29:53",
+      "finishedAt": "2026/9/23 9:30:11",
+      "ok": true,
+      "aborted": false
+    },
+    {
+      "id": "lint",
+      "label": "biome lint",
+      "cmd": [
+        "bun",
+        "run",
+        "lint"
+      ],
+      "logFile": "03-lint.log",
+      "exit": 0,
+      "durationMs": 1335,
+      "startedAt": "2026/9/23 9:29:53",
+      "finishedAt": "2026/9/23 9:29:54",
+      "ok": true,
+      "aborted": false
+    },
+    {
+      "id": "test:unit",
+      "label": "vitest run",
+      "cmd": [
+        "bun",
+        "run",
+        "test:unit"
+      ],
+      "logFile": "04-test-unit.log",
+      "exit": 0,
+      "durationMs": 26028,
+      "startedAt": "2026/9/23 9:29:53",
+      "finishedAt": "2026/9/23 9:30:19",
+      "ok": true,
+      "aborted": false
+    },
+    {
+      "id": "test:coverage",
+      "label": "vitest coverage",
+      "cmd": [
+        "bun",
+        "run",
+        "test:coverage"
+      ],
+      "logFile": "05-test-coverage.log",
+      "exit": 0,
+      "durationMs": 30542,
+      "startedAt": "2026/9/23 9:29:53",
+      "finishedAt": "2026/9/23 9:30:23",
+      "ok": true,
+      "aborted": false
+    },
+    {
+      "id": "check:determinism",
+      "label": "determinism guard",
+      "cmd": [
+        "bun",
+        "run",
+        "check:determinism"
+      ],
+      "logFile": "06-check-determinism.log",
+      "exit": 0,
+      "durationMs": 102,
+      "startedAt": "2026/9/23 9:29:53",
+      "finishedAt": "2026/9/23 9:29:53",
+      "ok": true,
+      "aborted": false
+    },
+    {
+      "id": "check:determinism:heavy",
+      "label": "determinism heavy 100x1000",
+      "cmd": [
+        "bun",
+        "run",
+        "check:determinism:heavy"
+      ],
+      "logFile": "07-check-determinism-heavy.log",
+      "exit": 0,
+      "durationMs": 1872,
+      "startedAt": "2026/9/23 9:29:53",
+      "finishedAt": "2026/9/23 9:29:54",
+      "ok": true,
+      "aborted": false
+    }
+  ]
+}

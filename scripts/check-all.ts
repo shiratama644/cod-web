@@ -1,33 +1,16 @@
 /**
- * 一括品質ゲート + ログ保存スクリプト（並列版）
+ * 一括品質ゲート + ログ保存スクリプト（並列版・abort対応・hang修正）
  *
  *   bun run check:all
- *   bun run scripts/check-all.ts
  *
- * build / e2e 以外の主要ゲートを async 並列で実行し、
- * 各出力を logs/<name>.log に保存。
- * 1つでも失敗したら残りを abort して即停止。
- *
- * 対象:
- *   - install (bun install --frozen-lockfile)
- *   - typecheck (tsc x2)
- *   - lint (biome lint .)
- *   - test:unit (vitest run)
- *   - test:coverage (vitest run --coverage)
- *   - check:determinism (scripts/check-determinism.ts)
- *   - check:determinism:heavy (scripts/determinism-heavy.ts)
- *
- * 出力:
- *   logs/
- *     01-install.log
- *     02-typecheck.log
- *     03-lint.log
- *     04-test-unit.log
- *     05-test-coverage.log
- *     06-check-determinism.log
- *     07-check-determinism-heavy.log
- *     summary.log
- *     summary.json
+ * 1つでも失敗したら残りを abort。typecheck のように sh -c "tsc && tsc" で
+ * 子プロセスを持つタスクでもハングしないよう、
+ * - setsid で新しいプロセスグループを作成
+ * - abort 時に kill -TERM/-KILL -pgid でグループ全体を kill
+ * - pkill -P で子も kill
+ * - ReadableStream reader.cancel() で読み取りループを抜ける
+ * - proc.exited に 6秒タイムアウト、全体に 10分 hard timeout
+ * で確実に Promise.all が resolve し、summary.log が書かれて exit する。
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -116,6 +99,17 @@ type Result = {
   aborted?: boolean
 }
 
+function hasSetsid(): boolean {
+  try {
+    const p = Bun.spawnSync(['which', 'setsid'])
+    return p.exitCode === 0
+  } catch {
+    return false
+  }
+}
+
+const USE_SETSID = hasSetsid()
+
 async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
   const startedAt = nowJst()
   const startedMs = Date.now()
@@ -125,25 +119,58 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
   captured += `> started: ${startedAt} (JST)\n`
   captured += `> log: logs/${task.logFile}\n`
   captured += `${'-'.repeat(60)}\n`
+  captured += `> use setsid: ${USE_SETSID}\n`
 
-  const proc = Bun.spawn(task.cmd, {
+  // setsid で新しい pgid を作ることで、kill -TERM -pgid で子含めて殺せる
+  const spawnCmd = USE_SETSID ? ['setsid', ...task.cmd] : task.cmd
+
+  const proc = Bun.spawn(spawnCmd, {
     cwd: process.cwd(),
     stdout: 'pipe',
     stderr: 'pipe',
   })
 
   let aborted = false
+  let killTimer: ReturnType<typeof setTimeout> | null = null
+
+  const killGroup = (sig: string) => {
+    // pgid kill: kill -TERM -<pid>
+    try {
+      Bun.spawnSync(['sh', '-c', `kill -${sig} -${proc.pid} 2>/dev/null; kill -${sig} ${proc.pid} 2>/dev/null; pkill -${sig} -P ${proc.pid} 2>/dev/null`])
+    } catch {}
+  }
+
   const onAbort = () => {
+    if (aborted) return
     aborted = true
+    captured += `\n[check:all] ABORT signal received, killing ${task.id} (pid ${proc.pid} pgid ${proc.pid})...\n`
+    try {
+      killGroup('TERM')
+      // 子プロセスを先に kill（sh -c "sleep|tsc" のケースで orphan 化を防ぐ）
+      Bun.spawn(['sh', '-c', `pkill -9 -P ${proc.pid} 2>/dev/null; echo killed children of ${proc.pid}`], {
+        stdout: 'pipe',
+        stderr: 'pipe',
+      })
+    } catch {}
     try {
       proc.kill('SIGTERM')
-      setTimeout(() => {
+      killTimer = setTimeout(() => {
+        try {
+          killGroup('KILL')
+        } catch {}
         try {
           proc.kill('SIGKILL')
         } catch {}
-      }, 1000)
+        try {
+          Bun.spawn(['sh', '-c', `pkill -9 -P ${proc.pid} 2>/dev/null; kill -9 -${proc.pid} 2>/dev/null`], {
+            stdout: 'pipe',
+            stderr: 'pipe',
+          })
+        } catch {}
+      }, 1200)
     } catch {}
   }
+
   if (signal.aborted) {
     onAbort()
   } else {
@@ -151,40 +178,87 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
   }
 
   const decoder = new TextDecoder()
+
   const readStream = async (stream: ReadableStream<Uint8Array> | null | undefined) => {
     if (!stream) return
     const reader = stream.getReader()
     try {
       for (;;) {
+        if (aborted || signal.aborted) {
+          try {
+            await reader.cancel()
+          } catch {}
+          break
+        }
         const { done, value } = await reader.read()
         if (done) break
-        captured += decoder.decode(value)
+        captured += decoder.decode(value, { stream: true })
       }
     } catch {
-      // aborted stream
+      // aborted
+    } finally {
+      try {
+        reader.releaseLock()
+      } catch {}
     }
   }
 
-  await Promise.all([readStream(proc.stdout), readStream(proc.stderr)])
-  const exit = await proc.exited
+  const stdoutP = readStream(proc.stdout)
+  const stderrP = readStream(proc.stderr)
+
+  const exitPromise = proc.exited.then((c) => c ?? 1)
+  const exitWithTimeout = async (): Promise<number> => {
+    if (aborted || signal.aborted) {
+      const timeout = new Promise<number>((res) => setTimeout(() => res(143), 6000))
+      return Promise.race([exitPromise, timeout])
+    }
+    return exitPromise
+  }
+
+  const hardTimeoutMs = 10 * 60 * 1000
+  const hardTimeout = new Promise<{ exit: number; timedOut: boolean }>((res) =>
+    setTimeout(() => res({ exit: 143, timedOut: true }), hardTimeoutMs),
+  )
+
+  const tasksDone = Promise.all([stdoutP, stderrP]).then(async () => {
+    const e = await exitWithTimeout()
+    return { exit: e, timedOut: false }
+  })
+
+  const { exit, timedOut } = (await Promise.race([tasksDone, hardTimeout])) as {
+    exit: number
+    timedOut: boolean
+  }
+
+  if (timedOut) {
+    captured += `\n[check:all] HARD TIMEOUT ${hardTimeoutMs}ms, force killing ${task.id}\n`
+    try {
+      killGroup('KILL')
+    } catch {}
+    try {
+      proc.kill('SIGKILL')
+    } catch {}
+    aborted = true
+  }
+
+  if (killTimer) clearTimeout(killTimer)
   signal.removeEventListener('abort', onAbort)
 
   const durationMs = Date.now() - startedMs
   const finishedAt = nowJst()
-  // abort された場合は exit が 0 でも失敗扱い
-  const ok = !aborted && exit === 0 && !signal.aborted
+  const ok = !aborted && exit === 0
 
   captured += `${'-'.repeat(60)}\n`
   captured += `> finished: ${finishedAt} (JST)\n`
   captured += `> duration: ${durationMs}ms\n`
-  captured += `> exit: ${exit} ${aborted ? '(ABORTED)' : ''} ${ok ? 'OK' : 'FAILED'}\n`
+  captured += `> exit: ${exit} ${aborted ? '(ABORTED)' : ''} ${timedOut ? '(HARD TIMEOUT)' : ''} ${ok ? 'OK' : 'FAILED'}\n`
 
   const logPath = join(LOG_DIR, task.logFile)
   writeFileSync(logPath, captured, 'utf8')
 
   const icon = ok ? `${GREEN}✔${RESET}` : `${RED}✘${RESET}`
   const status = aborted
-    ? `${RED}ABORTED${RESET}`
+    ? `${RED}${timedOut ? 'TIMEOUT' : 'ABORTED'}${RESET}`
     : ok
       ? `${GREEN}OK${RESET}`
       : `${RED}FAILED (exit ${exit})${RESET}`
@@ -195,7 +269,7 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
     label: task.label,
     cmd: task.cmd,
     logFile: task.logFile,
-    exit: exit ?? 1,
+    exit,
     durationMs,
     startedAt,
     finishedAt,
@@ -207,23 +281,17 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
 async function main() {
   log(`Starting all checks in PARALLEL (excluding build/e2e). Logs -> ${LOG_DIR}`)
   log(`Tasks: ${tasks.map((t) => t.id).join(', ')}`)
-  log(`Mode: async parallel + await all, abort on first failure`)
+  log(`Mode: async parallel + await all, abort on first failure (setsid=${USE_SETSID})`)
   console.log('')
 
   const controller = new AbortController()
   const { signal } = controller
 
-  // 並列起動: それぞれ async で実行
   const promises = tasks.map((task) => runTask(task, signal))
 
-  // 1つでも失敗したら即停止: 各 promise が resolve した時点でチェック
-  const results: Result[] = []
   let failed = false
-
-  // Promise.all ではなく、完了順に監視して失敗時に abort
   const wrapped = promises.map(async (p) => {
     const r = await p
-    results.push(r)
     if (!r.ok && !failed) {
       failed = true
       log(`${RED}✘ ${r.id} failed -> aborting remaining tasks...${RESET}`)
@@ -232,17 +300,15 @@ async function main() {
     return r
   })
 
-  // await でまとめる（ユーザー要望: async並列 + await）
   const allResults = await Promise.all(wrapped)
 
-  // summary
   const totalMs = allResults.reduce((s, r) => s + r.durationMs, 0)
   const passed = allResults.filter((r) => r.ok).length
   const failedResults = allResults.filter((r) => !r.ok)
 
   let summaryText = `check:all summary (PARALLEL)\n`
   summaryText += `date: ${nowJst()} (JST)\n`
-  summaryText += `mode: parallel async + abort on failure\n`
+  summaryText += `mode: parallel async + abort on failure (fixed hang, setsid=${USE_SETSID})\n`
   summaryText += `total: ${allResults.length} tasks, ${passed} passed, ${failedResults.length} failed, ${totalMs}ms\n`
   summaryText += `${'-'.repeat(60)}\n`
   for (const r of allResults) {
@@ -281,11 +347,11 @@ async function main() {
   console.log('')
   console.log(summaryText)
   if (failedResults.length > 0) {
-    log(`${RED}✘ ${failedResults.length} task(s) failed. See logs/ for details.${RESET}`)
-    process.exit(1)
+    log(`${RED}✘ ${failedResults.length} task(s) failed. See logs/ for details. Will exit now (no Ctrl+C needed).${RESET}`)
+    setTimeout(() => process.exit(1), 200)
   } else {
     log(`${GREEN}✔ All ${allResults.length} tasks passed. Logs in ${LOG_DIR}${RESET}`)
-    process.exit(0)
+    setTimeout(() => process.exit(0), 200)
   }
 }
 
