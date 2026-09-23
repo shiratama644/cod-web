@@ -5,11 +5,13 @@ node_modules/
 dist/
 dist-ssr/
 
-# logs
+# logs (keep aggregated quality gate logs for AI visibility)
 *.log
 npm-debug.log*
 bun-debug.log*
-logs/
+!logs/
+!logs/*.log
+!logs/*.json
 
 # editor / OS
 .vscode/*
