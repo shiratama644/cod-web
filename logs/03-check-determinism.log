@@ -1,14 +1,11 @@
-> bun install --frozen-lockfile
+> bun run check:determinism
 > started: 2026/9/23 9:56:38 (JST)
-> log: logs/01-install.log
+> log: logs/03-check-determinism.log
 ------------------------------------------------------------
 > use setsid: true
-bun install v1.4.0 (34cbb9a40)
-
-$ husky
-
-Checked 168 installs across 208 packages (no changes) [48.00ms]
+$ bun run scripts/check-determinism.ts
+✅ Determinism check passed (no forbidden patterns in SimProfile / L1)
 ------------------------------------------------------------
 > finished: 2026/9/23 9:56:38 (JST)
-> duration: 53ms
+> duration: 40ms
 > exit: 0   OK

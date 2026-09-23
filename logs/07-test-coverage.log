@@ -1,0 +1,73 @@
+> bun run test:coverage
+> started: 2026/9/23 9:56:38 (JST)
+> log: logs/07-test-coverage.log
+------------------------------------------------------------
+> use setsid: true
+$ vitest run --coverage
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/user/cod-web[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m _tests_/packages/engine-core/net/ingest.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 15447[2mms[22m[39m
+     [33m[2m✓[22m[39m ランダム 1000000 フレームでプロセスが落ちない [33m 15423[2mms[22m[39m
+ [32m✓[39m _tests_/apps/gameserver/src/index.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 266[2mms[22m[39m
+ [32m✓[39m _tests_/packages/profile-fps/sim/determinism.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m _tests_/apps/gameserver/src/runtime-gamemode.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+ [32m✓[39m _tests_/packages/engine-core/net/rate-limit.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m _tests_/apps/gameserver/src/handlers.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m _tests_/packages/engine-core/sim/Simulation.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m _tests_/packages/engine-core/gamemode/ModeMessageRateLimiter.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m _tests_/packages/profile-fps/sim/movement.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/game/net/prediction.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m _tests_/packages/protocol/protocol/packer.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m _tests_/packages/gamemode-api/src/ctx.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m _tests_/packages/profile-fps/sim/same-input.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m _tests_/packages/engine-core/net/snapshot.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m _tests_/packages/gamemode-api/src/defineGameMode.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m _tests_/packages/engine-core/gamemode/GameModeRuntime.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m _tests_/gamemodes/fps/official/ffa.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/lib/sandbox.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m _tests_/packages/profile-fps/profile/FpsSimProfile.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m _tests_/packages/engine-core/room/Room.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m _tests_/packages/engine-core/gamemode/GameModeTimer.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m _tests_/packages/protocol/protocol/framing.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m _tests_/apps/gameserver/src/runtime.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m _tests_/packages/protocol/protocol/quantize.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m _tests_/packages/engine-core/net/lagcomp-store.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m _tests_/packages/protocol/protocol/type-specs.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m _tests_/packages/protocol/src/types.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m _tests_/packages/engine-core/profile/SimProfile.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m _tests_/packages/protocol/protocol/binary.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/components/StartOverlay.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 367[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/components/SandboxModal.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 249[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/components/VoteOverlay.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[32m 181[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/game/babylon/BabylonGame.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 189[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/App2.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 64[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/components/Header.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 63[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/components/SandboxDetailPage.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 96[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/components/RoomSelectionModal.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 81[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/App.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/components/LeftSidebar.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/components/TouchControls.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/game/input/InputController.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/game/net/GameClient.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/game/net/websocket.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m _tests_/apps/web/src/lib/clamp.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m44 passed[39m[22m[90m (44)[39m
+[2m      Tests [22m [1m[32m311 passed[39m[22m[90m (311)[39m
+[2m   Start at [22m 00:56:40
+[2m   Duration [22m 27.02s[2m (transform 790ms, setup 2.68s, import 1.36s, tests 17.61s, environment 1.16s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+
+=============================== Coverage summary ===============================
+Statements   : 93.51% ( 1702/1820 )
+Branches     : 85.8% ( 653/761 )
+Functions    : 88.48% ( 361/408 )
+Lines        : 94.76% ( 1594/1682 )
+================================================================================
+------------------------------------------------------------
+> finished: 2026/9/23 9:57:07 (JST)
+> duration: 28524ms
+> exit: 0   OK

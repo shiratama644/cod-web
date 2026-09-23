@@ -1,10 +1,10 @@
 {
-  "date": "2026/9/23 9:33:24",
-  "mode": "parallel",
+  "date": "2026/9/23 9:57:07",
+  "mode": "install-first-parallel",
   "total": 7,
-  "passed": 4,
-  "failed": 3,
-  "totalMs": 20953,
+  "passed": 7,
+  "failed": 0,
+  "totalMs": 70476,
   "results": [
     {
       "id": "install",
@@ -16,27 +16,11 @@
       ],
       "logFile": "01-install.log",
       "exit": 0,
-      "durationMs": 2724,
-      "startedAt": "2026/9/23 9:33:20",
-      "finishedAt": "2026/9/23 9:33:23",
+      "durationMs": 53,
+      "startedAt": "2026/9/23 9:56:38",
+      "finishedAt": "2026/9/23 9:56:38",
       "ok": true,
       "aborted": false
-    },
-    {
-      "id": "typecheck",
-      "label": "typecheck (tsc x2)",
-      "cmd": [
-        "bun",
-        "run",
-        "typecheck"
-      ],
-      "logFile": "02-typecheck.log",
-      "exit": 143,
-      "durationMs": 3993,
-      "startedAt": "2026/9/23 9:33:20",
-      "finishedAt": "2026/9/23 9:33:24",
-      "ok": false,
-      "aborted": true
     },
     {
       "id": "lint",
@@ -46,45 +30,13 @@
         "run",
         "lint"
       ],
-      "logFile": "03-lint.log",
+      "logFile": "02-lint.log",
       "exit": 0,
-      "durationMs": 2416,
-      "startedAt": "2026/9/23 9:33:20",
-      "finishedAt": "2026/9/23 9:33:22",
+      "durationMs": 1117,
+      "startedAt": "2026/9/23 9:56:38",
+      "finishedAt": "2026/9/23 9:56:39",
       "ok": true,
       "aborted": false
-    },
-    {
-      "id": "test:unit",
-      "label": "vitest run",
-      "cmd": [
-        "bun",
-        "run",
-        "test:unit"
-      ],
-      "logFile": "04-test-unit.log",
-      "exit": 1,
-      "durationMs": 3821,
-      "startedAt": "2026/9/23 9:33:20",
-      "finishedAt": "2026/9/23 9:33:24",
-      "ok": false,
-      "aborted": false
-    },
-    {
-      "id": "test:coverage",
-      "label": "vitest coverage",
-      "cmd": [
-        "bun",
-        "run",
-        "test:coverage"
-      ],
-      "logFile": "05-test-coverage.log",
-      "exit": 143,
-      "durationMs": 3953,
-      "startedAt": "2026/9/23 9:33:20",
-      "finishedAt": "2026/9/23 9:33:24",
-      "ok": false,
-      "aborted": true
     },
     {
       "id": "check:determinism",
@@ -94,11 +46,11 @@
         "run",
         "check:determinism"
       ],
-      "logFile": "06-check-determinism.log",
+      "logFile": "03-check-determinism.log",
       "exit": 0,
-      "durationMs": 2109,
-      "startedAt": "2026/9/23 9:33:20",
-      "finishedAt": "2026/9/23 9:33:22",
+      "durationMs": 40,
+      "startedAt": "2026/9/23 9:56:38",
+      "finishedAt": "2026/9/23 9:56:38",
       "ok": true,
       "aborted": false
     },
@@ -110,11 +62,59 @@
         "run",
         "check:determinism:heavy"
       ],
-      "logFile": "07-check-determinism-heavy.log",
+      "logFile": "04-check-determinism-heavy.log",
       "exit": 0,
-      "durationMs": 1937,
-      "startedAt": "2026/9/23 9:33:21",
-      "finishedAt": "2026/9/23 9:33:22",
+      "durationMs": 1662,
+      "startedAt": "2026/9/23 9:56:38",
+      "finishedAt": "2026/9/23 9:56:40",
+      "ok": true,
+      "aborted": false
+    },
+    {
+      "id": "typecheck",
+      "label": "typecheck (tsc x2)",
+      "cmd": [
+        "bun",
+        "run",
+        "typecheck"
+      ],
+      "logFile": "05-typecheck.log",
+      "exit": 0,
+      "durationMs": 15924,
+      "startedAt": "2026/9/23 9:56:38",
+      "finishedAt": "2026/9/23 9:56:54",
+      "ok": true,
+      "aborted": false
+    },
+    {
+      "id": "test:unit",
+      "label": "vitest run",
+      "cmd": [
+        "bun",
+        "run",
+        "test:unit"
+      ],
+      "logFile": "06-test-unit.log",
+      "exit": 0,
+      "durationMs": 23156,
+      "startedAt": "2026/9/23 9:56:38",
+      "finishedAt": "2026/9/23 9:57:01",
+      "ok": true,
+      "aborted": false
+    },
+    {
+      "id": "test:coverage",
+      "label": "vitest coverage",
+      "cmd": [
+        "bun",
+        "run",
+        "test:coverage"
+      ],
+      "logFile": "07-test-coverage.log",
+      "exit": 0,
+      "durationMs": 28524,
+      "startedAt": "2026/9/23 9:56:38",
+      "finishedAt": "2026/9/23 9:57:07",
       "ok": true,
       "aborted": false
     }

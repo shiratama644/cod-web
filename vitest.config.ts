@@ -30,14 +30,8 @@ export default defineConfig({
     //   - vmForks.js: Cannot find module .../vmForks.js (3891522)
     // vmThreads はローカル 43/44 pass 1 timeout (chat 200 chars) 16.24s だが
     // Termux で唯一動作する可能性があるため採用。
+    // singleThread: false が既定。必要なら true にして Proot 安定化を試す
     pool: 'vmThreads',
-    poolOptions: {
-      vmThreads: {
-        // Proot-Distro で worker_threads が不安定な場合、singleThread で回避を試みる
-        // 必要なら singleThread: true に変更
-        singleThread: false,
-      },
-    },
     // 既定は jsdom（クライアント DOM コンポーネント用）。
     // packages/ と apps/gameserver の純粋ロジックはファイル先頭の
     // `// @vitest-environment node` で DOM 非依存に切り替える。

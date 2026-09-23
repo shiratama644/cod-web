@@ -1,16 +1,18 @@
 /**
- * 一括品質ゲート + ログ保存スクリプト（並列版・abort対応・hang修正）
+ * 一括品質ゲート + ログ保存スクリプト（install先行 + 並列版・abort対応・hang修正）
  *
  *   bun run check:all
  *
- * 1つでも失敗したら残りを abort。typecheck のように sh -c "tsc && tsc" で
- * 子プロセスを持つタスクでもハングしないよう、
- * - setsid で新しいプロセスグループを作成
- * - abort 時に kill -TERM/-KILL -pgid でグループ全体を kill
- * - pkill -P で子も kill
- * - ReadableStream reader.cancel() で読み取りループを抜ける
- * - proc.exited に 6秒タイムアウト、全体に 10分 hard timeout
- * で確実に Promise.all が resolve し、summary.log が書かれて exit する。
+ * 1. install を最初に単独実行（依存解決のため）
+ * 2. 残り6タスクを並列実行（速い順: lint → determinism → heavy → typecheck → test:unit → coverage）
+ *    1つでも失敗したら残りを abort。typecheck のように sh -c "tsc && tsc" で
+ *    子プロセスを持つタスクでもハングしないよう、
+ *    - setsid で新しいプロセスグループを作成
+ *    - abort 時に kill -TERM/-KILL -pgid でグループ全体を kill
+ *    - pkill -P で子も kill
+ *    - ReadableStream reader.cancel() で読み取りループを抜ける
+ *    - proc.exited に 6秒タイムアウト、全体に 10分 hard timeout
+ *    で確実に Promise.all が resolve し、summary.log が書かれて exit する。
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -41,6 +43,8 @@ function log(msg: string) {
 const LOG_DIR = join(process.cwd(), 'logs')
 mkdirSync(LOG_DIR, { recursive: true })
 
+// 速度順に並べ替え: install(2s) → lint(1s) → determinism(0.3s) → heavy(1-2s) → typecheck(14-18s) → test:unit(11-26s) → coverage(24-30s)
+// install は最初に単独実行するため、残り6つは並列だがログ番号は速度順
 const tasks: Task[] = [
   {
     id: 'install',
@@ -49,40 +53,40 @@ const tasks: Task[] = [
     logFile: '01-install.log',
   },
   {
-    id: 'typecheck',
-    label: 'typecheck (tsc x2)',
-    cmd: ['bun', 'run', 'typecheck'],
-    logFile: '02-typecheck.log',
-  },
-  {
     id: 'lint',
     label: 'biome lint',
     cmd: ['bun', 'run', 'lint'],
-    logFile: '03-lint.log',
-  },
-  {
-    id: 'test:unit',
-    label: 'vitest run',
-    cmd: ['bun', 'run', 'test:unit'],
-    logFile: '04-test-unit.log',
-  },
-  {
-    id: 'test:coverage',
-    label: 'vitest coverage',
-    cmd: ['bun', 'run', 'test:coverage'],
-    logFile: '05-test-coverage.log',
+    logFile: '02-lint.log',
   },
   {
     id: 'check:determinism',
     label: 'determinism guard',
     cmd: ['bun', 'run', 'check:determinism'],
-    logFile: '06-check-determinism.log',
+    logFile: '03-check-determinism.log',
   },
   {
     id: 'check:determinism:heavy',
     label: 'determinism heavy 100x1000',
     cmd: ['bun', 'run', 'check:determinism:heavy'],
-    logFile: '07-check-determinism-heavy.log',
+    logFile: '04-check-determinism-heavy.log',
+  },
+  {
+    id: 'typecheck',
+    label: 'typecheck (tsc x2)',
+    cmd: ['bun', 'run', 'typecheck'],
+    logFile: '05-typecheck.log',
+  },
+  {
+    id: 'test:unit',
+    label: 'vitest run',
+    cmd: ['bun', 'run', 'test:unit'],
+    logFile: '06-test-unit.log',
+  },
+  {
+    id: 'test:coverage',
+    label: 'vitest coverage',
+    cmd: ['bun', 'run', 'test:coverage'],
+    logFile: '07-test-coverage.log',
   },
 ]
 
@@ -279,15 +283,59 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
 }
 
 async function main() {
-  log(`Starting all checks in PARALLEL (excluding build/e2e). Logs -> ${LOG_DIR}`)
-  log(`Tasks: ${tasks.map((t) => t.id).join(', ')}`)
-  log(`Mode: async parallel + await all, abort on first failure (setsid=${USE_SETSID})`)
+  log(`Starting all checks. Logs -> ${LOG_DIR}`)
+  log(`Phase 1: install (sequential, must succeed first)`)
+  log(`Phase 2: remaining 6 tasks in PARALLEL (fast-first order, abort on failure, setsid=${USE_SETSID})`)
+  log(`Order: ${tasks.map((t) => t.id).join(' -> ')}`)
+  console.log('')
+
+  // Phase 1: install を最初に単独実行
+  const installTask = tasks[0]
+  const installSignal = new AbortController().signal // install は abort しない
+  const installResult = await runTask(installTask, installSignal)
+
+  if (!installResult.ok) {
+    // install 失敗時は即終了、summary を書く
+    const summaryText = `check:all summary (install-first)\n` +
+      `date: ${nowJst()} (JST)\n` +
+      `mode: install first sequential, then parallel (fast-first)\n` +
+      `FAILED at install phase\n` +
+      `${'-'.repeat(60)}\n` +
+      `${installResult.ok ? '✔' : '✘'} ${installTask.id.padEnd(28)} FAILED exit=${installResult.exit} ${installResult.durationMs}ms -> ${installTask.logFile}\n`
+
+    writeFileSync(join(LOG_DIR, 'summary.log'), summaryText, 'utf8')
+    writeFileSync(
+      join(LOG_DIR, 'summary.json'),
+      JSON.stringify(
+        {
+          date: nowJst(),
+          mode: 'install-first',
+          total: 1,
+          passed: 0,
+          failed: 1,
+          totalMs: installResult.durationMs,
+          results: [installResult],
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    )
+    console.log('')
+    console.log(summaryText)
+    log(`${RED}✘ install failed, aborting all. See logs/ for details.${RESET}`)
+    process.exit(1)
+  }
+
+  // Phase 2: 残り6タスクを並列実行
+  const remainingTasks = tasks.slice(1)
+  log(`✔ install OK, starting Phase 2 parallel: ${remainingTasks.map((t) => t.id).join(', ')}`)
   console.log('')
 
   const controller = new AbortController()
   const { signal } = controller
 
-  const promises = tasks.map((task) => runTask(task, signal))
+  const promises = remainingTasks.map((task) => runTask(task, signal))
 
   let failed = false
   const wrapped = promises.map(async (p) => {
@@ -300,15 +348,17 @@ async function main() {
     return r
   })
 
-  const allResults = await Promise.all(wrapped)
+  const phase2Results = await Promise.all(wrapped)
+  const allResults = [installResult, ...phase2Results]
 
   const totalMs = allResults.reduce((s, r) => s + r.durationMs, 0)
   const passed = allResults.filter((r) => r.ok).length
   const failedResults = allResults.filter((r) => !r.ok)
 
-  let summaryText = `check:all summary (PARALLEL)\n`
+  let summaryText = `check:all summary (install-first + parallel)\n`
   summaryText += `date: ${nowJst()} (JST)\n`
-  summaryText += `mode: parallel async + abort on failure (fixed hang, setsid=${USE_SETSID})\n`
+  summaryText += `mode: install sequential first, then 6 tasks parallel fast-first (setsid=${USE_SETSID})\n`
+  summaryText += `order: ${tasks.map((t) => t.id).join(' -> ')}\n`
   summaryText += `total: ${allResults.length} tasks, ${passed} passed, ${failedResults.length} failed, ${totalMs}ms\n`
   summaryText += `${'-'.repeat(60)}\n`
   for (const r of allResults) {
@@ -331,7 +381,7 @@ async function main() {
     JSON.stringify(
       {
         date: nowJst(),
-        mode: 'parallel',
+        mode: 'install-first-parallel',
         total: allResults.length,
         passed,
         failed: failedResults.length,
