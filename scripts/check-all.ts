@@ -1,201 +1,295 @@
 /**
- * 一括品質ゲート + ログ保存スクリプト
+ * 一括品質ゲート + ログ保存スクリプト（並列版）
  *
  *   bun run check:all
- *   または
  *   bun run scripts/check-all.ts
  *
- * - build と e2e 以外の主要ゲートを順に実行
- *   install / typecheck / lint / determinism / determinism:heavy / unit / coverage
- * - 各チェックの stdout/stderr を logs/<name>.log に保存
- * - 最後に logs/summary.log とコンソールにサマリを出力
- * - 1つでも失敗したら exit 1（ログは残る）
+ * build / e2e 以外の主要ゲートを async 並列で実行し、
+ * 各出力を logs/<name>.log に保存。
+ * 1つでも失敗したら残りを abort して即停止。
  *
- * Termux Proot-Distro でも動くように TS6 互換で記述。
+ * 対象:
+ *   - install (bun install --frozen-lockfile)
+ *   - typecheck (tsc x2)
+ *   - lint (biome lint .)
+ *   - test:unit (vitest run)
+ *   - test:coverage (vitest run --coverage)
+ *   - check:determinism (scripts/check-determinism.ts)
+ *   - check:determinism:heavy (scripts/determinism-heavy.ts)
+ *
+ * 出力:
+ *   logs/
+ *     01-install.log
+ *     02-typecheck.log
+ *     03-lint.log
+ *     04-test-unit.log
+ *     05-test-coverage.log
+ *     06-check-determinism.log
+ *     07-check-determinism-heavy.log
+ *     summary.log
+ *     summary.json
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-type Check = {
-  name: string
+type Task = {
+  id: string
+  label: string
   cmd: string[]
   logFile: string
-  description: string
+}
+
+const RESET = '\x1b[0m'
+const GREEN = '\x1b[32m'
+const RED = '\x1b[31m'
+const CYAN = '\x1b[36m'
+const YELLOW = '\x1b[33m'
+const DIM = '\x1b[2m'
+
+function nowJst(): string {
+  return new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', hour12: false })
+}
+
+function log(msg: string) {
+  console.log(`${CYAN}[check:all]${RESET} ${msg}`)
 }
 
 const LOG_DIR = join(process.cwd(), 'logs')
+mkdirSync(LOG_DIR, { recursive: true })
 
-// build と e2e は除外（ユーザー要望）。必要ならコメントアウトを外す。
-const CHECKS: Check[] = [
+const tasks: Task[] = [
   {
-    name: 'install',
+    id: 'install',
+    label: 'bun install --frozen-lockfile',
     cmd: ['bun', 'install', '--frozen-lockfile'],
-    logFile: 'install.log',
-    description: '依存インストール（frozen-lockfile）',
+    logFile: '01-install.log',
   },
   {
-    name: 'typecheck',
+    id: 'typecheck',
+    label: 'typecheck (tsc x2)',
     cmd: ['bun', 'run', 'typecheck'],
-    logFile: 'typecheck.log',
-    description: 'TypeScript 型チェック（tsc --noEmit x2）',
+    logFile: '02-typecheck.log',
   },
   {
-    name: 'lint',
+    id: 'lint',
+    label: 'biome lint',
     cmd: ['bun', 'run', 'lint'],
-    logFile: 'lint.log',
-    description: 'Biome lint（132 files）',
+    logFile: '03-lint.log',
   },
   {
-    name: 'determinism',
-    cmd: ['bun', 'run', 'check:determinism'],
-    logFile: 'determinism.log',
-    description: '決定論 & アーキテクチャガード（Math.random禁止等）',
-  },
-  {
-    name: 'determinism-heavy',
-    cmd: ['bun', 'run', 'check:determinism:heavy'],
-    logFile: 'determinism-heavy.log',
-    description: 'Heavy決定論 100x1000 ticks',
-  },
-  {
-    name: 'unit',
+    id: 'test:unit',
+    label: 'vitest run',
     cmd: ['bun', 'run', 'test:unit'],
-    logFile: 'unit.log',
-    description: 'Vitest unit（44 files 311 tests）',
+    logFile: '04-test-unit.log',
   },
   {
-    name: 'coverage',
+    id: 'test:coverage',
+    label: 'vitest coverage',
     cmd: ['bun', 'run', 'test:coverage'],
-    logFile: 'coverage.log',
-    description: 'Vitest coverage 85%閾値',
+    logFile: '05-test-coverage.log',
   },
-  // 除外（必要なら有効化）:
-  // { name: 'build', cmd: ['bun','run','build'], logFile: 'build.log', description: 'Vite build' },
-  // { name: 'e2e-list', cmd: ['bun','run','test:e2e','--','--list'], logFile: 'e2e-list.log', description: 'Playwright E2E discovery' },
+  {
+    id: 'check:determinism',
+    label: 'determinism guard',
+    cmd: ['bun', 'run', 'check:determinism'],
+    logFile: '06-check-determinism.log',
+  },
+  {
+    id: 'check:determinism:heavy',
+    label: 'determinism heavy 100x1000',
+    cmd: ['bun', 'run', 'check:determinism:heavy'],
+    logFile: '07-check-determinism-heavy.log',
+  },
 ]
 
-function nowJST(): string {
-  // JST でタイムスタンプ（Termux でも動くように Intl 使わず手動）
-  const d = new Date()
-  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000)
-  return jst.toISOString().replace('T', ' ').replace('Z', ' JST')
+type Result = {
+  id: string
+  label: string
+  cmd: string[]
+  logFile: string
+  exit: number
+  durationMs: number
+  startedAt: string
+  finishedAt: string
+  ok: boolean
+  aborted?: boolean
 }
 
-async function runCheck(check: Check): Promise<{ name: string; exit: number; durationMs: number; logPath: string }> {
-  const logPath = join(LOG_DIR, check.logFile)
-  const start = Date.now()
-  console.log(`\n▶ [${check.name}] ${check.description}`)
-  console.log(`  $ ${check.cmd.join(' ')}`)
-  console.log(`  log: ${logPath}`)
+async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
+  const startedAt = nowJst()
+  const startedMs = Date.now()
+  log(`${YELLOW}▶ ${task.id}${RESET} ${DIM}${task.label}${RESET} -> logs/${task.logFile}`)
 
-  let output = `=== ${check.name} ===\n`
-  output += `Description: ${check.description}\n`
-  output += `Command: ${check.cmd.join(' ')}\n`
-  output += `Started: ${nowJST()}\n`
-  output += `Log: ${logPath}\n`
-  output += `---\n\n`
+  let captured = `> ${task.cmd.join(' ')}\n`
+  captured += `> started: ${startedAt} (JST)\n`
+  captured += `> log: logs/${task.logFile}\n`
+  captured += `${'-'.repeat(60)}\n`
 
-  const proc = Bun.spawn(check.cmd, {
+  const proc = Bun.spawn(task.cmd, {
     cwd: process.cwd(),
     stdout: 'pipe',
     stderr: 'pipe',
   })
 
-  const decoder = new TextDecoder()
-  let stdout = ''
-  let stderr = ''
+  let aborted = false
+  const onAbort = () => {
+    aborted = true
+    try {
+      proc.kill('SIGTERM')
+      setTimeout(() => {
+        try {
+          proc.kill('SIGKILL')
+        } catch {}
+      }, 1000)
+    } catch {}
+  }
+  if (signal.aborted) {
+    onAbort()
+  } else {
+    signal.addEventListener('abort', onAbort, { once: true })
+  }
 
-  const readStream = async (stream: ReadableStream<Uint8Array> | null, isErr: boolean) => {
+  const decoder = new TextDecoder()
+  const readStream = async (stream: ReadableStream<Uint8Array> | null | undefined) => {
     if (!stream) return
     const reader = stream.getReader()
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) break
-      const text = decoder.decode(value, { stream: true })
-      if (isErr) {
-        stderr += text
-      } else {
-        stdout += text
+    try {
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        captured += decoder.decode(value)
       }
-      // リアルタイムでコンソールにも流す
-      process.stdout.write(text)
+    } catch {
+      // aborted stream
     }
   }
 
-  await Promise.all([readStream(proc.stdout, false), readStream(proc.stderr, true)])
-
+  await Promise.all([readStream(proc.stdout), readStream(proc.stderr)])
   const exit = await proc.exited
-  const durationMs = Date.now() - start
+  signal.removeEventListener('abort', onAbort)
 
-  output += stdout
-  if (stderr) {
-    output += `\n--- stderr ---\n${stderr}`
+  const durationMs = Date.now() - startedMs
+  const finishedAt = nowJst()
+  // abort された場合は exit が 0 でも失敗扱い
+  const ok = !aborted && exit === 0 && !signal.aborted
+
+  captured += `${'-'.repeat(60)}\n`
+  captured += `> finished: ${finishedAt} (JST)\n`
+  captured += `> duration: ${durationMs}ms\n`
+  captured += `> exit: ${exit} ${aborted ? '(ABORTED)' : ''} ${ok ? 'OK' : 'FAILED'}\n`
+
+  const logPath = join(LOG_DIR, task.logFile)
+  writeFileSync(logPath, captured, 'utf8')
+
+  const icon = ok ? `${GREEN}✔${RESET}` : `${RED}✘${RESET}`
+  const status = aborted
+    ? `${RED}ABORTED${RESET}`
+    : ok
+      ? `${GREEN}OK${RESET}`
+      : `${RED}FAILED (exit ${exit})${RESET}`
+  log(`${icon} ${task.id} ${status} ${DIM}${durationMs}ms -> ${task.logFile}${RESET}`)
+
+  return {
+    id: task.id,
+    label: task.label,
+    cmd: task.cmd,
+    logFile: task.logFile,
+    exit: exit ?? 1,
+    durationMs,
+    startedAt,
+    finishedAt,
+    ok,
+    aborted,
   }
-  output += `\n---\nExit: ${exit}\nDuration: ${durationMs}ms\nFinished: ${nowJST()}\n`
-  output += exit === 0 ? `Status: PASS\n` : `Status: FAIL\n`
-
-  // ログ保存
-  mkdirSync(LOG_DIR, { recursive: true })
-  writeFileSync(logPath, output, 'utf8')
-
-  const status = exit === 0 ? '✅ PASS' : '❌ FAIL'
-  console.log(`  ${status} (${durationMs}ms) -> ${check.logFile}`)
-
-  return { name: check.name, exit: exit ?? 1, durationMs, logPath }
 }
 
 async function main() {
-  mkdirSync(LOG_DIR, { recursive: true })
+  log(`Starting all checks in PARALLEL (excluding build/e2e). Logs -> ${LOG_DIR}`)
+  log(`Tasks: ${tasks.map((t) => t.id).join(', ')}`)
+  log(`Mode: async parallel + await all, abort on first failure`)
+  console.log('')
 
-  console.log(`\n=== check:all 一括品質ゲート ===`)
-  console.log(`Started: ${nowJST()}`)
-  console.log(`Logs dir: ${LOG_DIR}`)
-  console.log(`Checks: ${CHECKS.map((c) => c.name).join(', ')} (build/e2e除外)`)
-  console.log(`---`)
+  const controller = new AbortController()
+  const { signal } = controller
 
-  const results: { name: string; exit: number; durationMs: number; logPath: string }[] = []
+  // 並列起動: それぞれ async で実行
+  const promises = tasks.map((task) => runTask(task, signal))
 
-  for (const check of CHECKS) {
-    const r = await runCheck(check)
+  // 1つでも失敗したら即停止: 各 promise が resolve した時点でチェック
+  const results: Result[] = []
+  let failed = false
+
+  // Promise.all ではなく、完了順に監視して失敗時に abort
+  const wrapped = promises.map(async (p) => {
+    const r = await p
     results.push(r)
+    if (!r.ok && !failed) {
+      failed = true
+      log(`${RED}✘ ${r.id} failed -> aborting remaining tasks...${RESET}`)
+      controller.abort()
+    }
+    return r
+  })
+
+  // await でまとめる（ユーザー要望: async並列 + await）
+  const allResults = await Promise.all(wrapped)
+
+  // summary
+  const totalMs = allResults.reduce((s, r) => s + r.durationMs, 0)
+  const passed = allResults.filter((r) => r.ok).length
+  const failedResults = allResults.filter((r) => !r.ok)
+
+  let summaryText = `check:all summary (PARALLEL)\n`
+  summaryText += `date: ${nowJst()} (JST)\n`
+  summaryText += `mode: parallel async + abort on failure\n`
+  summaryText += `total: ${allResults.length} tasks, ${passed} passed, ${failedResults.length} failed, ${totalMs}ms\n`
+  summaryText += `${'-'.repeat(60)}\n`
+  for (const r of allResults) {
+    const st = r.aborted ? 'ABORTED' : r.ok ? 'OK' : `FAILED exit=${r.exit}`
+    summaryText += `${r.ok ? '✔' : '✘'} ${r.id.padEnd(28)} ${st.padEnd(18)} ${r.durationMs}ms -> ${r.logFile}\n`
+  }
+  summaryText += `${'-'.repeat(60)}\n`
+  if (failedResults.length > 0) {
+    summaryText += `FAILED tasks:\n`
+    for (const f of failedResults) {
+      summaryText += `  - ${f.id}: logs/${f.logFile} ${f.aborted ? '(aborted)' : ''}\n`
+    }
+  } else {
+    summaryText += `All checks passed.\n`
   }
 
-  // サマリ作成
-  const summaryPath = join(LOG_DIR, 'summary.log')
-  let summary = `=== check:all Summary ===\n`
-  summary += `Started: ${nowJST()}\n`
-  summary += `Logs dir: ${LOG_DIR}\n`
-  summary += `---\n`
-  let allPass = true
-  let totalMs = 0
-  for (const r of results) {
-    const status = r.exit === 0 ? 'PASS' : 'FAIL'
-    summary += `${r.name.padEnd(20)} ${status.padEnd(6)} ${r.durationMs}ms  ${r.logPath}\n`
-    console.log(`${status === 'PASS' ? '✅' : '❌'} ${r.name.padEnd(20)} ${status} (${r.durationMs}ms)`)
-    if (r.exit !== 0) allPass = false
-    totalMs += r.durationMs
-  }
-  summary += `---\n`
-  summary += `Total: ${totalMs}ms\n`
-  summary += `Result: ${allPass ? 'ALL PASS' : 'SOME FAILED'}\n`
-  summary += `Finished: ${nowJST()}\n`
+  writeFileSync(join(LOG_DIR, 'summary.log'), summaryText, 'utf8')
+  writeFileSync(
+    join(LOG_DIR, 'summary.json'),
+    JSON.stringify(
+      {
+        date: nowJst(),
+        mode: 'parallel',
+        total: allResults.length,
+        passed,
+        failed: failedResults.length,
+        totalMs,
+        results: allResults,
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  )
 
-  writeFileSync(summaryPath, summary, 'utf8')
-
-  console.log(`\n=== Summary ===`)
-  console.log(summary)
-  console.log(`Logs saved to: ${LOG_DIR}/`)
-
-  if (!allPass) {
-    console.error(`\n❌ Some checks failed. See logs/ for details.`)
+  console.log('')
+  console.log(summaryText)
+  if (failedResults.length > 0) {
+    log(`${RED}✘ ${failedResults.length} task(s) failed. See logs/ for details.${RESET}`)
     process.exit(1)
   } else {
-    console.log(`\n✅ All checks passed.`)
+    log(`${GREEN}✔ All ${allResults.length} tasks passed. Logs in ${LOG_DIR}${RESET}`)
+    process.exit(0)
   }
 }
 
-main().catch((e) => {
-  console.error(`Unexpected error: ${e instanceof Error ? e.stack ?? e.message : String(e)}`)
+main().catch((err) => {
+  console.error(`Unexpected error: ${err instanceof Error ? err.stack ?? err.message : String(err)}`)
   process.exit(1)
 })
