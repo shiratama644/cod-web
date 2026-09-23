@@ -1,5 +1,5 @@
 > bun run check:determinism:heavy
-> started: 2026/9/23 9:10:51 (JST)
+> started: 2026/9/23 9:22:23 (JST)
 > log: logs/07-check-determinism-heavy.log
 ------------------------------------------------------------
 $ bun run scripts/determinism-heavy.ts
@@ -16,6 +16,6 @@ $ bun run scripts/determinism-heavy.ts
   100/100 scenarios passed
 ✅ Heavy determinism passed: 100 scenarios x 1000 ticks identical within 1e-10
 ------------------------------------------------------------
-> finished: 2026/9/23 9:10:53 (JST)
-> duration: 2008ms
+> finished: 2026/9/23 9:22:24 (JST)
+> duration: 1458ms
 > exit: 0  OK
