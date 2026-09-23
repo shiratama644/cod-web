@@ -20,6 +20,11 @@ export default defineConfig({
     },
   },
   test: {
+    // Termux Proot-Distro では forks pool が
+    // node_modules/.bun/vitest@.../dist/workers/forks.js を解決できず
+    // MODULE_NOT_FOUND になるため、threads pool を使用。
+    // 2026-09-23 Termuxログ: Cannot find module .../forks.js
+    pool: 'threads',
     // 既定は jsdom（クライアント DOM コンポーネント用）。
     // packages/ と apps/gameserver の純粋ロジックはファイル先頭の
     // `// @vitest-environment node` で DOM 非依存に切り替える。
