@@ -1,0 +1,9 @@
+> bun install --frozen-lockfile
+> started: 2026/9/23 9:10:51 (JST)
+> log: logs/01-install.log
+------------------------------------------------------------
+bun install v1.4.0 (34cbb9a40)
+------------------------------------------------------------
+> finished: 2026/9/23 9:10:53 (JST)
+> duration: 2572ms
+> exit: 143 (ABORTED) FAILED

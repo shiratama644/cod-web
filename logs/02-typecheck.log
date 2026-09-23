@@ -1,0 +1,10 @@
+> bun run typecheck
+> started: 2026/9/23 9:10:51 (JST)
+> log: logs/02-typecheck.log
+------------------------------------------------------------
+$ tsc --noEmit && tsc --noEmit -p tsconfig.server.json
+error: script "typecheck" was terminated by signal SIGTERM (Polite quit request)
+------------------------------------------------------------
+> finished: 2026/9/23 9:11:20 (JST)
+> duration: 29307ms
+> exit: 143 (ABORTED) FAILED
