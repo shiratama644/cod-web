@@ -1,10 +1,10 @@
 > bun run typecheck
-> started: 2026/9/23 20:43:18 (JST)
+> started: 2026/9/24 7:24:25 (JST)
 > log: logs/05-typecheck.log
 ------------------------------------------------------------
 > use setsid: true
 $ tsc --noEmit && tsc --noEmit -p tsconfig.server.json
 ------------------------------------------------------------
-> finished: 2026/9/23 20:43:21 (JST)
-> duration: 3003ms
+> finished: 2026/9/24 7:24:38 (JST)
+> duration: 13347ms
 > exit: 0   OK

@@ -46,7 +46,10 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 ### bun / Vite / TS / Biome
 
 - bun はプリインストールされない。`bun.sh` は SSL で到達不可。**npm registry 経由**（`restore-sandbox-env.sh`）。バージョンは devDependency で exact 固定。
-- **TypeScript 7**: `baseUrl` 廃止。`paths` は相対（`"@/*": ["./src/*"]`）。
+- **TypeScript: 標準の JS tsc のみ**（devDependency `typescript@^6.0.3`）。`paths` は相対（`"@/*": ["./src/*"]`）、`baseUrl` は不使用。
+  - **TypeScript 7（tsgo）は禁止**: レジストリの `typescript@latest` = 7.x は `@typescript/typescript-*`（linux-arm64 等）の **プラットフォーム別プレビルド Go バイナリ** を optionalDependencies に持ち、**proot-distro ではパスバグで失敗する**。lockfile に `@typescript/typescript-*` エントリが増えたら誤って 7.x（Go）が入っている証拠。
+  - `bun run` は `node_modules/.bin` を PATH 先頭に付与するため、`tsc` はローカルの JS 実装に解決する（グローバルの tsgo を shadow）。
+  - 素の `bun add -d typescript` は 7.x（Go 版）を拾うため禁止。常に `bun add -d typescript@^6.0.3` でピン留め。
 - **Biome 2**: `rules: { preset: "recommended" }`。`vcs.useIgnoreFile: true` で `files.includes` を書かない。import 制限は `linter.rules.style.noRestrictedImports`。scope package の深い subpath は `@cod/profile-fps/**` のように `**` で捕捉する（`*` は 1 階層だけ）。DOM global の `WebSocket` 直接参照禁止は import rule ではなく `linter.rules.style.noRestrictedGlobals` を使う。
 - ESM の `vite.config.ts` では `__dirname` 未定義。`path.dirname(fileURLToPath(import.meta.url))`。
 - ライブプレビュー（e2b.app）では `server.allowedHosts: true`（preview も）+ `host: true`。未設定は 403。
