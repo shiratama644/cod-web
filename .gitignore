@@ -36,3 +36,4 @@ test-results/
 # Next.js
 .next/
 next-env.d.ts
+*.tsbuildinfo
