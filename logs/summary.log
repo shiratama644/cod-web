@@ -1,15 +1,15 @@
 check:all summary (install-first + parallel)
-date: 2026/10/3 20:48:42 (JST)
+date: 2026/10/3 21:13:43 (JST)
 mode: install sequential first, then 6 tasks parallel fast-first (setsid=true)
 order: install -> lint -> check:determinism -> check:determinism:heavy -> typecheck -> test:unit -> test:coverage
-total: 7 tasks, 7 passed, 0 failed, 46245ms
+total: 7 tasks, 7 passed, 0 failed, 45351ms
 ------------------------------------------------------------
-✔ install                      OK                 64ms -> 01-install.log
-✔ lint                         OK                 847ms -> 02-lint.log
-✔ check:determinism            OK                 39ms -> 03-check-determinism.log
-✔ check:determinism:heavy      OK                 1412ms -> 04-check-determinism-heavy.log
-✔ typecheck                    OK                 9208ms -> 05-typecheck.log
-✔ test:unit                    OK                 14904ms -> 06-test-unit.log
-✔ test:coverage                OK                 19771ms -> 07-test-coverage.log
+✔ install                      OK                 68ms -> 01-install.log
+✔ lint                         OK                 705ms -> 02-lint.log
+✔ check:determinism            OK                 95ms -> 03-check-determinism.log
+✔ check:determinism:heavy      OK                 1206ms -> 04-check-determinism-heavy.log
+✔ typecheck                    OK                 8961ms -> 05-typecheck.log
+✔ test:unit                    OK                 14605ms -> 06-test-unit.log
+✔ test:coverage                OK                 19711ms -> 07-test-coverage.log
 ------------------------------------------------------------
 All checks passed.

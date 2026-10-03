@@ -85,6 +85,7 @@ Docker 系を採用へ転換。いずれも pnpm/Node24 前提を bun + 本モ�
 | .dockerignore | 採用（bun / Next.js / .agent 構成に書き換え） |
 | .devcontainer/ | 採用（development ターゲット + bun install、ポート 3000/4173/8080/5432、Biome/cspell 拡張） |
 | commitlint.config.js + .husky/commit-msg | 採用（Conventional Commits 規約=AGENTS.md §4.2 の機械的強制。日本語 subject 許可） |
+| scripts/setup.ts | **採用へ転換（2026-10-03 ユーザー明示指示）**。pnpm 版の移植ではなく bun 版を新規設計（apt システム依存 → bun install → イメージ取得 → check:env。アプリは実行しない。`bun run setup`） |
 | CONTRIBUTING.md | 不採用（AGENTS.md と重複。規約の正本は AGENTS.md に一本化） |
 | .gitleaks.toml | 不採用（scripts/check-security.ts のシークレットスキャンで代替済み） |
 | scripts/dev.ts / build.ts / check.ts | 不採用（フレームワーク自動検出基盤は構成固定の本リポジトリに不要。check.ts はそもそも本リポジトリの check-all.ts 由来） |

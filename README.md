@@ -15,6 +15,13 @@
 ## 起動・ビルド・テスト
 
 ```bash
+# 初回セットアップ(環境準備のみ。アプリ・ビルドは実行しない)
+bun run setup                        # 環境診断 → apt(必要時) → bun install → postgres イメージ取得 → check:env
+bun run setup --no-apt               # apt によるシステム依存インストールをスキップ
+bun run setup --e2e                  # Playwright ブラウザ(chromium)も取得
+# ※ docker なし環境(Termux proot 等)では apt で PostgreSQL を導入し、
+#   パスワード/app_db/.env/スキーマまで自動設定する(フェイルソフト)
+
 bun install                          # 依存インストール (bun@1.4.0, bun.lock)
 
 # 本番構成: install → PostgreSQL(Docker) → build → gameserver :8080 + preview :4173

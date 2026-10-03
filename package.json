@@ -19,6 +19,7 @@
     "build:apps": "cd apps/gameserver && bun run build && cd ../web && bun run build",
     "preview": "cd apps/web && bun run preview",
     "start": "bun run scripts/execute.ts",
+    "setup": "bun run scripts/setup.ts",
     "server": "cd apps/gameserver && bun run start",
     "server:dev": "cd apps/gameserver && bun run dev",
     "db:up": "docker compose up -d --wait postgres",
