@@ -139,8 +139,15 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
 
   const killGroup = (sig: string) => {
     // pgid kill: kill -TERM -<pid>
+    // プロセスグループ・本体・子プロセスの3段 kill を1つの意味単位として変数に抽出
+    // (行幅100の自動折返しで 'sh', '-c' が無意味にバラけるのを防ぐ)
+    const killCmd = [
+      `kill -${sig} -${proc.pid} 2>/dev/null`,
+      `kill -${sig} ${proc.pid} 2>/dev/null`,
+      `pkill -${sig} -P ${proc.pid} 2>/dev/null`,
+    ].join('; ')
     try {
-      Bun.spawnSync(['sh', '-c', `kill -${sig} -${proc.pid} 2>/dev/null; kill -${sig} ${proc.pid} 2>/dev/null; pkill -${sig} -P ${proc.pid} 2>/dev/null`])
+      Bun.spawnSync(['sh', '-c', killCmd])
     } catch {}
   }
 

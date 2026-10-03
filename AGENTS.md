@@ -233,6 +233,11 @@ bash .agent/hooks/restore-sandbox-env.sh
 - ユーザー提供前は dev サーバー（`apps/web` で `bun run dev` :3000）または `bun run build && bun run preview`（:4173）で確認する。
 
 ### 6.5 Biome 特有ルール
+- **行幅 100 の折返しは「意味のある区切り」で行う（2026-10-03 ユーザー指示）**:
+  - Biome の自動折返しは引数・プロパティ・配列要素の単位で行われる。これは意味単位として許容する。
+  - 長いコマンド文字列・式が原因で配列要素等が無意味にバラける場合は、**意味のある名前の中間変数に抽出**して折返し位置を意味単位にする（例: `scripts/check-all.ts` の `killCmd`）。
+  - 手組みのレイアウトを維持したい箇所のみ `// biome-ignore format: 理由` を使う（乱用しない）。
+  - コメント行・分割不能トークン（長い文字列リテラル等）は 100 桁超を許容（Biome はコメント・文字列を reflow しない仕様）。
 - **`biome-ignore` は対象コードの直前の行**。
 - `<span>` に `aria-label` を付ける時は `role="img"`。
 - テスト（`_tests_/**` / `*.test.{ts,tsx}`）の non-null 緩和は biome.json の `overrides` で行う。プロダクションでは non-null assertion 禁止。overrides が未設定なら勝手に緩めない。
