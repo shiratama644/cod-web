@@ -58,7 +58,7 @@
 - 原則として commit 前に以下 4+3 種を全て pass させる。**一括実行は `bun run check:all` を推奨**（install 先行 → 残り並列、~50s、`logs/` に保存）：
   ```bash
   bun run typecheck             # tsc --noEmit および tsc -p tsconfig.server.json（※ apps/web は含まない）
-  bunx biome lint .             # Biome 直接呼び出し（※ apps/web は対象外、ESLint が正）
+  bunx biome lint .             # Biome 直接呼び出し（apps/web を含むリポジトリ全体。D27）
   bun run test:unit             # vitest run（watch モードではない）
   bun run build                 # packages + gameserver + apps/web（next build）
   bun run check:determinism     # SimProfile.step禁止API検出（EM01〜）
