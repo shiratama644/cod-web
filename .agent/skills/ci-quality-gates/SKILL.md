@@ -12,7 +12,7 @@ description: GitHub Actions quality-gates.ymlを唯一の正本として扱い�
 
 - **品質ゲートCIは `.github/workflows/quality-gates.yml` が唯一の正本**。`docs/ops/github-actions-proposal.yml` は2026-09-22に削除済み、docsに再作成しない
 - 2026-10-03以降、目的別ワークフローを併設: `codeql.yml`（セキュリティ解析）、`dependency-review.yml`（PR依存検査）。品質ゲートの重複定義ではないため共存可（AGENTS.md §6.3）
-- Agentは `.github/workflows/` を直接作成しない（AGENTS.md §6.3例外: 2026-09-19以降はmono-repo効率化のため直接書き込み許可済みだが、提案→承認フローが基本）
+- Agentは `.github/workflows/` を直接作成しない（AGENTS.md §6.3例外: 2026-09-19以降はbun/mono-repo効率化のため直接書き込み許可済みだが、提案→承認フローが基本）
 - quality-gates.mdはworkflowの解説、proposal ymlの複製ではない
 
 ## quality-gates.yml構成（現行）
@@ -34,29 +34,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version-file: .nvmrc, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run typecheck
-      - run: pnpm run lint
-      - run: pnpm run check:determinism
-      - run: pnpm run test:unit
-      - run: pnpm run test:coverage
-      - run: pnpm run build
-      - run: pnpm run test:e2e --list  # discoveryのみ、browser実行はe2e jobで
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run check:determinism
+      - run: bun run test:unit
+      - run: bun run test:coverage
+      - run: bun run build
+      - run: bun run test:e2e -- --list  # discoveryのみ、browser実行はe2e jobで
 
   e2e:
     runs-on: ubuntu-latest
     if: inputs.job == 'all' || inputs.job == 'e2e' || github.event_name != 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version-file: .nvmrc, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm run test:e2e
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e
 ```
 
 ### inputs.job
@@ -70,13 +66,13 @@ jobs:
 
 | コマンド | 目的 | 失敗時の典型 |
 |---|---|---|
-| `pnpm run typecheck` | tsc --noEmit | 型エラー、import境界違反 |
-| `pnpm run lint` | biome check | import制限、noConsole、any濫用 |
-| `pnpm run check:determinism` | 禁止API検出 | Math.random / Date.now / setTimeout がSimProfile.stepに混入 |
-| `pnpm run test:unit` | Vitest unit 30files/189tests | 意味あるテスト失敗 |
-| `pnpm run test:coverage` | threshold 85/85/85/85 | 95.12%/87.97%/90.7%/96.8% 実績 |
-| `pnpm run build` | Vite + tsc build | importエラー、型エラー |
-| `pnpm run test:e2e --list` | discovery | spec構文エラー、configエラー |
+| `bun run typecheck` | tsc --noEmit | 型エラー、import境界違反 |
+| `bun run lint` | biome check | import制限、noConsole、any濫用 |
+| `bun run check:determinism` | 禁止API検出 | Math.random / Date.now / setTimeout がSimProfile.stepに混入 |
+| `bun run test:unit` | Vitest unit 30files/189tests | 意味あるテスト失敗 |
+| `bun run test:coverage` | threshold 85/85/85/85 | 95.12%/87.97%/90.7%/96.8% 実績 |
+| `bun run build` | Vite + tsc build | importエラー、型エラー |
+| `bun run test:e2e -- --list` | discovery | spec構文エラー、configエラー |
 
 ## Manual dispatch（手動実行）
 
@@ -91,9 +87,9 @@ jobs:
 
 ## よくある失敗
 
-- `pnpm-lock.yaml` が古い: `pnpm install` → `git diff pnpm-lock.yaml` を確認、CIは `--frozen-lockfile` なのでlockb不一致で失敗
-- CI セットアップは `pnpm/action-setup@v4` + `actions/setup-node@v4`（node-version-file: .nvmrc, cache: pnpm）。2026-10-03 bun→pnpm 移行
-- Playwright browser未インストール: CIでは `pnpm exec playwright install --with-deps chromium` 必須、localでは `pnpm exec playwright install chromium`
+- `bun.lockb` が古い: `bun install` → `git diff bun.lockb` を確認、CIは `--frozen-lockfile` なのでlockb不一致で失敗
+- `oven-sh/setup-bun` バージョン固定忘れ: v2を使う
+- Playwright browser未インストール: CIでは `bunx playwright install --with-deps chromium` 必須、localでは `bunx playwright install chromium`
 - proposal ymlをdocsに再作成: しない、`.github/workflows/` が正本
 
 ## 関連

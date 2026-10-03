@@ -12,38 +12,38 @@
 | Playwright webServer | `webServer.command` / `url` / `reuseExistingServer` / `timeout` / `gracefulShutdown` があり、`use.baseURL` と組み合わせると相対 `page.goto('/')` を使える。`webServer` は配列を取れ、複数サーバー（gameserver + preview）を同時に起動できる。 | <https://playwright.dev/docs/test-webserver> |
 | Playwright WebSocket | `page.on('websocket')` で WS 接続を監視、フレーム送受信を検証できる。公式 API は `WebSocket` / `WebSocketRoute`。補助資料として実践記事も参照。 | <https://playwright.dev/docs/api/class-websocket> / <https://playwright.dev/docs/mock#mock-websockets> / <https://dzone.com/articles/playwright-for-real-time-applications-testing-webs> |
 | Vitest coverage thresholds | `thresholds.lines/statements/branches/functions` で閾値設定、perFileやglobで個別設定も可能。 | <https://vitest.dev/config/coverage> |
-| pnpm CI install | 再現性のため `pnpm install --frozen-lockfile` を使う（2026-10-03 bun→pnpm 移行）。 | <https://pnpm.io/cli/install> |
+| Bun CI install | 再現性のため `bun ci` または `bun install --frozen-lockfile` を使う。 | <https://bun.com/docs/pm/cli/install> |
 | GitHub Actions workflow | workflow は YAML で、公式配置先は `.github/workflows`。 | <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax> |
-| pnpm/action-setup | GitHub Actions では `pnpm/action-setup@v4` + `actions/setup-node@v4`（cache: pnpm）でセットアップする。 | <https://github.com/pnpm/action-setup> |
+| setup-bun | GitHub Actions では `oven-sh/setup-bun@v2` で Bun をセットアップできる。 | <https://github.com/oven-sh/setup-bun> |
 
 ## 2. Local gate
 
 各実装タスクの commit 前に、原則として次を実行する。
 
 ```bash
-pnpm run typecheck
-pnpm exec biome lint .
-pnpm run check:determinism
-pnpm run test:unit
-pnpm run build
+bun run typecheck
+bunx biome lint .
+bun run check:determinism
+bun run test:unit
+bun run build
 ```
 
 Phase 1.5 以降は coverage も品質ゲートとして扱う。
 
 ```bash
-pnpm run test:coverage
+bun run test:coverage
 ```
 
 Phase 2 以降は determinism heavy も品質ゲートとして扱う（0.8s）。
 
 ```bash
-pnpm run scripts/determinism-heavy.ts
+bun run scripts/determinism-heavy.ts
 ```
 
 E2E の spec discovery は browser binary 不要なので、Playwright 設定変更時に確認する。
 
 ```bash
-pnpm run test:e2e --list
+bun run test:e2e -- --list
 ```
 
 ## 3. Coverage gate
@@ -84,13 +84,13 @@ PH1.5-C で Playwright の入口を追加、EM02 でフルE2E（複数 webServer
 
 | 項目 | 値 |
 |---|---:|
-| script | `pnpm run test:e2e` |
+| script | `bun run test:e2e` |
 | config | [`../../playwright.config.ts`](../../playwright.config.ts) |
 | specs | [`../../e2e/main-menu.spec.ts`](../../e2e/main-menu.spec.ts) |
 | local baseURL | `http://127.0.0.1:4173` |
 | gameserver URL | `http://127.0.0.1:8080` (health check 200) |
-| local servers | `webServer: [{command: pnpm run server, url: 8080}, {command: pnpm run preview, url: 4173}]` 配列化 |
-| preview / CI override | `PLAYWRIGHT_BASE_URL=<url> pnpm run test:e2e` |
+| local servers | `webServer: [{command: bun run server, url: 8080}, {command: bun run preview, url: 4173}]` 配列化 |
+| preview / CI override | `PLAYWRIGHT_BASE_URL=<url> bun run test:e2e` |
 | current project | Desktop Chrome / Chromium |
 | tests | 11 tests (EM02): shell smoke 3 + HUD 3 + TouchControls 2 + WebSocket full-e2e 3 |
 
@@ -106,8 +106,8 @@ PH1.5-C で Playwright の入口を追加、EM02 でフルE2E（複数 webServer
 
 Sandbox 方針:
 
-- Arena Sandbox では Chromium browser install / 実行が不可または不安定なため、`pnpm run test:e2e` の browser 実行を pass と主張しない。
-- Sandbox で確認するのは `pnpm run test:e2e --list` による spec discovery まで。
+- Arena Sandbox では Chromium browser install / 実行が不可または不安定なため、`bun run test:e2e` の browser 実行を pass と主張しない。
+- Sandbox で確認するのは `bun run test:e2e -- --list` による spec discovery まで。
 - 実行結果は CI または実機で記録する。
 
 ## 5. CI 本番配置（2026-09-19 許可 / 2026-09-22 整理）
@@ -117,8 +117,8 @@ Sandbox 方針:
 
 | Job | 内容 | 備考 |
 |---|---|---|
-| `quality` | `pnpm install --frozen-lockfile` → typecheck → lint → determinism → unit → coverage → build → E2E discovery | PR の基本 gate |
-| `e2e` | Playwright browser install → `pnpm run test:e2e` → report artifact upload | Browser 実行可能な runner 用 |
+| `quality` | `bun ci` → typecheck → lint → determinism → unit → coverage → build → E2E discovery | PR の基本 gate |
+| `e2e` | Playwright browser install → `bun run test:e2e` → report artifact upload | Browser 実行可能な runner 用 |
 
 ### 手動実行（2026-09-21 追加）
 
@@ -148,18 +148,18 @@ GitHub UIでの操作:
 ローカル同等:
 ```bash
 # quality
-pnpm run typecheck && pnpm exec biome lint . && pnpm run check:determinism && pnpm run test:unit && pnpm run test:coverage && pnpm run build && pnpm run test:e2e --list
+bun run typecheck && bunx biome lint . && bun run check:determinism && bun run test:unit && bun run test:coverage && bun run build && bun run test:e2e -- --list
 # e2e
-pnpm exec playwright install --with-deps chromium && pnpm run test:e2e
+bunx playwright install --with-deps chromium && bun run test:e2e
 ```
 
 ## 6. Phase 4 完了確認と Phase 5 へ進む前の確認
 
-- `pnpm run test:unit` 44 files / 311 tests pass (PH3-D 37/255 → PH4-F 44/311, +7 files +56 tests)
-- `pnpm run test:coverage` が thresholds（85/85/85/85）を満たす。PH4-F後: 93.51%/85.8%/88.48%/94.76%
-- `pnpm run check:determinism` pass (no forbidden patterns)
-- `pnpm run scripts/determinism-heavy.ts` pass (100x1000 0.7s)
-- `pnpm run test:e2e --list` で 11 tests discovered
+- `bun run test:unit` 44 files / 311 tests pass (PH3-D 37/255 → PH4-F 44/311, +7 files +56 tests)
+- `bun run test:coverage` が thresholds（85/85/85/85）を満たす。PH4-F後: 93.51%/85.8%/88.48%/94.76%
+- `bun run check:determinism` pass (no forbidden patterns)
+- `bun run scripts/determinism-heavy.ts` pass (100x1000 0.7s)
+- `bun run test:e2e -- --list` で 11 tests discovered
 - import boundary audit: 0 violations (engine-core→profile-*, gamemodes→sdkのみ)
 - `grep console.log` client 0件、server 3件（運用ログ許容）
 - `grep getPlayers()` hot path 0件
@@ -168,7 +168,7 @@ pnpm exec playwright install --with-deps chromium && pnpm run test:e2e
 - memory leak: 0件 (removePlayer/clear + rateLimiter remove)
 - zero-alloc: 0件 hot path
 - gamemode exception safety: roomが落ちない (GameModeRuntime safeCall + timer try/catch + runtime-gamemode.test.ts)
-- CI または実環境で `pnpm run test:e2e` を一度実行し、結果を記録する
+- CI または実環境で `bun run test:e2e` を一度実行し、結果を記録する
 
 ### Phase 4 追加ゲート — 改訂版
 

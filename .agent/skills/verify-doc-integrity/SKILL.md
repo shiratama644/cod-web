@@ -53,12 +53,12 @@ git status --short && git diff --stat
 # 狙いではないファイル・.agent/logs/ の過去ログが混ざっていないか
 ```
 
-### Step 5. packageManager 整合性（pnpm）
+### Step 5. packageManager 整合性（bun）
 
 ```bash
 node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).packageManager"
-# 期待: pnpm@x.y.z 形式（素の typescript 追加で tsgo 7.x が混入していないかも lockfile で確認:
-# grep -c '@typescript/typescript-linux' pnpm-lock.yaml → 0）
+# 期待: bun@1.4.0 形式（素の typescript 追加で tsgo 7.x が混入していないかも lockfile で確認:
+# grep -c '@typescript/typescript-linux' bun.lock → 0）
 ```
 
 ## 完了報告のフォーマット
@@ -68,7 +68,7 @@ node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).packageMa
 - (B) リンク: OK (broken 0件)
 - (C) 目次: OK / 要更新
 - (D) 変更狙い: 意図した N ファイルのみ
-- (E) packageManager: pnpm@10.34.6
+- (E) packageManager: bun@1.4.0
 ```
 
 どれか1つでも NG なら「完了」宣言はしない。先に直す。

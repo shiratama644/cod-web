@@ -4,36 +4,35 @@
   "version": "0.0.0",
   "type": "module",
   "description": "Browser-based multi-type game platform prototype using Bun, React, and Babylon.js.",
-  "packageManager": "pnpm@10.34.6",
+  "packageManager": "bun@1.4.0",
   "engines": {
-    "node": ">=22",
-    "pnpm": ">=10"
+    "bun": ">=1.4.0"
   },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm --filter web dev",
-    "build": "pnpm run build:packages && pnpm run build:apps",
-    "build:packages": "pnpm --filter @cod/protocol build && pnpm --filter @cod/engine-core build && pnpm --filter @cod/profile-fps build",
-    "build:apps": "pnpm --filter @cod/gameserver build && pnpm --filter web build",
-    "preview": "pnpm --filter web preview",
-    "start": "tsx scripts/execute.ts",
-    "server": "pnpm --filter @cod/gameserver start",
-    "server:dev": "pnpm --filter @cod/gameserver dev",
+    "dev": "cd apps/web && bun run dev",
+    "build": "bun run build:packages && bun run build:apps",
+    "build:packages": "cd packages/protocol && bun run build && cd ../engine-core && bun run build && cd ../profile-fps && bun run build",
+    "build:apps": "cd apps/gameserver && bun run build && cd ../web && bun run build",
+    "preview": "cd apps/web && bun run preview",
+    "start": "bun run scripts/execute.ts",
+    "server": "cd apps/gameserver && bun run start",
+    "server:dev": "cd apps/gameserver && bun run dev",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "check:determinism": "tsx scripts/check-determinism.ts",
-    "check:determinism:heavy": "tsx scripts/determinism-heavy.ts",
-    "check:all": "tsx scripts/check-all.ts",
-    "check:env": "tsx scripts/check-env.ts",
-    "verify:docs": "tsx scripts/verify-docs.ts",
-    "security:check": "tsx scripts/check-security.ts",
+    "check:determinism": "bun run scripts/check-determinism.ts",
+    "check:determinism:heavy": "bun run scripts/determinism-heavy.ts",
+    "check:all": "bun run scripts/check-all.ts",
+    "check:env": "bun run scripts/check-env.ts",
+    "verify:docs": "bun run scripts/verify-docs.ts",
+    "security:check": "bun run scripts/check-security.ts",
     "bench": "vitest bench --run --config vitest.bench.config.ts",
     "spell": "cspell --no-progress --relative",
     "prepare": "husky"
@@ -63,21 +62,6 @@
     "jsdom": "^30.0.1",
     "typescript": "^6.0.3",
     "vite": "^8.2.2",
-    "vitest": "^4.1.11",
-    "tsx": "^4.20.6"
-  },
-  "pnpm": {
-    "auditConfig": {
-      "ignoreGhsas": [
-        "GHSA-vfj7-8cjw-p6xm"
-      ]
-    },
-    "onlyBuiltDependencies": [
-      "@biomejs/biome",
-      "bun",
-      "esbuild",
-      "sharp",
-      "unrs-resolver"
-    ]
+    "vitest": "^4.1.11"
   }
 }

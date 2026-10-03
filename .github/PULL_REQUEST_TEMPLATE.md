@@ -16,17 +16,17 @@
 
 ## チェックリスト
 
-### 品質ゲート(`pnpm run check:all` = 7 ゲート)
+### 品質ゲート(`bun run check:all` = 7 ゲート)
 
-- [ ] `pnpm run check:all` が 7/7 PASS(install / lint / determinism / heavy / typecheck / test:unit / coverage)
-- [ ] 決定論に関わる変更の場合、`pnpm run check:determinism:heavy` も確認した
-- [ ] Next.js(apps/web)に触れた場合、`cd apps/web && pnpm run build` が通る
+- [ ] `bun run check:all` が 7/7 PASS(install / lint / determinism / heavy / typecheck / test:unit / coverage)
+- [ ] 決定論に関わる変更の場合、`bun run check:determinism:heavy` も確認した
+- [ ] Next.js(apps/web)に触れた場合、`cd apps/web && bun run build` が通る
 
 ### 任意検査(該当する場合)
 
-- [ ] `pnpm run verify:docs`(ドキュメントを変更した場合)
-- [ ] `pnpm run security:check`(依存を追加・更新した場合)
-- [ ] `pnpm run bench`(protocol/engine-core のホットパスに触れた場合)
+- [ ] `bun run verify:docs`(ドキュメントを変更した場合)
+- [ ] `bun run security:check`(依存を追加・更新した場合)
+- [ ] `bun run bench`(protocol/engine-core のホットパスに触れた場合)
 
 ### 運用
 

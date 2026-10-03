@@ -23,7 +23,7 @@ description: apps/web（Next.js 16）をSandbox/Arenaプレビューで確実に
 ## ツールチェーンの分担（重要）
 
 - **Biome は apps/web を見ない**: `biome.json` の `files.includes` = `["**", "!apps/web/**"]`。apps/web は **app ローカルの ESLint**（`next lint` 系）が正。
-- **root `pnpm run typecheck` は apps/web を含まない**（root tsconfig include から除外済み）。web の型検査は `cd apps/web && pnpm run typecheck`。
+- **root `bun run typecheck` は apps/web を含まない**（root tsconfig include から除外済み）。web の型検査は `cd apps/web && bun run typecheck`。
 - **Vitest coverage も apps/web を含まない**（E2E と app ローカル検証でカバー）。
 - root の TypeScript は JS tsc 6.x ピン（`tech-stack/SKILL.md`）、apps/web は app ローカルに typescript 5.9.x を持つ（Next 公式要件。これは root ピンと矛盾しない — workspace 別依存）。
 
@@ -31,9 +31,9 @@ description: apps/web（Next.js 16）をSandbox/Arenaプレビューで確実に
 
 1. **@types/react の二重解決で typecheck 崩壊**: app と root で @types/react のバージョンがずれると framer-motion 経由で `'unique symbol' Key` 系の TS2322 が大量発生。**app 側の @types/react / @types/react-dom を root と同じ ^19.2.x に揃えて dedupe** する。lockfile に @types/react が2エントリあったら要修正。
 2. **Arena ライブプレビュー（e2b.app）**: `next.config.ts` に `allowedDevOrigins`（`*.e2b.app`）が必要。`-H 0.0.0.0` でバインド。未設定だと dev オーバーレイ/HMR がブロックされる。
-3. **依存変更直後の `pnpm install --frozen-lockfile` は失敗する**: まず素の `pnpm install` で lockfile を更新してから frozen を使う（check:all は frozen 前提）。
+3. **依存変更直後の `bun install --frozen-lockfile` は失敗する**: まず素の `bun install` で lockfile を更新してから frozen を使う（check:all は frozen 前提）。
 4. **.gitignore**: `.next/` と `*.tsbuildinfo`（next typecheck の incremental 出力）を ignore（40b44eb）。
-5. **Playwright**: `playwright.config.ts` の webServer は `cd apps/web && pnpm run build && pnpm run preview`（:4173）単発構成。spec は `e2e/main-menu.spec.ts`（Home パネル文言 + `/api/loadouts` round-trip + `/api/health`）。timeout 300s（next build が遅い）。
+5. **Playwright**: `playwright.config.ts` の webServer は `cd apps/web && bun run build && bun run preview`（:4173）単発構成。spec は `e2e/main-menu.spec.ts`（Home パネル文言 + `/api/loadouts` round-trip + `/api/health`）。timeout 300s（next build が遅い）。
 
 ## S フェーズ（ゲーム統合）に向けて
 
@@ -44,8 +44,8 @@ description: apps/web（Next.js 16）をSandbox/Arenaプレビューで確実に
 ## 監査コマンド
 
 ```bash
-cd apps/web && pnpm run typecheck && pnpm run lint   # web はこの2つが正
-grep -c '"@types/react"' pnpm-lock.yaml                   # 二重解決チェック
+cd apps/web && bun run typecheck && bun run lint   # web はこの2つが正
+grep -c '"@types/react"' bun.lock                   # 二重解決チェック
 grep -n "allowedDevOrigins" apps/web/next.config.ts # プレビュー設定確認
 ```
 

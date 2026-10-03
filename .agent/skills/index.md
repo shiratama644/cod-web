@@ -14,7 +14,7 @@
 | 状況 | 使うスキル |
 | :--- | :--- |
 | 初回 / 全体把握 | [`project-overview/SKILL.md`](./project-overview/SKILL.md) |
-| ライブラリの使いどころ・サンドボックスでの pnpm/Node/WS ハマり | [`tech-stack/SKILL.md`](./tech-stack/SKILL.md), [`bun-runtime/SKILL.md`](./bun-runtime/SKILL.md) |
+| ライブラリの使いどころ・サンドボックスでの bun/Vite/WS ハマり | [`tech-stack/SKILL.md`](./tech-stack/SKILL.md), [`bun-runtime/SKILL.md`](./bun-runtime/SKILL.md) |
 | 「動かない / テストできない / ネットワーク・GPU が絡む」環境トラブル | [`sandbox-constraints/SKILL.md`](./sandbox-constraints/SKILL.md) |
 | Bun WS / Channel / Input 16B / backpressure / rate limit | [`networking/SKILL.md`](./networking/SKILL.md) |
 | SimProfile決定論 / same-input / heavy determinism | [`deterministic-sim/SKILL.md`](./deterministic-sim/SKILL.md) |
@@ -45,8 +45,8 @@
 | :--- | :--- | :--- |
 | [project-overview/SKILL.md](./project-overview/SKILL.md) | プロダクト目標・現行コード（移行元）と理想フェーズを素早く把握する | 2026-10-03（現状注記: CoDM入れ替え方針 + Next化） |
 | [tech-stack/SKILL.md](./tech-stack/SKILL.md) | 理想スタックと移行元コードのハマりどころを区別して実装できる | 2026-10-03（現状注記: apps/webはNext化） |
-| [sandbox-constraints/SKILL.md](./sandbox-constraints/SKILL.md) | Sandbox / ネットワーク / GitHub App の制約を迂回して検証できる | 2026-10-03（HEAD巻き戻りreset --soft + pnpm PATH + frozen-lockfile） |
-| [bun-runtime/SKILL.md](./bun-runtime/SKILL.md) | pnpm + Node/tsx 運用と gameserver 用 bun を Sandbox で確実に導入・復旧する | 2026-10-03（bun→pnpm 全面移行） |
+| [sandbox-constraints/SKILL.md](./sandbox-constraints/SKILL.md) | Sandbox / ネットワーク / GitHub App の制約を迂回して検証できる | 2026-10-03（HEAD巻き戻りreset --soft + bun PATH + frozen-lockfile） |
+| [bun-runtime/SKILL.md](./bun-runtime/SKILL.md) | BunをSandboxで確実に導入・復旧し、workspaces/serveを正しく使う | 2026-09-22（adopt-bun + restore-sandbox-env） |
 | [networking/SKILL.md](./networking/SKILL.md) | Bun WS権威サーバー、Channel framing、Input 16B、backpressure、rate limitを正しく実装 | 2026-09-22（PH0-A/B/C + PH1-C + EM01 + EM02 handlers） |
 | [deterministic-sim/SKILL.md](./deterministic-sim/SKILL.md) | SimProfile.step決定論を守り、same-input + heavy determinismテストを実装 | 2026-09-22（PH2-E 1000x100 0.8s） |
 | [zero-alloc/SKILL.md](./zero-alloc/SKILL.md) | ホットパスでゼロアロケを守り、GCを出さない実装パターンを適用 | 2026-10-03（現状注記: client netcodeはengine-core/src/client） |
@@ -62,7 +62,7 @@
 | [gamemode-api/SKILL.md](./gamemode-api/SKILL.md) | gamemode-api core + sdk facade、define検証、RoomCtx、hybrid async、ctx spawn、Runtime/Timer/RateLimiter例外安全、ffa最小+pvpエイリアス、gameserver統合例外安全、parentGenre/genres/tags/subModes/display/stats拡張、Official FPS 1ゲーム複数モード投票、Sandbox公式拡張+UGC、Header/Sidebar/Modal/Detail/Room/VoteハブUI骨組み | 2026-09-22（PH4-F 投票 Official FPS FFA/TDM/DOM + Sandbox公式拡張+UGC + ハブUI 44 files 311 tests + coverage 93.51%） |
 | [nextjs-frontend/SKILL.md](./nextjs-frontend/SKILL.md) | apps/web（Next.js 16）を Sandbox/Arena プレビューで運用し、Biome/tsc/Vitest 体制と共存させる（allowedDevOrigins、@types/react dedupe、DB fallback、E2E webServer） | 2026-10-03（Next主化 + Vite削除 2a93a99） |
 | [codm-research/SKILL.md](./codm-research/SKILL.md) | CoDM ディープリサーチ R0〜R7 をハイブリッド基準・検証ラベル・IP境界で進め、INTEGRATION_SPEC まで導く | 2026-10-03（R0 完了 + ハイブリッド基準確定） |
-| [verify-doc-integrity/SKILL.md](./verify-doc-integrity/SKILL.md) | docs変更の整合性（リンク実在・目次更新・機密混入なし・packageManager=pnpm）を機械検証できる | 2026-10-03（bun→pnpm 移行反映） |
+| [verify-doc-integrity/SKILL.md](./verify-doc-integrity/SKILL.md) | docs変更の整合性（リンク実在・目次更新・機密混入なし・packageManager=bun）を機械検証できる | 2026-10-03（TEMPLATE_REPO 採用・bun調整） |
 | [diff-review-report/SKILL.md](./diff-review-report/SKILL.md) | 大きな変更を人間がレビュー可能なレポート（docs/audit/diff-*.md）にまとめられる | 2026-10-03（TEMPLATE_REPO 採用） |
 
 ## 設計仕様の正本（スキルではなく docs/arch/）

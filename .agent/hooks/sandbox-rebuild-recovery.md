@@ -14,7 +14,7 @@
 
 - 見分けの決め手: `git log -1 --oneline` が古いのに、`ls` すると直近の作業ファイルが存在する → HEAD のみ巻き戻り。
 - 巻き戻り時に `git rm` 等が「local modifications」で失敗するのは典型症状。先に soft reset で HEAD を戻す。
-- どちらの場合も復旧後に `bash .agent/hooks/restore-sandbox-env.sh` で pnpm を確認（グローバル bin が PATH から消えることが多い。`export PATH=$PATH:/usr/local/bin`）。
+- どちらの場合も復旧後に `bash .agent/hooks/restore-sandbox-env.sh` で bun を確認（PATH から消えることが多い。`export PATH=$PATH:/usr/local/bin`）。
 
 ## 背景
 
@@ -41,7 +41,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 ```bash
 git log --oneline -5          # push 済みコミットが見えること
-pnpm run test:unit                # テストが通ること（プロジェクト初期化前は未整備でも可、その場合は pnpm install 成功まで確認）
+bun run test:unit                # テストが通ること（プロジェクト初期化前は未整備でも可、その場合は bun install 成功まで確認）
 ```
 → 問題なければ作業再開。
 

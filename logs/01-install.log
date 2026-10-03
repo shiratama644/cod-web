@@ -1,16 +1,14 @@
-> pnpm install --frozen-lockfile
-> started: 2026/10/3 16:24:15 (JST)
+> bun install --frozen-lockfile
+> started: 2026/10/3 16:48:43 (JST)
 > log: logs/01-install.log
 ------------------------------------------------------------
 > use setsid: true
-Scope: all 8 workspace projects
-Lockfile is up to date, resolution step is skipped
-Already up to date
+bun install v1.4.0 (34cbb9a40)
 
-. prepare$ husky
-. prepare: Done
-Done in 5.7s using pnpm v10.34.6
+$ husky
+
+Checked 635 installs across 814 packages (no changes) [141.00ms]
 ------------------------------------------------------------
-> finished: 2026/10/3 16:24:21 (JST)
-> duration: 5816ms
+> finished: 2026/10/3 16:48:43 (JST)
+> duration: 146ms
 > exit: 0   OK

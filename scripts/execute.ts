@@ -1,22 +1,20 @@
 /**
  * 一括起動スクリプト（本番構成）。
  *
- *   pnpm run start   （tsx 実行・Node。2026-10-03 bun→pnpm 移行で child_process に移植）
+ *   bun run scripts/execute.ts   （または `bun run start`）
  *
  * 次を順に実行する:
- *   1. `pnpm install --frozen-lockfile`。失敗したらそこで停止。
- *   2. `pnpm run build`（packages + gameserver + next build）。失敗したらそこで停止してサーバは起動しない。
+ *   1. `bun install`。失敗したらそこで停止。
+ *   2. `bun run build`（packages + gameserver + next build）。失敗したらそこで停止してサーバは起動しない。
  *   3. ビルド成功後、次の 2 プロセスを並列起動する:
- *        - game server : `pnpm run server` （権威ゲームサーバ・:8080、bun ランタイムで実行）
- *        - web client  : `pnpm run preview`（next start・:4173）
+ *        - game server : `bun run server` （権威ゲームサーバ・:8080）
+ *        - web client  : `bun run preview`（next start・:4173）
  *
  * 各プロセスの stdout/stderr は **プロセスごとに色分けしてタグ付け**して
  * 自プロセスの stdout へ流す。Ctrl+C 等で終了したら子プロセスをすべて後始末する。
  *
  * 補助: 色やタグ付けのために外部依存は使わず ANSI エスケープを直接使う。
  */
-
-import { type ChildProcess, spawn as nodeSpawn } from 'node:child_process'
 
 // ── ANSI 色（ログの色分け） ──────────────────────────────────────────────
 const RESET = '\x1b[0m'
@@ -47,87 +45,102 @@ function logLine(kind: Kind, line: string): void {
   process.stdout.write(`${fg}${DIM}[${tag}]${RESET}${pad} ${fg}${text}${RESET}\n`)
 }
 
-/** 子プロセスの stdout/stderr を行単位で色付けして転送する。capture=true なら全文も返す。 */
-function pipeOutput(
-  kind: Kind,
-  proc: ChildProcess,
-  onChunk?: (chunk: string) => void,
-): void {
+/** 子プロセスの stdout/stderr を行単位で色付けして転送する。 */
+function pipeOutput(kind: Kind, proc: {
+  stdout?: ReadableStream<Uint8Array> | null
+  stderr?: ReadableStream<Uint8Array> | null
+}): void {
+  const decoder = new TextDecoder()
   let buffer = ''
-  const pump = (stream: NodeJS.ReadableStream | null) => {
+  const pump = (stream: ReadableStream<Uint8Array> | null | undefined) => {
     if (!stream) return
-    stream.on('data', (data: Buffer) => {
-      const chunk = data.toString('utf8')
-      onChunk?.(chunk)
-      buffer += chunk
-      let nl = buffer.indexOf('\n')
-      while (nl >= 0) {
-        logLine(kind, buffer.slice(0, nl))
-        buffer = buffer.slice(nl + 1)
-        nl = buffer.indexOf('\n')
+    void (async () => {
+      const reader = stream.getReader()
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        let nl = buffer.indexOf('\n')
+        while (nl >= 0) {
+          logLine(kind, buffer.slice(0, nl))
+          buffer = buffer.slice(nl + 1)
+          nl = buffer.indexOf('\n')
+        }
       }
-    })
-    stream.on('end', () => {
-      if (buffer.length > 0) {
-        logLine(kind, buffer)
-        buffer = ''
-      }
-    })
+    })()
   }
   pump(proc.stdout)
   pump(proc.stderr)
 }
 
-/** 子プロセスの終了コードを Promise で待つ。 */
-function waitExit(proc: ChildProcess): Promise<number> {
-  return new Promise((resolve) => {
-    proc.on('close', (code, sig) => resolve(code ?? (sig ? 143 : 1)))
-    proc.on('error', () => resolve(1))
-  })
-}
-
-/** コマンドを起動して出力を色分け転送する（npm script を経由せず直接バイナリへ）。 */
-function spawnTagged(kind: Kind, cmd: string[], cwd = process.cwd()): ChildProcess {
-  const proc = nodeSpawn(cmd[0] as string, cmd.slice(1), {
+/** bun のサブコマンドを実行する（npm script を経由せず直接バイナリへ）。 */
+function spawn(kind: Kind, cmd: string[], cwd = process.cwd()) {
+  const proc = Bun.spawn(cmd, {
     cwd,
     // 出力は親にパイプして色分けする。
-    stdio: ['inherit', 'pipe', 'pipe'],
+    stdout: 'pipe',
+    stderr: 'pipe',
+    stdin: 'inherit',
   })
   pipeOutput(kind, proc)
   return proc
 }
 
-async function runInstallWithLogs(
-  args: string[],
-  kind: Kind,
-): Promise<{ exit: number; output: string }> {
+async function runInstallWithLogs(args: string[], kind: Kind): Promise<{ exit: number; output: string }> {
   // インストールの出力をキャプチャしつつ、色付きで流す。失敗時に詳細を返す。
   let captured = ''
-  const proc = nodeSpawn('pnpm', args, {
+  const proc = Bun.spawn(['bun', ...args], {
     cwd: process.cwd(),
-    stdio: ['inherit', 'pipe', 'pipe'],
+    stdout: 'pipe',
+    stderr: 'pipe',
+    stdin: 'inherit',
   })
-  pipeOutput(kind, proc, (chunk) => {
-    captured += chunk
-  })
-  const exit = await waitExit(proc)
-  return { exit, output: captured }
+  // pipeOutput と同時にキャプチャ
+  const decoder = new TextDecoder()
+  let buffer = ''
+  const pumpCapture = (stream: ReadableStream<Uint8Array> | null | undefined) => {
+    if (!stream) return
+    void (async () => {
+      const reader = stream.getReader()
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        captured += chunk
+        buffer += chunk
+        let nl = buffer.indexOf('\n')
+        while (nl >= 0) {
+          logLine(kind, buffer.slice(0, nl))
+          buffer = buffer.slice(nl + 1)
+          nl = buffer.indexOf('\n')
+        }
+      }
+      if (buffer.length > 0) {
+        logLine(kind, buffer)
+        buffer = ''
+      }
+    })()
+  }
+  pumpCapture(proc.stdout)
+  pumpCapture(proc.stderr)
+  const exit = await proc.exited
+  return { exit: exit ?? 1, output: captured }
 }
 
 async function main(): Promise<number> {
   // ── 1. 依存関係のインストール ──────────────────────────────────────────
   // まずは frozen-lockfile で決定的に。失敗したら verbose で原因を出す。
-  logLine('install', 'Installing dependencies... (pnpm install --frozen-lockfile)')
+  logLine('install', 'Installing dependencies... (bun install --frozen-lockfile)')
   const result = await runInstallWithLogs(['install', '--frozen-lockfile'], 'install')
   if (result.exit !== 0) {
-    logLine('install', `! First install failed (exit ${result.exit}). Retrying with --loglevel=debug to diagnose...`)
-    const verbose = await runInstallWithLogs(['install', '--loglevel=debug'], 'install')
+    logLine('install', `! First install failed (exit ${result.exit}). Retrying with --verbose to diagnose...`)
+    const verbose = await runInstallWithLogs(['install', '--verbose'], 'install')
     logLine('install', `X Install failed (exit ${verbose.exit}). Build and servers will not be started.`)
     logLine('install', `--- Troubleshooting ---`)
-    logLine('install', `1) pnpm store prune`)
-    logLine('install', `2) Force reinstall: pnpm install --force`)
-    logLine('install', `3) If @biomejs or optional deps fail: pnpm install --ignore-scripts then pnpm run prepare`)
-    logLine('install', `4) Check network / proxy, then retry: pnpm run start`)
+    logLine('install', `1) Bun cache clear: bun pm cache rm`)
+    logLine('install', `2) Force reinstall: bun install --force`)
+    logLine('install', `3) If @biomejs or optional deps fail: bun install --ignore-scripts then bun run prepare`)
+    logLine('install', `4) Check network / proxy, then retry: bun run start`)
     logLine('install', `Last output tail:`)
     const tail = verbose.output.split('\n').slice(-30).join('\n')
     for (const line of tail.split('\n')) {
@@ -139,8 +152,14 @@ async function main(): Promise<number> {
 
   // ── 2. ビルド ─────────────────────────────────────────────────────────
   logLine('build', 'Starting production build... (packages + gameserver + next build)')
-  const build = spawnTagged('build', ['pnpm', 'run', 'build'])
-  const buildExit = await waitExit(build)
+  const build = Bun.spawn(['bun', 'run', 'build'], {
+    cwd: process.cwd(),
+    stdout: 'pipe',
+    stderr: 'pipe',
+    stdin: 'inherit',
+  })
+  pipeOutput('build', build)
+  const buildExit = await build.exited
   if (buildExit !== 0) {
     logLine('build', `X Build failed (exit ${buildExit}). Servers will not be started.`)
     return buildExit ?? 1
@@ -148,8 +167,8 @@ async function main(): Promise<number> {
   logLine('build', 'OK Build succeeded. Starting game server and client...')
 
   // ── 3. game server と next preview を並列起動 ──────────────────────────
-  const server = spawnTagged('server', ['pnpm', 'run', 'server'])
-  const client = spawnTagged('client', ['pnpm', 'run', 'preview'])
+  const server = spawn('server', ['bun', 'run', 'server'])
+  const client = spawn('client', ['bun', 'run', 'preview'])
 
   // どちらかが落ちたら全体を終扱いにする。
   const children = [
@@ -173,7 +192,7 @@ async function main(): Promise<number> {
   // 各プロセスの終了を待つ。
   const exits = await Promise.all(
     children.map(async (c) => {
-      const code = await waitExit(c.proc)
+      const code = await c.proc.exited
       return { name: c.name, code }
     }),
   )
@@ -193,6 +212,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((err) => {
-    logLine('build', `X Unexpected error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`)
+    logLine('build', `X Unexpected error: ${err instanceof Error ? err.stack ?? err.message : String(err)}`)
     process.exit(1)
   })

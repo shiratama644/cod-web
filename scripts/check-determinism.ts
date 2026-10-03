@@ -5,27 +5,12 @@
  * - L1 (engine-core) に if (type === 'voxel' | 'fps') のような type 分岐
  * - hub/store/components での Babylon 直接参照は biome で強制済みだが、ここでも二重チェック
  *
- * Usage: pnpm run check:determinism (tsx 実行・Node)
+ * Usage: bun run scripts/check-determinism.ts
  * Exit 0 = OK, Exit 1 = violations found
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, relative } from 'node:path'
-
-/** dir 以下の .ts/.tsx を再帰列挙する(bun Glob の置き換え・2026-10-03 pnpm移行)。 */
-function walkTsFiles(dir: string): string[] {
-  const result: string[] = []
-  if (!existsSync(dir)) return result
-  for (const entry of readdirSync(dir)) {
-    const fullPath = join(dir, entry)
-    if (statSync(fullPath).isDirectory()) {
-      result.push(...walkTsFiles(fullPath))
-    } else if (entry.endsWith('.ts') || entry.endsWith('.tsx')) {
-      result.push(relative(process.cwd(), fullPath))
-    }
-  }
-  return result
-}
+import { Glob } from 'bun'
+import { readFileSync } from 'node:fs'
 
 type Violation = { file: string; line: number; pattern: string; snippet: string }
 
@@ -52,15 +37,16 @@ async function check(): Promise<Violation[]> {
   const violations: Violation[] = []
 
   // 1. SimProfile.step 配下の禁止API
-  const simProfileDirs = [
-    'packages/engine-core/src/profile',
-    'packages/profile-fps/src/profile',
-    'packages/profile-fps/src/sim',
-    'packages/profile-voxel/src',
+  const simProfileGlobs = [
+    'packages/engine-core/src/profile/**/*.{ts,tsx}',
+    'packages/profile-fps/src/profile/**/*.{ts,tsx}',
+    'packages/profile-fps/src/sim/**/*.{ts,tsx}',
+    'packages/profile-voxel/src/**/*.{ts,tsx}',
   ]
 
-  for (const dir of simProfileDirs) {
-    for (const file of walkTsFiles(dir)) {
+  for (const pattern of simProfileGlobs) {
+    const glob = new Glob(pattern)
+    for await (const file of glob.scan({ cwd: process.cwd() })) {
       const content = readFileSync(file, 'utf8')
       const lines = content.split('\n')
       lines.forEach((line, idx) => {
@@ -74,7 +60,8 @@ async function check(): Promise<Violation[]> {
   }
 
   // 2. L1 (engine-core) での type 分岐禁止
-  for (const file of walkTsFiles('packages/engine-core/src')) {
+  const l1Glob = new Glob('packages/engine-core/src/**/*.{ts,tsx}')
+  for await (const file of l1Glob.scan({ cwd: process.cwd() })) {
     const content = readFileSync(file, 'utf8')
     const lines = content.split('\n')
     lines.forEach((line, idx) => {

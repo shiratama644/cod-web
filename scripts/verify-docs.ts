@@ -1,6 +1,6 @@
 /**
  * ドキュメント整合性検証スクリプト(cod-web版)。
- * TEMPLATE_REPO の verify-docs.ts を pnpm + 本リポジトリ構成向けに書き直したもの。
+ * TEMPLATE_REPO の verify-docs.ts を bun + 本リポジトリ構成向けに書き直したもの。
  *
  * 検証内容:
  *   (A) Markdown 内部リンク切れ検出(docs/ + .agent/ + ルート *.md、コードスパン除外)
@@ -8,7 +8,7 @@
  *   (B) .env 系ファイルが git 追跡されていないこと
  *   (C) パッケージマネージャ整合(bun.lock が存在し、他 PM のロックファイルが無いこと)
  *
- * 実行: pnpm run verify:docs
+ * 実行: bun run verify:docs
  */
 
 import { execSync } from 'node:child_process'
@@ -95,27 +95,16 @@ export function checkTrackedEnvFiles(): { envFiles: string[] } {
 }
 
 export function checkPackageManager(root = process.cwd()): { ok: boolean; message: string } {
-  // 2026-10-03 bun→pnpm 移行: pnpm-lock.yaml が唯一の正
-  if (!existsSync(join(root, 'pnpm-lock.yaml'))) {
-    return { ok: false, message: 'pnpm-lock.yaml がありません(本リポジトリは pnpm が唯一の PM)' }
+  if (!existsSync(join(root, 'bun.lock')) && !existsSync(join(root, 'bun.lockb'))) {
+    return { ok: false, message: 'bun.lock がありません(本リポジトリは bun が唯一の PM)' }
   }
-  const foreign = ['bun.lock', 'bun.lockb', 'package-lock.json', 'yarn.lock'].filter((f) =>
+  const foreign = ['pnpm-lock.yaml', 'package-lock.json', 'yarn.lock'].filter((f) =>
     existsSync(join(root, f)),
   )
   if (foreign.length > 0) {
-    return { ok: false, message: `pnpm 以外のロックファイルが存在: ${foreign.join(', ')}` }
+    return { ok: false, message: `bun 以外のロックファイルが存在: ${foreign.join(', ')}` }
   }
-  try {
-    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8')) as {
-      packageManager?: string
-    }
-    if (!pkg.packageManager?.startsWith('pnpm@')) {
-      return { ok: false, message: `packageManager が pnpm ではありません: ${pkg.packageManager}` }
-    }
-  } catch {
-    return { ok: false, message: 'package.json を読めません' }
-  }
-  return { ok: true, message: 'pnpm-lock.yaml のみ + packageManager=pnpm(OK)' }
+  return { ok: true, message: 'bun.lock のみ(OK)' }
 }
 
 export function runVerifyDocs(): boolean {

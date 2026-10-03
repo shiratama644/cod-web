@@ -2,7 +2,7 @@
  * Heavy determinism check: 1000 ticks x 100 scenarios.
  * Lightweight smoke (100x10) lives in unit tests; this script is for local/CI heavy verification.
  *
- * Usage: pnpm run check:determinism:heavy (tsx 実行)
+ * Usage: bun run scripts/determinism-heavy.ts
  * Exit 0 = pass, Exit 1 = fail
  */
 

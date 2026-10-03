@@ -1,24 +1,24 @@
 {
-  "date": "2026/10/3 16:24:43",
+  "date": "2026/10/3 16:49:04",
   "mode": "install-first-parallel",
   "total": 7,
   "passed": 7,
   "failed": 0,
-  "totalMs": 70913,
+  "totalMs": 58158,
   "results": [
     {
       "id": "install",
-      "label": "pnpm install --frozen-lockfile",
+      "label": "bun install --frozen-lockfile",
       "cmd": [
-        "pnpm",
+        "bun",
         "install",
         "--frozen-lockfile"
       ],
       "logFile": "01-install.log",
       "exit": 0,
-      "durationMs": 5816,
-      "startedAt": "2026/10/3 16:24:15",
-      "finishedAt": "2026/10/3 16:24:21",
+      "durationMs": 146,
+      "startedAt": "2026/10/3 16:48:43",
+      "finishedAt": "2026/10/3 16:48:43",
       "ok": true,
       "aborted": false
     },
@@ -26,15 +26,15 @@
       "id": "lint",
       "label": "biome lint",
       "cmd": [
-        "pnpm",
+        "bun",
         "run",
         "lint"
       ],
       "logFile": "02-lint.log",
       "exit": 0,
-      "durationMs": 2014,
-      "startedAt": "2026/10/3 16:24:21",
-      "finishedAt": "2026/10/3 16:24:23",
+      "durationMs": 892,
+      "startedAt": "2026/10/3 16:48:43",
+      "finishedAt": "2026/10/3 16:48:44",
       "ok": true,
       "aborted": false
     },
@@ -42,15 +42,15 @@
       "id": "check:determinism",
       "label": "determinism guard",
       "cmd": [
-        "pnpm",
+        "bun",
         "run",
         "check:determinism"
       ],
       "logFile": "03-check-determinism.log",
       "exit": 0,
-      "durationMs": 1692,
-      "startedAt": "2026/10/3 16:24:21",
-      "finishedAt": "2026/10/3 16:24:23",
+      "durationMs": 97,
+      "startedAt": "2026/10/3 16:48:43",
+      "finishedAt": "2026/10/3 16:48:43",
       "ok": true,
       "aborted": false
     },
@@ -58,15 +58,15 @@
       "id": "check:determinism:heavy",
       "label": "determinism heavy 100x1000",
       "cmd": [
-        "pnpm",
+        "bun",
         "run",
         "check:determinism:heavy"
       ],
       "logFile": "04-check-determinism-heavy.log",
       "exit": 0,
-      "durationMs": 3720,
-      "startedAt": "2026/10/3 16:24:21",
-      "finishedAt": "2026/10/3 16:24:25",
+      "durationMs": 1924,
+      "startedAt": "2026/10/3 16:48:43",
+      "finishedAt": "2026/10/3 16:48:45",
       "ok": true,
       "aborted": false
     },
@@ -74,15 +74,15 @@
       "id": "typecheck",
       "label": "typecheck (tsc x2)",
       "cmd": [
-        "pnpm",
+        "bun",
         "run",
         "typecheck"
       ],
       "logFile": "05-typecheck.log",
       "exit": 0,
-      "durationMs": 14457,
-      "startedAt": "2026/10/3 16:24:21",
-      "finishedAt": "2026/10/3 16:24:36",
+      "durationMs": 13562,
+      "startedAt": "2026/10/3 16:48:43",
+      "finishedAt": "2026/10/3 16:48:56",
       "ok": true,
       "aborted": false
     },
@@ -90,15 +90,15 @@
       "id": "test:unit",
       "label": "vitest run",
       "cmd": [
-        "pnpm",
+        "bun",
         "run",
         "test:unit"
       ],
       "logFile": "06-test-unit.log",
       "exit": 0,
-      "durationMs": 21052,
-      "startedAt": "2026/10/3 16:24:21",
-      "finishedAt": "2026/10/3 16:24:42",
+      "durationMs": 20003,
+      "startedAt": "2026/10/3 16:48:43",
+      "finishedAt": "2026/10/3 16:49:03",
       "ok": true,
       "aborted": false
     },
@@ -106,15 +106,15 @@
       "id": "test:coverage",
       "label": "vitest coverage",
       "cmd": [
-        "pnpm",
+        "bun",
         "run",
         "test:coverage"
       ],
       "logFile": "07-test-coverage.log",
       "exit": 0,
-      "durationMs": 22162,
-      "startedAt": "2026/10/3 16:24:21",
-      "finishedAt": "2026/10/3 16:24:43",
+      "durationMs": 21534,
+      "startedAt": "2026/10/3 16:48:43",
+      "finishedAt": "2026/10/3 16:49:04",
       "ok": true,
       "aborted": false
     }

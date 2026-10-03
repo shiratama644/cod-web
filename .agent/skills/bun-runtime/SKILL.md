@@ -1,76 +1,67 @@
 ---
 name: bun-runtime
-description: pnpm + Node/tsx 運用と gameserver 用 bun ランタイムを Sandbox で確実に動かすスキル。2026-10-03 bun→pnpm 移行後の正。npm 経由導入、restore-sandbox-env.sh、workspaces、Bun.serve、Vitest 維持判断。
+description: BunをSandboxで確実に動かすスキル。npm経由導入、restore-sandbox-env.sh、workspaces、serve、uWebSockets注意点、Vitest維持判断。
 ---
 
-# Runtime & Package Manager — pnpm + Node(tsx) + gameserver 用 bun
+# Bun Runtime — Sandboxで確実にBunを使うスキル
 
-> 2026-10-03 に **パッケージマネージャを bun→pnpm に全面移行**（ユーザー指示）。
-> スキル名 `bun-runtime` は過去ログからの参照を壊さないため維持。内容は pnpm 移行後の正。
-> 仕様正本: `AGENTS.md` §3.1/§6.1、`docs/ops/quality-gates.md`
+> 仕様正本: `docs/arch/tech-stack.md`、`docs/ops/quality-gates.md`  
+> ログ: `.agent/logs/2026-09-03_adopt-bun-runtime-and-package-manager.md`
 
-## 役割分担（2026-10-03〜）
+## SandboxでBunを使う唯一の確実な経路
 
-| 層 | ツール | 備考 |
-|---|---|---|
-| パッケージ管理 | **pnpm**（`packageManager` フィールドで固定、`pnpm-workspace.yaml`） | ロックファイルは `pnpm-lock.yaml` のみ |
-| TS スクリプト実行（scripts/*.ts） | **tsx**（devDep、`pnpm run check:all` 等が内部で使用） | Bun API は使わない（child_process 等 Node API のみ） |
-| テスト | **Vitest**（Node 上） | bun:test は過去も今後も使わない（jsdom + @testing-library 資産） |
-| gameserver 実行ランタイム | **bun**（`Bun.serve` ネイティブ WebSocket） | devDependencies.bun → `node_modules/.bin/bun`。グローバル導入不要 |
-
-## Sandbox で pnpm を使う経路
-
-- pnpm はプリインストールされていない。**npm 経由でグローバル導入**（registry.npmjs.org は到達可）
-- バージョンは package.json の `packageManager`（`pnpm@x.y.z`）に従う
+- `bun.sh` のinstallスクリプトはSandboxから到達不可（OpenSSL SSL_ERROR_SYSCALL）
+- npmパッケージ `bun` 経由ならインストール・実行とも問題なし
+- グローバル導入で `/usr/local/bin/bun` に置かれ、セッション中は永続（サンドボックス再構築では消えるのでrestoreスクリプト必須）
 
 ```bash
-npm install -g pnpm@10
-pnpm --version
-pnpm install --frozen-lockfile
+npm install -g bun@1.4.0
+bun --version
 ```
 
 ### restore-sandbox-env.sh
 
-- `.nvmrc` の Node メジャー版を npm registry の `node-linux-x64` から復元（nodejs.org は SSL で到達不可）
-- pnpm を `packageManager` 記載バージョンで `npm i -g`
-- `pnpm install --frozen-lockfile` で依存復元（bun バイナリも devDep として入る）
+- 元々 corepack+pnpm 前提だったが、bunにはcorepackが無い
+- `package.json` の `devDependencies.bun` からバージョンを読んで `npm install -g bun@<ver>` する方式に変更済み
+- `.nvmrc` と package.jsonのpackageManagerを読む汎用スクリプトなので、Nodeバージョン管理も兼ねる
 
 ```bash
-bash .agent/hooks/restore-sandbox-env.sh
-export PATH=$PATH:/usr/local/bin   # グローバル bin が PATH から消えることが多い
+./.agent/hooks/restore-sandbox-env.sh
 ```
 
-## package.json 固定
+## package.json固定
 
 ```json
 {
-  "packageManager": "pnpm@10.34.6",
-  "engines": { "node": ">=22", "pnpm": ">=10" },
-  "devDependencies": { "bun": "1.4.0", "tsx": "^4.20.6" },
-  "pnpm": {
-    "onlyBuiltDependencies": ["@biomejs/biome", "bun", "esbuild", "sharp", "unrs-resolver"],
-    "auditConfig": { "ignoreGhsas": ["GHSA-vfj7-8cjw-p6xm"] }
-  }
+  "devDependencies": {
+    "bun": "1.4.0"
+  },
+  "packageManager": "bun@1.4.0",
+  "workspaces": ["packages/*", "apps/*"]
 }
 ```
 
-- **pnpm 10 はビルドスクリプトをデフォルト拒否** → bun バイナリの postinstall が走らず gameserver が起動しない。`onlyBuiltDependencies` に必ず `bun` を含める
-- ワークスペース定義は `pnpm-workspace.yaml`（package.json の `workspaces` は pnpm では無効）
-- フィルタ実行: `pnpm --filter web dev`、`pnpm --filter @cod/gameserver start`
+- `bun init` 等は使わず Viteテンプレートをベースに package.jsonを用意
+- `bun install` → 4検証をbunコマンドで通す
 
-## pnpm 固有の落とし穴（移行時に実測）
+## Vitest維持判断（PH0-Aで確立）
 
-- `pnpm run script -- --flag` は **`--` ごと子コマンドに渡る**（npm と違う）。`pnpm run test:e2e --list` のように `--` なしで書く
-- packageManager フィールドが他 PM のままだと pnpm が `ERROR This project is configured to use bun` で拒否 → 先に package.json を書き換える
-- 脆弱性の個別無視は CLI フラグではなく `pnpm.auditConfig.ignoreGhsas`（package.json）
+- テストを bun:test に寄せない、jsdom + @testing-library/react のDOMテスト資産とR3Fの将来テストを考慮
+- bunの強みはパッケージ管理・ランナー・サーバーランタイムで享受、テスト層は互換性優先
+- Colyseus等のゲームサーバーがbunランタイムで完全動作するかはPhase1で実機確認が必要（リスクとしてPHASE00_PLAN §11相当で管理）
 
-## gameserver（Bun.serve）
+## Bun.serve注意
 
-- `apps/gameserver` の `start`/`dev` は `bun run src/index.ts` / `bun --watch` のまま（Bun.serve 使用のため）
-- bun バイナリは root devDep から `node_modules/.bin/bun` に入り、pnpm run 経由で PATH 解決される
-- Bun.serve の使い方・backpressure 設定は `networking/SKILL.md`
+- ネイティブWSは内部でuWebSockets、追加パッケージ `uWebSockets.js` はbunでは動かない（PH0実績）
+- `perMessageDeflate: false` 必須、60Hz高頻度では圧縮が遅延を生む
 
-## Vitest 維持判断（PH0-A で確立、pnpm 移行後も不変）
+## CIでのBun
 
-- テストを bun:test に寄せない。jsdom + @testing-library/react の DOM テスト資産と互換性を優先
-- uWebSockets.js は glibc 前提バイナリで Sandbox 不可 → Bun.serve を採用した経緯（`networking/SKILL.md`）
+- `oven-sh/setup-bun@v2` を使う
+- `bun install --frozen-lockfile` でlockb固定
+- 公式: https://bun.com/docs/pm/cli/install / https://github.com/oven-sh/setup-bun
+
+## 関連
+
+- `.agent/logs/2026-09-03_adopt-bun-runtime-and-package-manager.md`
+- `.agent/skills/tech-stack/SKILL.md`

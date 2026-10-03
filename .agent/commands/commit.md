@@ -15,9 +15,9 @@ description: 変更を検証し、Conventional Commits形式でコミットす�
 
 2. **検証**:
    ```bash
-   pnpm run check:all          # 推奨（7タスク一括）
+   bun run check:all          # 推奨（7タスク一括）
    # apps/web を触った場合は追加
-   cd apps/web && pnpm run typecheck && pnpm run lint
+   cd apps/web && bun run typecheck && bun run lint
    ```
    1つでも失敗したら原因を特定して修正し、再検証。docs-only は整合性確認で代替可。
 

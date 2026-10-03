@@ -44,7 +44,7 @@
   - `verify-doc-integrity`, `diff-review-report` (2026-10-03 TEMPLATE_REPO統合で追加)
   - 対応するログ: `adopt-bun`, `authoritative-server`, `bvh-kinematic`, `ph0-a/b/c`, `ph1-b/c/d/e/f`, `ph1-5-a/b/c/d`, `ph2-a/b/c/d/e`, `plat-em-em01`, `em1-complete`, `em2-coverage-85`, `doc-4/5/6`, `dr-1/2`, `ph3-*`, `ph4-*`, `codm-deep-research-plan-r0-hybrid-baseline`, `nextjs-frontend-adoption-and-vite-removal` 等
 - スキル化の判断基準:
-  - pnpm/ランタイム導入・復旧 → `bun-runtime`（2026-10-03 pnpm 移行後も同スキルに集約）
+  - Bun導入/復旧 → `bun-runtime`
   - WS/Channel/Input/backpressure/rate-limit/handlers → `networking`
   - 決定論/same-input/heavy → `deterministic-sim`
   - ゼロアロケ/encode once/ring/Map再利用 → `zero-alloc`

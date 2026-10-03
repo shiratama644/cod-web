@@ -16,7 +16,7 @@ git log -5 --oneline
 - 未コミット変更があれば勝手に破棄・混入しない。
 - ログが起点 1 件のみ / `git status` が大量の削除+未追跡 / `node_modules` 無 → **Sandbox 再構築**。→ [`sandbox-rebuild-recovery.md`](./sandbox-rebuild-recovery.md)。
 - **HEAD だけが古いコミットに戻り、ワークツリーは最新**（push 済み作業が diff に見える）→ **HEAD のみ巻き戻り**。`--hard` 禁止、`git reset --soft origin/<branch>` で復旧 → 同 hook の診断表参照（本セッションで複数回発生）。
-- pnpm が無いことが多い → `bash .agent/hooks/restore-sandbox-env.sh; export PATH=$PATH:/usr/local/bin` を最初に実行（2026-10-03 bun→pnpm 移行。gameserver ランタイム用 bun は devDep で入る）。
+- bun が PATH に無いことが多い → `bash .agent/hooks/restore-sandbox-env.sh; export PATH=$PATH:/usr/local/bin` を最初に実行。
 
 ### 2. 知識のピンポイント読込（本 hook の核心）
 

@@ -46,3 +46,7 @@ root/各ワークスペースの package.json スクリプトも必要に応じ�
 4. pnpm は root に未宣言の workspace パッケージをリンクしない → vitest 設定の @cod/* alias が必須(bench で顕在化)
 5. advisory 個別無視は CLI フラグでなく `pnpm.auditConfig.ignoreGhsas`
 6. ブロックコメント内に `packages/*/src` と書くと `*/` でコメントが終了し rolldown が PARSE_ERROR(vitest.bench.config.ts で実際に発生)
+
+## 追記(同日)
+本移行は同日のユーザー指示により **revert 済み**(HANDOFF D26)。bun 統一が正。
+本ログは pnpm 固有の知見の保存のため追記専用ポリシーに従い残置。

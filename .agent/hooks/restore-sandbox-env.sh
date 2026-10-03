@@ -6,12 +6,10 @@
 #   1. Node.js を .nvmrc のメジャー版 (最新 LTS) に置換
 #      - nodejs.org は Sandbox から到達不可 (SSL 接続エラー) のため、
 #        npm registry が配信する node-linux-x64 バイナリパッケージを使用
-#   2. pnpm を npm 経由で導入 (2026-10-03 bun→pnpm 移行)
-#      - バージョンは package.json の packageManager (pnpm@x.y.z) を優先し、
-#        無ければ pnpm@10 を入れる
-#   3. pnpm で依存を frozen-lockfile で検証付きインストール
-#      - gameserver ランタイム用の bun バイナリは devDependencies.bun 経由で
-#        node_modules/.bin/bun に入る (グローバル導入は不要)
+#   2. bun を npm 経由で導入 (bun.sh は SSL エラーで到達不可。registry.npmjs.org は到達可)
+#      - バージョンは package.json の devDependencies.bun に固定した値を優先し、
+#        無ければ latest を入れる
+#   3. bun で依存を frozen-lockfile で検証付きインストール
 set -euo pipefail
 
 # ============================================================================
@@ -63,28 +61,28 @@ fi
 echo "[restore-sandbox-env] node: $(node --version)"
 
 # ============================================================================
-# 2. pnpm を npm 経由で導入
+# 2. bun を npm 経由で導入
 # ============================================================================
-# pnpm はサンドボックスにプリインストールされていない。registry.npmjs.org は
-# 到達可能なので npm パッケージとしてグローバル導入する。バージョンは
-# package.json の packageManager フィールド (pnpm@x.y.z) に従う。
-if command -v pnpm >/dev/null 2>&1; then
-  echo "[restore-sandbox-env] pnpm already installed: $(pnpm --version)"
+# bun はサンドボックスにプリインストールされていない。bun.sh の install スクリプトは
+# SSL エラーで到達不可だが、registry.npmjs.org は到達するので npm パッケージとして
+# グローバル導入する（AGENTS.md §6.1）。
+if command -v bun >/dev/null 2>&1; then
+  echo "[restore-sandbox-env] bun already installed: $(bun --version)"
 else
   if [ -f package.json ]; then
-    PNPM_SPEC="$(node -e "
+    BUN_SPEC="$(node -e "
       try {
         const p = JSON.parse(require('fs').readFileSync('package.json','utf8'));
-        const pm = p.packageManager || '';
-        console.log(pm.startsWith('pnpm@') ? pm : 'pnpm@10');
-      } catch { console.log('pnpm@10'); }
+        const v = (p.devDependencies && p.devDependencies.bun) || (p.dependencies && p.dependencies.bun);
+        console.log(v ? 'bun@' + v.replace(/^[\^~]/, '') : 'bun@latest');
+      } catch { console.log('bun@latest'); }
     ")"
   else
-    PNPM_SPEC="pnpm@10"
+    BUN_SPEC="bun@latest"
   fi
-  echo "[restore-sandbox-env] installing pnpm (${PNPM_SPEC}) globally via npm ..."
-  npm install -g "${PNPM_SPEC}" >/dev/null 2>&1
-  echo "[restore-sandbox-env] pnpm: $(pnpm --version)"
+  echo "[restore-sandbox-env] installing bun (${BUN_SPEC}) globally via npm ..."
+  npm install -g "${BUN_SPEC}" >/dev/null 2>&1
+  echo "[restore-sandbox-env] bun: $(bun --version)"
 fi
 
 # ============================================================================
@@ -92,8 +90,8 @@ fi
 # ============================================================================
 if [ -f package.json ]; then
   echo "[restore-sandbox-env] installing dependencies (frozen-lockfile) ..."
-  pnpm install --frozen-lockfile
-  echo "[restore-sandbox-env] done. verify with: pnpm run test:unit"
+  bun install --frozen-lockfile
+  echo "[restore-sandbox-env] done. verify with: bun run test:unit"
 else
   echo "[restore-sandbox-env] no package.json yet (pre Phase 0). skipping dependency install."
 fi

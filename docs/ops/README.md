@@ -21,14 +21,14 @@
 
 | Gate | コマンド | 実行場所 | 備考 |
 |---|---|---|---|
-| Typecheck | `pnpm run typecheck` | Local / CI | client + server tsconfig |
-| Lint | `pnpm exec biome lint .` | Local / CI | Biome 直接実行 |
-| Determinism | `pnpm run check:determinism` | Local / CI | SimProfile決定論ガード |
-| Unit | `pnpm run test:unit` | Local / CI | Vitest run (30 files / 189 tests) |
-| Coverage | `pnpm run test:coverage` | Local / CI | EM2 thresholds: statements 85 / branches 85 / functions 85 / lines 85 (95.12%/87.97%/90.7%/96.8%) |
-| Build | `pnpm run build` | Local / CI | Vite chunk-size warning は既存 |
-| E2E discovery | `pnpm run test:e2e --list` | Local / CI | Browser 不要。spec discovery 確認 (11 tests) |
-| E2E browser | `pnpm run test:e2e` | CI / 実環境 | Sandbox では Chromium 制約により未実行扱い |
+| Typecheck | `bun run typecheck` | Local / CI | client + server tsconfig |
+| Lint | `bunx biome lint .` | Local / CI | Biome 直接実行 |
+| Determinism | `bun run check:determinism` | Local / CI | SimProfile決定論ガード |
+| Unit | `bun run test:unit` | Local / CI | Vitest run (30 files / 189 tests) |
+| Coverage | `bun run test:coverage` | Local / CI | EM2 thresholds: statements 85 / branches 85 / functions 85 / lines 85 (95.12%/87.97%/90.7%/96.8%) |
+| Build | `bun run build` | Local / CI | Vite chunk-size warning は既存 |
+| E2E discovery | `bun run test:e2e -- --list` | Local / CI | Browser 不要。spec discovery 確認 (11 tests) |
+| E2E browser | `bun run test:e2e` | CI / 実環境 | Sandbox では Chromium 制約により未実行扱い |
 
 ## 手動実行（2026-09-21 追加）
 
@@ -47,9 +47,9 @@ GitHub Actions UI から `Quality Gates` workflow を手動実行できます。
 ローカルでの同等実行:
 ```bash
 # quality 相当
-pnpm run typecheck && pnpm exec biome lint . && pnpm run check:determinism && pnpm run test:unit && pnpm run test:coverage && pnpm run build && pnpm run test:e2e --list
+bun run typecheck && bunx biome lint . && bun run check:determinism && bun run test:unit && bun run test:coverage && bun run build && bun run test:e2e -- --list
 
-# e2e 相当 (要: pnpm run server + pnpm run preview 別ターミナル or CI環境)
-pnpm exec playwright install --with-deps chromium
-pnpm run test:e2e
+# e2e 相当 (要: bun run server + bun run preview 別ターミナル or CI環境)
+bunx playwright install --with-deps chromium
+bun run test:e2e
 ```

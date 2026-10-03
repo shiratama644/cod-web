@@ -1,4 +1,4 @@
-# Quality gates CI (唯一正本)。2026-10-03 bun→pnpm 移行。
+# Proposal source (now also deployed directly to .github/workflows/quality-gates.yml).
 #
 # 2026-09-19: AGENTS.md §6.3 was changed to allow direct writing to .github/workflows/.
 # This file is the source, and .github/workflows/quality-gates.yml is the production file.
@@ -43,40 +43,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          bun-version: 1.4.0
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun ci
 
       - name: Typecheck
-        run: pnpm run typecheck
+        run: bun run typecheck
 
       - name: Lint
-        run: pnpm exec biome lint .
+        run: bunx biome lint .
 
       - name: Determinism guard
-        run: pnpm run check:determinism
+        run: bun run check:determinism
 
       - name: Unit tests
-        run: pnpm run test:unit
+        run: bun run test:unit
 
       - name: Coverage thresholds (85%)
-        run: pnpm run test:coverage
+        run: bun run test:coverage
 
       - name: Build
-        run: pnpm run build
+        run: bun run build
 
       - name: E2E spec discovery
-        run: pnpm run test:e2e --list
+        run: bun run test:e2e -- --list
 
   e2e:
     name: Playwright E2E
@@ -89,25 +83,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          bun-version: 1.4.0
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun ci
 
       - name: Install Playwright Chromium with system dependencies
-        run: pnpm exec playwright install --with-deps chromium
+        run: bunx playwright install --with-deps chromium
 
       - name: Run Playwright E2E
-        run: pnpm run test:e2e
+        run: bun run test:e2e
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}

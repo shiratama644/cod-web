@@ -21,7 +21,7 @@
 ├── hooks/                     # フック手順(.md) + 実行スクリプト(.sh)（入口は hooks/index.md）
 │   ├── index.md / pre-task.md / verify-before-commit.md / log-task.md
 │   ├── sandbox-rebuild-recovery.md   # 完全再構築 + HEAD巻き戻りの診断表
-│   ├── restore-sandbox-env.sh        # pnpm を npm 経由で導入 + install（2026-10-03 bun→pnpm 移行）
+│   ├── restore-sandbox-env.sh        # bun を npm 経由で導入 + install（bun.sh は到達不可）
 │   ├── pre_edit_guard.sh             # PreToolUse: 編集禁止領域ブロック（exit 2）
 │   └── post_edit_verify.sh           # PostToolUse: .env混入 / docs目次 / packageManager検証
 ├── commands/                  # 旧commands互換（commit / review / test）
@@ -59,7 +59,7 @@
 
 | テンプレ資産 | 判断 |
 |---|---|
-| scripts/verify-docs.ts | 採用（bun 版に書き直し。対象 = docs/ + .agent/(logs除く) + ルート md、PM 検査は pnpm-lock.yaml 整合に変更） |
+| scripts/verify-docs.ts | 採用（bun 版に書き直し。対象 = docs/ + .agent/(logs除く) + ルート md、PM 検査は bun.lock 整合に変更） |
 | scripts/check-env.ts | 採用（Termux 診断を捨て、cod-web 実績事故の検出器に全面書き直し: tsgo 混入・@types/react 二重化・Biome スキーマ乖離・husky） |
 | scripts/check-security.ts | 採用（pnpm audit/SBOM 版を縮約: シークレットスキャン + `bun audit --audit-level=high`、ignore は理由+確認日必須） |
 | bench（vitest bench + bench/） | 採用（protocol packer encode/decode の実ベンチに差し替え。ゼロアロケーション文化の回帰検知） |
@@ -72,10 +72,3 @@
 | size-limit / publint / changesets / release / taze / renovate | 不採用（npm 公開パッケージではない。依存更新は `security:check` + 手動） |
 | lighthouse / a11y / visual / bundle-size / preview / stale / automerge / label の各 workflow | 不採用（デプロイ先・PR 流量が前提。bundle 監視は `next build` ルート表で代替） |
 | docker / devcontainer / bin/create-template.mjs / FUNDING | 不採用（対象外） |
-
-## bun→pnpm 全面移行（2026-10-03、ユーザー指示）
-
-- パッケージマネージャを **pnpm** に移行（`packageManager: pnpm@10.34.6` / `pnpm-workspace.yaml` / `pnpm-lock.yaml`。bun.lock と bunfig.toml は削除）
-- TS スクリプト（scripts/*.ts）は **tsx** 実行に移植（Bun API → node:child_process 等）
-- **gameserver の実行ランタイムのみ bun 継続**（`Bun.serve`。devDependencies.bun → `node_modules/.bin/bun`）
-- 上記 2026-10-03 採用表の「bun 版に書き直し」等の記述は当時の記録（現在は pnpm 版が正: `bun-runtime/SKILL.md` 参照）
