@@ -1,0 +1,26 @@
+# 依存関係レビュー(TEMPLATE_REPO 由来)— PR で追加される依存の既知脆弱性/ライセンスを検査
+# 品質ゲートの正本は quality-gates.yml。本ワークフローは PR 時の依存検査専用。
+name: Dependency Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure

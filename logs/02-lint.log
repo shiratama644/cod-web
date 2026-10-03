@@ -1,29 +1,11 @@
 > bun run lint
-> started: 2026/10/3 12:14:54 (JST)
+> started: 2026/10/3 14:14:16 (JST)
 > log: logs/02-lint.log
 ------------------------------------------------------------
 > use setsid: true
 $ biome lint .
-biome.json:2:14 deserialize ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  i The configuration schema version does not match the CLI version 2.5.15
-  
-    1 │ {
-  > 2 │   "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
-      │              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    3 │   "vcs": {
-    4 │     "enabled": true,
-  
-  i   Expected:                     2.5.15
-      Found:                        2.5.12
-  
-  
-  i Run the command biome migrate to migrate the configuration file.
-  
-
-Checked 89 files in 548ms. No fixes applied.
-Found 1 info.
+Checked 95 files in 537ms. No fixes applied.
 ------------------------------------------------------------
-> finished: 2026/10/3 12:14:55 (JST)
-> duration: 715ms
+> finished: 2026/10/3 14:14:17 (JST)
+> duration: 724ms
 > exit: 0   OK

@@ -71,6 +71,14 @@
 - **`vitest` を watch モードで起動しないこと**。commit 前検証には必ず `test:unit`（`vitest run`）を使う。
 - **E2E（Playwright）は Sandbox でbrowser実行不可**（§6.2 参照）。`test:e2e -- --list` discoveryはSandboxでも実行可、browser実行はCIのみ。`package.json` に `test:e2e` が無い限り捏造しない。
 - apps/web のビルド成果物は `apps/web/.next/`（gitignore 済）。バンドル肥大は `next build` のルート表で確認する（3D エンジン導入後は chunk 分割・依存の重複に注意）。
+- **任意コマンド（2026-10-03〜、TEMPLATE_REPO 由来・cod-web 向けに書き直し）**。check:all の必須 7 ゲートには含まれないが、該当する変更時に実行する：
+  ```bash
+  bun run check:env       # 環境ドクター（tsgo混入・@types/react二重化・Biomeスキーマ乖離等の検出）
+  bun run verify:docs     # Markdownリンク切れ・.env追跡・PM整合（ドキュメント変更時に推奨）
+  bun run security:check  # シークレットスキャン + bun audit（fail閾値: high以上、依存追加・更新時に必須）
+  bun run bench           # protocol packer等ホットパスのマイクロベンチ（netcode変更時に推奨）
+  bun run spell           # cspell（コード識別子のタイポ検出、辞書: cspell.json）
+  ```
 - ドキュメントのみの変更（コード無変更）では 4+3 検証はスキップ可。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。内部リンクはfenced/inline code除外、外部URLは公式URLをfetch_pageで200確認、proposal yml参照残存チェック（`docs-maintenance/SKILL.md`）。
 
 ### 3.2 エラー対応と品質維持
@@ -200,7 +208,8 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 ### 6.3 GitHub App 権限制約（2026-09-19 許可に変更、2026-09-22 proposal削除）
 
-- **`.github/workflows/` への直接書き込みは許可**。CI は `.github/workflows/quality-gates.yml` が唯一正本。
+- **`.github/workflows/` への直接書き込みは許可**。**品質ゲート CI は `.github/workflows/quality-gates.yml` が唯一正本**（品質ゲートの重複定義は禁止）。
+- 2026-10-03 以降、**目的別ワークフローを併設**（TEMPLATE_REPO 由来）: `codeql.yml`（セキュリティ解析・週次+push）、`dependency-review.yml`（PR 時の依存検査）。これらは品質ゲートではないため quality-gates.yml と役割が重複しない。
 - 旧ルールでは「書き込み不可、CI は `docs/ops/` に保管しユーザーが配置する」としていたが、2026-09-19 にユーザー許可により解除。以降は Agent が直接 `.github/workflows/quality-gates.yml` 等を作成・更新してよい。
 - **2026-09-22に `docs/ops/github-actions-proposal.yml` は削除済み**、再作成禁止。docsがproposalを参照している箇所は全て `.github/workflows/quality-gates.yml` へ書き換え。`docs/ops/` は `README.md` + `quality-gates.md` のみ（`ci-quality-gates/SKILL.md`）。
 - 変更前の表記が残っているドキュメントは本節を正とし、順次更新する。

@@ -10,7 +10,8 @@ description: GitHub Actions quality-gates.ymlを唯一の正本として扱い�
 
 ## 原則
 
-- **`.github/workflows/quality-gates.yml` が唯一の正本**。`docs/ops/github-actions-proposal.yml` は2026-09-22に削除済み、docsに再作成しない
+- **品質ゲートCIは `.github/workflows/quality-gates.yml` が唯一の正本**。`docs/ops/github-actions-proposal.yml` は2026-09-22に削除済み、docsに再作成しない
+- 2026-10-03以降、目的別ワークフローを併設: `codeql.yml`（セキュリティ解析）、`dependency-review.yml`（PR依存検査）。品質ゲートの重複定義ではないため共存可（AGENTS.md §6.3）
 - Agentは `.github/workflows/` を直接作成しない（AGENTS.md §6.3例外: 2026-09-19以降はbun/mono-repo効率化のため直接書き込み許可済みだが、提案→承認フローが基本）
 - quality-gates.mdはworkflowの解説、proposal ymlの複製ではない
 

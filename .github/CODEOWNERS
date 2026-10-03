@@ -1,0 +1,18 @@
+# CODEOWNERS — レビュー必須オーナーを定義(TEMPLATE_REPO 由来・cod-web 向けに縮約)
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# デフォルトオーナー(全ファイル)
+* @shiratama644
+
+# 重要設定・エージェント運用ファイル
+/.github/ @shiratama644
+/.agent/ @shiratama644
+/scripts/ @shiratama644
+/AGENTS.md @shiratama644
+
+# ネットコード・決定論の中核(変更は品質ゲート必須)
+/packages/protocol/ @shiratama644
+/packages/engine-core/ @shiratama644
+
+# ドキュメント(リサーチ成果物含む)
+/docs/ @shiratama644

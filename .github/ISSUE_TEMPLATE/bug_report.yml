@@ -1,0 +1,54 @@
+name: バグ報告
+description: 動作しない・期待と違う挙動の報告
+title: '[Bug] '
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: 何が起きたかを簡潔に
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      placeholder: |
+        1. `bun run dev` で起動
+        2. ルームに参加
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する挙動
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 影響範囲
+      options:
+        - apps/web(Next.js フロントエンド)
+        - apps/gameserver(権威サーバー)
+        - packages/protocol(バイナリプロトコル)
+        - packages/engine-core(シミュレーション/決定論)
+        - scripts / CI
+        - その他
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: 環境
+      placeholder: |
+        - OS / ブラウザ:
+        - bun --version:
+        - コミット SHA:
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ・スクリーンショット
+      description: logs/ 配下の該当ログや console 出力があれば添付

@@ -1,0 +1,54 @@
+# CodeQL セキュリティ解析(TEMPLATE_REPO 由来・cod-web 向けに縮約)
+# 品質ゲートの正本は quality-gates.yml。本ワークフローはセキュリティ解析専用。
+# JS/TS はソース走査のみで解析できるため、依存インストールは行わない。
+name: CodeQL
+
+on:
+  push:
+    branches: [main, 'arena/**']
+    paths-ignore:
+      - 'docs/**'
+      - '.agent/**'
+      - '**.md'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '.agent/**'
+      - '**.md'
+  schedule:
+    # 毎週月曜 3:00 JST(日曜 18:00 UTC)
+    - cron: '0 18 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: CodeQL Analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript-typescript']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:${{ matrix.language }}'

@@ -54,3 +54,21 @@
 | restore-env.sh（corepack+pnpm） | 不採用（bun 版 `restore-sandbox-env.sh` が正） |
 | rules/project-template.md | 不採用（テンプレ利用時専用。本リポジトリは AGENTS.md §6 に反映済み） |
 | hooks のファイル名 | 既存名を維持（`verify-before-commit.md` 等。過去ログ・AGENTS.md からの参照を壊さない） |
+
+## TEMPLATE_REPO からの追加採用（第2弾: scripts / workflows / meta、2026-10-03）
+
+| テンプレ資産 | 判断 |
+|---|---|
+| scripts/verify-docs.ts | 採用（bun 版に書き直し。対象 = docs/ + .agent/(logs除く) + ルート md、PM 検査は bun.lock 整合に変更） |
+| scripts/check-env.ts | 採用（Termux 診断を捨て、cod-web 実績事故の検出器に全面書き直し: tsgo 混入・@types/react 二重化・Biome スキーマ乖離・husky） |
+| scripts/check-security.ts | 採用（pnpm audit/SBOM 版を縮約: シークレットスキャン + `bun audit --audit-level=high`、ignore は理由+確認日必須） |
+| bench（vitest bench + bench/） | 採用（protocol packer encode/decode の実ベンチに差し替え。ゼロアロケーション文化の回帰検知） |
+| cspell | 採用（コード識別子のみ対象、CJK 除外、CoDM/netcode 辞書。`flagWords: boxel`） |
+| .github/workflows: codeql / dependency-review | 採用（CodeQL は依存インストール不要の構成に縮約。quality-gates.yml = 品質ゲート唯一正本は維持） |
+| ISSUE/PR テンプレ・CODEOWNERS・SECURITY.md・.editorconfig | 採用（cod-web の領域・7 ゲート・IP 境界に合わせ書き換え） |
+| scripts/setup.ts（pnpm setup） | **不採用（ユーザー明示指示）** |
+| check-cicd.ts / lib/(detector・cache・termux 等) | 不採用（テンプレの自動検出基盤専用。cod-web は構成固定） |
+| knip / jscpd / stryker(mutation) / type-coverage / dep-cruise | 不採用（ゲート過多。Biome + coverage 85% + 決定論ガードで回帰は検知可能。必要になれば個別導入） |
+| size-limit / publint / changesets / release / taze / renovate | 不採用（npm 公開パッケージではない。依存更新は `security:check` + 手動） |
+| lighthouse / a11y / visual / bundle-size / preview / stale / automerge / label の各 workflow | 不採用（デプロイ先・PR 流量が前提。bundle 監視は `next build` ルート表で代替） |
+| docker / devcontainer / bin/create-template.mjs / FUNDING | 不採用（対象外） |

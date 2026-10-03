@@ -1,0 +1,37 @@
+name: 機能要望
+description: 新機能・改善の提案
+title: '[Feature] '
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解決したい課題
+      description: 何に困っているか・何を実現したいか
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提案内容
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 対象領域
+      options:
+        - ゲームモード / ルール(docs/research/codm 準拠)
+        - 武器 / Gunsmith
+        - ネットコード / プロトコル
+        - UI / UX(apps/web)
+        - マップ(JSON 定義・拡張)
+        - 開発体験(scripts / CI)
+        - その他
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足
+      description: 参考資料・IP 境界の確認(公式アセット/名称は不可、メカニクス/数値のみ)など

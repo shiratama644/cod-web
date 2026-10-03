@@ -86,7 +86,7 @@ PH1.5-C で Playwright の入口を追加、EM02 でフルE2E（複数 webServer
 |---|---:|
 | script | `bun run test:e2e` |
 | config | [`../../playwright.config.ts`](../../playwright.config.ts) |
-| specs | [`../../e2e/game-shell.spec.ts`](../../e2e/game-shell.spec.ts) |
+| specs | [`../../e2e/main-menu.spec.ts`](../../e2e/main-menu.spec.ts) |
 | local baseURL | `http://127.0.0.1:4173` |
 | gameserver URL | `http://127.0.0.1:8080` (health check 200) |
 | local servers | `webServer: [{command: bun run server, url: 8080}, {command: bun run preview, url: 4173}]` 配列化 |

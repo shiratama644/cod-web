@@ -30,6 +30,11 @@
     "check:determinism": "bun run scripts/check-determinism.ts",
     "check:determinism:heavy": "bun run scripts/determinism-heavy.ts",
     "check:all": "bun run scripts/check-all.ts",
+    "check:env": "bun run scripts/check-env.ts",
+    "verify:docs": "bun run scripts/verify-docs.ts",
+    "security:check": "bun run scripts/check-security.ts",
+    "bench": "vitest bench --run --config vitest.bench.config.ts",
+    "spell": "cspell --no-progress --relative",
     "prepare": "husky"
   },
   "dependencies": {
@@ -52,6 +57,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^4.1.11",
     "bun": "1.4.0",
+    "cspell": "^10.3.6",
     "husky": "^9.1.7",
     "jsdom": "^30.0.1",
     "typescript": "^6.0.3",
