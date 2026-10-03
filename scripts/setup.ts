@@ -13,10 +13,13 @@
  *          （/etc/apt/keyrings/docker.asc + sources.list.d/docker.list、公式手順準拠。
  *           非 root なら docker グループへ追加。グループは再ログインまで反映されないため、
  *           導入直後の daemon 確認と compose pull は sudo 経由で行う）。`--no-docker` でスキップ可
+ *        - docker CLI はあるが daemon 停止 → systemctl / service で起動を試み、
+ *          それでも到達できなければ環境別ヒント（WSL systemd / proot 等）を表示する
  *        - docker が使える（daemon 起動確認済み）→ PostgreSQL は compose が提供する
  *          ため apt では入れない（ホスト postgres と :5432 の衝突を避ける）
  *        - docker が使えない（導入失敗 / proot 等で daemon 不可）→ フォールバックとして
- *          apt install postgresql → サービス起動 → パスワード設定 + app_db 作成 +
+ *          apt install postgresql → サービス起動（クラスタ未作成なら pg_createcluster で
+ *          修復、pg_isready で起動待ち）→ パスワード設定 + app_db 作成 +
  *          apps/web/.env 生成 + スキーマ反映
  *   3. bun install  : --frozen-lockfile（唯一の必須ステップ。失敗時はここで終了）
  *   4. git hooks    : husky（bun install の prepare で入るため確認のみ）
@@ -77,10 +80,14 @@ async function run(kind: Kind, cmd: string[], cwd = process.cwd()): Promise<numb
   return exit ?? 1
 }
 
-/** コマンドを静かに実行して { 成功, stdout } を返す（存在チェック・短い問い合わせ用）。 */
-function runQuiet(cmd: string[]): { ok: boolean; out: string } {
+/** コマンドを静かに実行して { 成功, stdout, stderr } を返す（存在チェック・短い問い合わせ用）。 */
+function runQuiet(cmd: string[]): { ok: boolean; out: string; err: string } {
   const r = Bun.spawnSync(cmd, { stdout: 'pipe', stderr: 'pipe' })
-  return { ok: r.exitCode === 0, out: new TextDecoder().decode(r.stdout).trim() }
+  return {
+    ok: r.exitCode === 0,
+    out: new TextDecoder().decode(r.stdout).trim(),
+    err: new TextDecoder().decode(r.stderr).trim(),
+  }
 }
 
 const isRoot = typeof process.getuid === 'function' && process.getuid() === 0
@@ -161,6 +168,46 @@ function waitForDockerDaemon(timeoutSec: number): DockerAccess {
   return access
 }
 
+/** systemd が PID 1 として動いているか（WSL 旧設定・proot・コンテナでは無いことが多い）。 */
+function hasSystemd(): boolean {
+  return runQuiet(['test', '-d', '/run/systemd/system']).ok
+}
+
+/**
+ * docker daemon の起動を試み、到達を最大 15 秒待つ。
+ * systemd 環境は systemctl enable --now、それ以外は service docker start を使う。
+ */
+async function startDockerDaemon(): Promise<DockerAccess> {
+  const before = dockerAccess()
+  if (before.up) return before
+  const cmd = hasSystemd()
+    ? privileged(['systemctl', 'enable', '--now', 'docker'])
+    : privileged(['service', 'docker', 'start'])
+  if (cmd) await run('sys', cmd)
+  return waitForDockerDaemon(15)
+}
+
+/** daemon に到達できないときに、環境別の原因ヒントを表示する。 */
+function printDockerDaemonHints(): void {
+  logLine('sys', '! docker daemon に到達できません。考えられる原因:')
+  if (!isRoot && hasSudo && !runQuiet(['sudo', '-n', 'true']).ok) {
+    logLine('sys', '  - sudo がパスワード待ちのため sudo 経由の確認ができませんでした。')
+    logLine('sys', '    手動確認: sudo docker info')
+  }
+  const status = runQuiet(['sh', '-c', 'service docker status 2>&1 | head -1'])
+  if (status.out) logLine('sys', `  - service docker status: ${status.out}`)
+  const kernel = runQuiet(['cat', '/proc/version'])
+  if (kernel.out.toLowerCase().includes('microsoft')) {
+    logLine('sys', '  - WSL: /etc/wsl.conf に [boot] systemd=true を追記し、')
+    logLine('sys', '    PowerShell で `wsl --shutdown` 後に再実行してください。')
+  } else if (!hasSystemd()) {
+    logLine('sys', '  - systemd が無い環境です。`sudo service docker start` または')
+    logLine('sys', '    `sudo dockerd &` を試してください。')
+    logLine('sys', '  - proot 等の権限制限環境では daemon を起動できません。')
+    logLine('sys', '    その場合は apt の PostgreSQL(本スクリプトが自動設定)を使ってください。')
+  }
+}
+
 /**
  * Docker 公式 apt リポジトリを設定して docker-ce 一式をインストールする（公式手順準拠）。
  *   1. 前提: ca-certificates / curl
@@ -235,10 +282,6 @@ async function installDockerOfficialRepo(): Promise<boolean> {
     return false
   }
 
-  // daemon 起動（systemd 環境は自動起動。非 systemd は service を試す。失敗しても続行）
-  const svc = privileged(['service', 'docker', 'start'])
-  if (svc) await run('sys', svc)
-
   // 非 root ユーザーを docker グループへ（公式 post-install 手順。再ログインで有効）
   if (!isRoot && process.env.USER) {
     const usermod = privileged(['usermod', '-aG', 'docker', process.env.USER])
@@ -275,11 +318,40 @@ async function setupAptPostgres(): Promise<void> {
   const svc = privileged(['service', 'postgresql', 'start'])
   if (svc) await run('db', svc)
 
+  // クラスタ未作成（インストール時の locale 問題等で起きる）なら作成して起動する
+  if (Bun.which('pg_lsclusters')) {
+    const clusters = runQuiet(['pg_lsclusters'])
+    const lines = clusters.out.split('\n').filter((l) => l.trim().length > 0)
+    if (lines.length < 2) {
+      const ver = runQuiet(['sh', '-c', 'ls /usr/lib/postgresql 2>/dev/null | sort -V | tail -1'])
+      if (ver.out) {
+        logLine('db', `クラスタが無いため作成します... (pg_createcluster ${ver.out} main --start)`)
+        const create = privileged(['pg_createcluster', ver.out, 'main', '--start'])
+        if (create) await run('db', create)
+      }
+    }
+  }
+
+  // サーバが接続を受け付けるまで最大 15 秒待つ（service 直後は起動中のことがある）
+  if (Bun.which('pg_isready')) {
+    let ready = runQuiet(['pg_isready']).ok
+    for (let i = 0; i < 15 && !ready; i++) {
+      Bun.sleepSync(1000)
+      ready = runQuiet(['pg_isready']).ok
+    }
+    if (!ready) {
+      logLine('db', '! pg_isready で起動確認できませんでした(そのまま続行して試します)。')
+    }
+  }
+
   // パスワード設定 + app_db 作成（compose.yaml / .env.example のデフォルトに一致させる）
   const alter = asPostgres(['psql', '-c', "ALTER USER postgres PASSWORD 'postgres'"])
-  if (!alter || (await run('db', alter)) !== 0) {
+  const alterRes = alter ? runQuiet(alter) : { ok: false, out: '', err: 'root/sudo が使えません' }
+  if (!alterRes.ok) {
     logLine('db', '! postgres ユーザーのパスワード設定に失敗しました。')
+    if (alterRes.err) logLine('db', `  詳細: ${alterRes.err.split('\n')[0]}`)
     logLine('db', '  手動: sudo -u postgres psql -c "ALTER USER postgres PASSWORD \'postgres\'"')
+    logLine('db', '  状態確認: pg_lsclusters / sudo service postgresql status')
     record('PostgreSQL (apt)', 'WARN', 'provisioning 失敗')
     return
   }
@@ -346,17 +418,34 @@ async function main(): Promise<number> {
     }
 
     // ── 2a. Docker(公式 apt リポジトリ経由)──────────────────────────
-    if (hasDockerCli) {
-      record('Docker (公式リポジトリ)', 'SKIP', '導入済み')
-    } else if (noDocker) {
+    if (noDocker) {
       logLine('sys', 'Skipping Docker install (--no-docker).')
       record('Docker (公式リポジトリ)', 'SKIP', '--no-docker')
+    } else if (hasDockerCli) {
+      if (docker.up) {
+        record('Docker (公式リポジトリ)', 'SKIP', '導入済み(daemon 稼働中)')
+      } else {
+        // 導入済みでも daemon が止まっているなら起動を試みる(再実行時にここへ来る)
+        logLine('sys', 'docker CLI はありますが daemon が停止中のため、起動を試みます...')
+        docker = await startDockerDaemon()
+        if (!docker.up) printDockerDaemonHints()
+        record(
+          'Docker (公式リポジトリ)',
+          docker.up ? 'OK' : 'WARN',
+          docker.up
+            ? docker.viaSudo
+              ? 'daemon 起動(sudo 経由。再ログイン後は sudo 不要)'
+              : 'daemon 起動'
+            : '導入済み(daemon 起動失敗)',
+        )
+      }
     } else {
       const installed = await installDockerOfficialRepo()
       if (installed) {
         // グループ未反映のシェルでは sudo 経由で再評価する。
-        // service 直後は socket 準備中のことがあるため最大 15 秒待つ。
-        docker = waitForDockerDaemon(15)
+        // 起動直後は socket 準備中のことがあるため最大 15 秒待つ。
+        docker = await startDockerDaemon()
+        if (!docker.up) printDockerDaemonHints()
         record(
           'Docker (公式リポジトリ)',
           'OK',
