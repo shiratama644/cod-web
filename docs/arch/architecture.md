@@ -43,7 +43,7 @@ L0  プラットフォーム  ★タイプ非依存
 
 `official` / `ugc` は type ではなく Content Source。3 種類目の type として扱わない。**Official FPSは1ゲーム複数モード、Official Voxelは1モード永続、Sandboxは標準以外の公式+UGC**。将来 3 つ目の本当の type（例: `racing`）を足すときに触るのは L2 と L3 だけ。L0/L1 は無変更。
 
-> 注: 過去の議論で `boxel` と記載があった箇所は `voxel` のタイポ。`voxel` に訂正済み。エイリアス機能としては扱わない。
+> 注: 過去の議論に存在した `voxel` のタイポ表記は `voxel` に訂正済み。エイリアス機能としては扱わない。
 
 実装中に「L1 に `if (type === 'voxel')` を書きたくなった」ら、L1/L2 の境界を見直す。
 

@@ -12,7 +12,7 @@ TEMPLATE_REPO から .agent/ 以外の資産（スクリプト・workflow・GitH
 | 2 | scripts/check-env.ts | 新規（全面書き直し）。tsgo 混入・@types/react 二重化・Biome スキーマ乖離・husky・bun.lock を診断 |
 | 3 | scripts/check-security.ts | 新規（縮約版）。シークレットスキャン（`secret-scan:allow` で除外可）+ `bun audit --audit-level=high` |
 | 4 | bench/protocol.bench.ts + vitest.bench.config.ts | 新規。packer encode/decode・quantize の実ベンチ |
-| 5 | cspell.json + devDep cspell | 新規。コード識別子のみ・CJK 除外・ドメイン辞書 42 語・`flagWords: boxel` |
+| 5 | cspell.json + devDep cspell | 新規。コード識別子のみ・CJK 除外・ドメイン辞書 42 語 |
 | 6 | .github/workflows/codeql.yml, dependency-review.yml | 新規。CodeQL は依存インストール不要構成。quality-gates.yml の品質ゲート正本は維持 |
 | 7 | .github/ ISSUE_TEMPLATE×3, PULL_REQUEST_TEMPLATE, CODEOWNERS, SECURITY.md | 新規（cod-web の領域・7 ゲート・IP 境界に適合） |
 | 8 | .editorconfig | 新規（テンプレ縮約） |

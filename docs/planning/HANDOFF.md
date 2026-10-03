@@ -46,7 +46,7 @@
 | D19 | Header [FPS][Voxel]はOfficial切替、Left Sidebar [Sandbox] | 2026-09-22改訂版。HeaderはOfficialゲーム切替 [FPS][Voxel]、SandboxはSidebarから。メイン初期Official FPS |
 | D20 | Sandboxモーダル カード/親ジャンル+サブタグフィルタ/ソート | 2026-09-22改訂版。カード thumbnail/title/creator/plays/desc (creator Official含む)、親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athletic、ソート plays/active/views (totalPlays/activePlayers/detailViews) |
 | D21 | 詳細ページ Play Now/Room Selection | 2026-09-22改訂版。カードクリックで詳細ページ /sandbox/{id}、Play Now空きルーム自動マッチ、ルーム選択モーダル手動選択。公式拡張+UGC両方 |
-| D22 | boxel は voxel のタイポ | 2026-09-22 ユーザー確認。`boxel` は `voxel` のタイポで `voxel` に訂正。エイリアス機能としては扱わない |
+| D22 | voxel の旧タイポ表記 | 2026-09-22 ユーザー確認。旧タイポ表記は `voxel` に訂正。エイリアス機能としては扱わない |
 | D23 | parentGenre/subTag/subModes/display/stats/category拡張 | 2026-09-22改訂版。GameModeDefinitionにparentGenre/genres(サブタグ)/tags/display/stats/subModes/currentSubMode/category optional追加、後方互換維持、Sandbox親ジャンル+サブタグフィルタ/ソート/カード表示用 |
 | D24 | matchmakerはPhase 4 mock、本実装は後続 | Phase 4では mock API (matchmaker-mock.ts)、本実装 Redis/HMACはPhase 5以降。Sandboxは公式拡張+UGC |
 

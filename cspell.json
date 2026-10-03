@@ -80,6 +80,5 @@
     "xoroshiro",
     "xorshift"
   ],
-  "flagWords": ["boxel"],
   "allowCompoundWords": true
 }

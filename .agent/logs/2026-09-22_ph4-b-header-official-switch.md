@@ -19,7 +19,7 @@ Phase 4改訂版 PH4-B: ハブUI Header [FPS][Voxel] Official切替実装。Offi
 - HeaderはOfficialゲーム切替のみ、SandboxはSidebarからという2026-09-22改訂版仕様を忠実に実装。L1 typeはfps|voxelの2つのまま。
 - activeTabはstoreで管理、Headerはcontrolledでも動作するようにpropsで上書き可能。
 - Official FPSは1ゲーム複数モードという概念をUIではタブ切替で表現、実際のサブモード投票はPH4-Fで実装。
-- Boxel typoはvoxelに訂正済み、Headerではfps/voxelのみ扱う。
+- 過去のtypoはvoxelに訂正済み、Headerではfps/voxelのみ扱う。
 
 ## 4. 次にすべきこと (Next Actions)
 - PH4-C Left Sidebar Krunker風 + Sandboxボタン

@@ -85,7 +85,7 @@
 | 詳細ページ遷移 カードクリック 公式拡張+UGC | /sandbox/{id} → 内部 /{type}/official|ugc/{slug} | editor.md, client.md |
 | Play Now 自動マッチング | POST /v1/seek-game 相当 mock、公式拡張+UGC | matchmaker.md, client.md |
 | ルーム選択 モーダル手動選択 | GET /v1/game-list 相当 mock、公式拡張+UGC | matchmaker.md, client.md |
-| boxel | voxel のタイポ、`voxel` に訂正。エイリアス機能としては扱わない | - |
+| 旧タイポ表記 | `voxel` に訂正。エイリアス機能としては扱わない | - |
 
 ## 技術制約維持 (D2等) — 改訂版
 
@@ -93,7 +93,7 @@
 - gamemodes/* → @cod/gamemode-sdkのみ (Biome維持)
 - engine-core → profile-* 禁止 (Biome維持)
 - 決定論・ゼロアロケ・例外安全維持
-- `boxel` は `voxel` のタイポで `voxel` に訂正。エイリアス機能としては扱わない
+- 旧タイポ表記は `voxel` に訂正。エイリアス機能としては扱わない
 - matchmaker本実装はPhase 4 mock、Redis/HMACはPhase 5以降
 - voxel本実装、AOI、delta snapshot、QuickJS、GLBエディタ本実装はPhase 5以降
 - Official FPSのTDM/DOMサブモード本実装、Official Voxel Survival永続本実装はPhase 5以降

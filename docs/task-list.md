@@ -172,7 +172,7 @@
 計画書: [`planning/PHASE04_PLAN.md`](./planning/PHASE04_PLAN.md)  
 橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（PH3-D完了。次は **Phase 4 計画作成 PLAT-4** → Phase 4 実装）
 
-目的: Phase 3で分離した gamemode APIの上に、2026-09-22改訂版のゲーム種別・階層構造 (Official FPS 1ゲーム複数モード [FFA,TDM,DOM]投票 + Voxel 1モード [Survival]永続、Sandboxは標準FPS/Voxel以外の公式ゲーム + UGC、親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athletic) のハブUI骨組みを実装し、Sandboxの親ジャンル+サブタグフィルタ/ソート/参加フローとOfficial FPS投票システムの入口を作る。L1 type分岐は fps|voxelの2つのまま、Sandboxは公式拡張+UGC表示集約。過去の `boxel` 表記は `voxel` のタイポで訂正済み。matchmaker本実装は含めずmock、voxel本実装/AOI/delta/QuickJS/GLBエディタ本実装は含めない。
+目的: Phase 3で分離した gamemode APIの上に、2026-09-22改訂版のゲーム種別・階層構造 (Official FPS 1ゲーム複数モード [FFA,TDM,DOM]投票 + Voxel 1モード [Survival]永続、Sandboxは標準FPS/Voxel以外の公式ゲーム + UGC、親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athletic) のハブUI骨組みを実装し、Sandboxの親ジャンル+サブタグフィルタ/ソート/参加フローとOfficial FPS投票システムの入口を作る。L1 type分岐は fps|voxelの2つのまま、Sandboxは公式拡張+UGC表示集約。過去のタイポ表記は `voxel` に訂正済み。matchmaker本実装は含めずmock、voxel本実装/AOI/delta/QuickJS/GLBエディタ本実装は含めない。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---:|

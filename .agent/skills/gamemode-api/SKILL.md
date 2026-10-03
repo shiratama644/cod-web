@@ -199,7 +199,7 @@ export interface GameModeDefinition<T extends GameType> {
 
 - gameStore拡張: activeTab, sandboxOpen, sandboxParentGenre, sandboxSubTag, sandboxSort, sandboxSearch, selectedSandboxCardId, roomSelectionOpen, voteSession {roomId,gameId,options[{subMode,label,votes}],endsAtMs}
 - App統合: Header+LeftSidebar+SandboxModal+Detail+Room+Vote
-- boxelはvoxelのタイポで訂正済み、エイリアス機能としては扱わない
+- voxelの旧タイポ表記は訂正済み、エイリアス機能としては扱わない
 
 ## テスト
 

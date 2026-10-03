@@ -59,7 +59,7 @@
 
 ### 1.6 補足 (ユーザー回答)
 
-- `boxel` は typo (voxelの意)、エイリアス機能としては扱わない
+- voxel の旧タイポ表記は訂正済み、エイリアス機能としては扱わない
 - SandboxはUGCだけでなく、標準FPS/Voxel以外の公式ゲームも含む
 - Official FPSは1ゲーム複数モード、Official Voxelは1モード永続
 
@@ -222,6 +222,6 @@ Room List Modal:
 - gamemodes/* → @cod/gamemode-sdkのみ (Biome維持)
 - engine-core → profile-* 禁止 (Biome維持)
 - 決定論・ゼロアロケ・例外安全維持
-- boxelはvoxelのタイポでvoxelに訂正。エイリアス機能としては扱わない
+- voxelの旧タイポ表記はvoxelに訂正。エイリアス機能としては扱わない
 - SandboxはUGCだけでなく標準FPS/Voxel以外の公式ゲームも含む
 - Official FPSは1ゲーム複数モード、Official Voxelは1モード永続

@@ -1,7 +1,7 @@
 # Sandbox + フィルター設計の整理 (2026-09-22 改訂版)
 
 > Date: 2026-09-22 / Status: 合意済み改訂版 / 対象: 2026-09-22改訂版「Official FPS 1ゲーム複数モード + Voxel 1モード永続、Sandboxは公式拡張+UGC、親ジャンル+サブタグ」
-> **最終訂正 2026-09-22: `boxel` は `voxel` のタイポ。エイリアス機能としては扱わない。`voxel` に訂正済み。**
+> **最終訂正 2026-09-22: 旧タイポ表記は `voxel` に訂正済み。エイリアス機能としては扱わない。**
 > **改訂版 2026-09-22: SandboxはUGCだけでなく標準FPS/Voxel以外の公式ゲームも含む。Official FPSは1ゲーム複数モード、Official Voxelは1モード永続。親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athletic。**
 
 ## 現状の設計 (docs/arch/editor.md 改訂版)
@@ -204,9 +204,9 @@ sandbox画面 — 改訂版:
 - 多数決で次サブモード決定、次ラウンド開始
 - Official Voxelは投票対象外 (Survival永続)
 
-### boxel の扱い — 最終
+### voxel 表記の扱い — 最終
 
-- `boxel` は `voxel` のタイポで `voxel` に訂正。エイリアス機能としては扱わない。
+- 旧タイポ表記は `voxel` に訂正。エイリアス機能としては扱わない。
 
 ## 合意 (改訂版)
 
@@ -215,7 +215,7 @@ sandbox画面 — 改訂版:
 3. Header [FPS][Voxel]はOfficial切替、Left Sidebar [Sandbox]は公式拡張+UGC。
 4. 親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athleticでフィルタ、ソート plays/active/views。
 5. URLは現行の /{type}/{source}/{slug} を維持しつつ、/sandbox を表示集約として追加。Sandboxは source=official|ugc両方含む。
-6. boxelはvoxelのタイポで訂正、エイリアス機能としては扱わない。
+6. voxelの旧タイポ表記は訂正済み、エイリアス機能としては扱わない。
 
 ## 次のステップ (合意後) — 改訂版
 

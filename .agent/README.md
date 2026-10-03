@@ -63,7 +63,7 @@
 | scripts/check-env.ts | 採用（Termux 診断を捨て、cod-web 実績事故の検出器に全面書き直し: tsgo 混入・@types/react 二重化・Biome スキーマ乖離・husky） |
 | scripts/check-security.ts | 採用（pnpm audit/SBOM 版を縮約: シークレットスキャン + `bun audit --audit-level=high`、ignore は理由+確認日必須） |
 | bench（vitest bench + bench/） | 採用（protocol packer encode/decode の実ベンチに差し替え。ゼロアロケーション文化の回帰検知） |
-| cspell | 採用（コード識別子のみ対象、CJK 除外、CoDM/netcode 辞書。`flagWords: boxel`） |
+| cspell | 採用（コード識別子のみ対象、CJK 除外、CoDM/netcode 辞書） |
 | .github/workflows: codeql / dependency-review | 採用（CodeQL は依存インストール不要の構成に縮約。quality-gates.yml = 品質ゲート唯一正本は維持） |
 | ISSUE/PR テンプレ・CODEOWNERS・SECURITY.md・.editorconfig | 採用（cod-web の領域・7 ゲート・IP 境界に合わせ書き換え） |
 | scripts/setup.ts（pnpm setup） | **不採用（ユーザー明示指示）** |
