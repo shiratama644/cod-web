@@ -189,12 +189,12 @@ bash .agent/hooks/restore-sandbox-env.sh
 - **ランタイム / パッケージ管理: bun**（`bun install` / `bun run` / `bunx`、ロックファイル `bun.lock`）。
   - bun はサンドボックスにプリインストールされていない。**npm 経由で導入**（`bun.sh` は SSL で到達不可）。復旧は [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh)。バージョンは devDependency で固定。PATH から消えたら `export PATH=$PATH:/usr/local/bin`。
 - **フロントエンド: Next.js 16（App Router）+ React 19 + Tailwind 4 = `apps/web`**。旧 Vite+React クライアントは削除済み（git 履歴 ≤40b44eb）。運用詳細は `nextjs-frontend/SKILL.md`。
-  - apps/web は **app ローカルの ESLint + tsc** が正（root の Biome / typecheck 対象外）。e2b プレビューは `allowedDevOrigins` + `-H 0.0.0.0`。
+  - apps/web の lint は **root の Biome**（2026-10-03 D27 で ESLint 廃止）、typecheck は **app ローカル tsc**（root typecheck 対象外）。e2b プレビューは `allowedDevOrigins` + `-H 0.0.0.0`。
 - **TypeScript: 標準の JS tsc のみ**（root devDependency `typescript@^6.0.3` にピン）。素の `bun add -d typescript` は Go 製 tsgo 7.x を拾うため禁止（proot でパスバグ）。lockfile に `@typescript/typescript-*` が増えたら誤入の証拠。apps/web ローカルの typescript 5.9.x（Next 要件）は別枠で可。
 - **3D（S フェーズで Next app に統合予定）: Babylon.js**（`@babylonjs/core`）。新規 3D を R3F で足さない。`@cod/profile-fps` の three / three-mesh-bvh は衝突判定用に維持（描画用ではない）。
 - **状態**: 毎フレーム値は React State に置かない。ハブ UI は Zustand 可。Context API は新規に使わない。
-- **Lint/Format**: Biome（`files.includes` で apps/web を除外）。apps/web のみ ESLint。
-- **テスト**: **Vitest**。`bun test` は使わない。テストは `_tests_/` にソース構造をミラー。E2E は Playwright（`e2e/main-menu.spec.ts`、webServer = next build + preview :4173。browser 実行は CI のみ）。
+- **Lint/Format**: **Biome をリポジトリ全体で使用**（apps/web 含む。2026-10-03 D27 で `!apps/web` 除外を撤廃、ESLint は廃止）。スタイルは root `biome.json`（single quote / semicolons asNeeded / trailingCommas all / lineWidth 100 / 2 スペース）。
+- **テスト**: **Vitest 5**（root `vitest@^5.0.3`）。`bun test` は使わない。テストは `_tests_/` にソース構造をミラー。E2E は Playwright（`e2e/main-menu.spec.ts`、webServer = next build + preview :4173。browser 実行は CI のみ）。
 - **ゲームサーバー: bun**（`Bun.serve` ネイティブ WebSocket）。
 - arch に無い主要ライブラリを導入する場合はユーザーに相談する。
 
@@ -236,7 +236,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 - **`biome-ignore` は対象コードの直前の行**。
 - `<span>` に `aria-label` を付ける時は `role="img"`。
 - テスト（`_tests_/**` / `*.test.{ts,tsx}`）の non-null 緩和は biome.json の `overrides` で行う。プロダクションでは non-null assertion 禁止。overrides が未設定なら勝手に緩めない。
-- **`noConsole`**: Biome 対象範囲（packages / gameserver / scripts）で管理。`console.log` はgameserver運用ログのみ許容。※ 旧 `apps/web/src/game/**` の override は Vite クライアント削除（2026-10-03）に伴い撤去済み。apps/web は ESLint 側で管理。
+- **`noConsole`**: Biome で管理（2026-10-03 D27 以降 apps/web も Biome 対象）。`console.log` はgameserver運用ログのみ許容。※ 旧 `apps/web/src/game/**` の override は Vite クライアント削除（2026-10-03）に伴い撤去済み。
 - **`noRestrictedImports` / `noPrivateImports`**: レイヤー境界を守る。`linter.rules.style.noRestrictedImports` 配下、scope packageは `**` で捕捉。`@cod/engine-core` 直接importはwebで禁止、`@cod/profile-fps` はengine-coreで禁止、詳細は `import-boundaries/SKILL.md`。
 - **any禁止**: biome-ignore + anyはprivate accessテストのみ許容、prodではany禁止（EM02）。
 
