@@ -18,8 +18,11 @@
 # 初回セットアップ(環境準備のみ。アプリ・ビルドは実行しない)
 bun run setup                        # 環境診断 → apt(必要時) → bun install → postgres イメージ取得 → check:env
 bun run setup --no-apt               # apt によるシステム依存インストールをスキップ
+bun run setup --no-docker            # Docker の導入を試みない(proot 等 daemon 不可環境向け)
 bun run setup --e2e                  # Playwright ブラウザ(chromium)も取得
-# ※ docker なし環境(Termux proot 等)では apt で PostgreSQL を導入し、
+# ※ docker なし → Docker 公式 apt リポジトリ(keyrings/docker.asc + sources.list.d)を
+#   設定して docker-ce 一式を導入。daemon が使えない環境(Termux proot 等)では
+#   フォールバックとして apt で PostgreSQL を導入し、
 #   パスワード/app_db/.env/スキーマまで自動設定する(フェイルソフト)
 
 bun install                          # 依存インストール (bun@1.4.0, bun.lock)
