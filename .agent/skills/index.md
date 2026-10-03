@@ -2,6 +2,7 @@
 
 > このファイルは `.agent/skills/` の**入口**。タスク着手時に本ファイルだけ読み、
 > 必要なスキルだけをピンポイントで読み込む（コンテキストの無駄遣いを防ぐ）。
+> 作業規約のトピック別詳細は [`../rules/`](../rules/)（01 情報の正 / 02 Git / 03 doc-style / 04 検証）。
 >
 > ここにあるのは **Agent 自身のスキル** — 「このプロジェクトで何をどうやるとうまくいくか」
 > という実践的なノウハウ・テクニック・手順・パターン・コードベース知識。
@@ -30,6 +31,8 @@
 | gamemode API / sdk facade / ffa最小 / hybrid async / ctx spawn | [`gamemode-api/SKILL.md`](./gamemode-api/SKILL.md) |
 | apps/web（Next.js 16）/ e2b プレビュー / ESLint・tsc 分担 / @types/react dedupe | [`nextjs-frontend/SKILL.md`](./nextjs-frontend/SKILL.md) |
 | CoDM ディープリサーチ（R1〜R7）/ ハイブリッド基準 / 検証ラベル / IP境界 | [`codm-research/SKILL.md`](./codm-research/SKILL.md) |
+| docs変更後の機械検証（リンク・目次・機密・packageManager） | [`verify-doc-integrity/SKILL.md`](./verify-doc-integrity/SKILL.md) |
+| 3ファイル以上・判断を伴う変更のレビューレポート作成 | [`diff-review-report/SKILL.md`](./diff-review-report/SKILL.md) |
 | 設計の正本（プロダクト・プロトコル・ADR・マイルストーン） | [`../../docs/arch/`](../../docs/arch/README.md)（product / protocol / engineering / adr / milestones） |
 
 > **2026-10-03 注記**: apps/web は Next.js に入れ替わり、旧 Vite+React クライアントは削除済み（git 履歴 ≤40b44eb）。
@@ -59,6 +62,8 @@
 | [gamemode-api/SKILL.md](./gamemode-api/SKILL.md) | gamemode-api core + sdk facade、define検証、RoomCtx、hybrid async、ctx spawn、Runtime/Timer/RateLimiter例外安全、ffa最小+pvpエイリアス、gameserver統合例外安全、parentGenre/genres/tags/subModes/display/stats拡張、Official FPS 1ゲーム複数モード投票、Sandbox公式拡張+UGC、Header/Sidebar/Modal/Detail/Room/VoteハブUI骨組み | 2026-09-22（PH4-F 投票 Official FPS FFA/TDM/DOM + Sandbox公式拡張+UGC + ハブUI 44 files 311 tests + coverage 93.51%） |
 | [nextjs-frontend/SKILL.md](./nextjs-frontend/SKILL.md) | apps/web（Next.js 16）を Sandbox/Arena プレビューで運用し、Biome/tsc/Vitest 体制と共存させる（allowedDevOrigins、@types/react dedupe、DB fallback、E2E webServer） | 2026-10-03（Next主化 + Vite削除 2a93a99） |
 | [codm-research/SKILL.md](./codm-research/SKILL.md) | CoDM ディープリサーチ R0〜R7 をハイブリッド基準・検証ラベル・IP境界で進め、INTEGRATION_SPEC まで導く | 2026-10-03（R0 完了 + ハイブリッド基準確定） |
+| [verify-doc-integrity/SKILL.md](./verify-doc-integrity/SKILL.md) | docs変更の整合性（リンク実在・目次更新・機密混入なし・packageManager=bun）を機械検証できる | 2026-10-03（TEMPLATE_REPO 採用・bun調整） |
+| [diff-review-report/SKILL.md](./diff-review-report/SKILL.md) | 大きな変更を人間がレビュー可能なレポート（docs/audit/diff-*.md）にまとめられる | 2026-10-03（TEMPLATE_REPO 採用） |
 
 ## 設計仕様の正本（スキルではなく docs/arch/）
 

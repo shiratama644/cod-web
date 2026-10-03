@@ -37,3 +37,7 @@ test-results/
 .next/
 next-env.d.ts
 *.tsbuildinfo
+
+# .agent 個人設定・自動生成（TEMPLATE_REPO統合 2026-10-03）
+.agent/settings.local.json
+.agent/agent-memory/

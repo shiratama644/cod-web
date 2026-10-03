@@ -1,5 +1,5 @@
 > bun run lint
-> started: 2026/10/3 11:50:20 (JST)
+> started: 2026/10/3 12:14:54 (JST)
 > log: logs/02-lint.log
 ------------------------------------------------------------
 > use setsid: true
@@ -21,28 +21,9 @@ biome.json:2:14 deserialize ━━━━━━━━━━━━━━━━━�
   i Run the command biome migrate to migrate the configuration file.
   
 
-biome.json:296:7 lint/suspicious/useBiomeIgnoreFolder  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  ! Incorrect usage of ignore a folder found.
-  
-    294 │     "includes": [
-    295 │       "**",
-  > 296 │       "!apps/web/**"
-        │       ^^^^^^^^^^^^^^
-    297 │     ]
-    298 │   }
-  
-  i Since version 2.2.0, ignoring folders doesn't require the use the trailing /**. This is a bug that affects version prior v2.2.0.
-  
-  i Safe fix: If you want to ignore a folder, use the following pattern instead: !apps/web.
-  
-    296 │ ······"!apps/web/**"
-        │                 --- 
-
-Checked 90 files in 578ms. No fixes applied.
-Found 1 warning.
+Checked 89 files in 548ms. No fixes applied.
 Found 1 info.
 ------------------------------------------------------------
-> finished: 2026/10/3 11:50:20 (JST)
-> duration: 811ms
+> finished: 2026/10/3 12:14:55 (JST)
+> duration: 715ms
 > exit: 0   OK

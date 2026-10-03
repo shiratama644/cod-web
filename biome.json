@@ -51,7 +51,7 @@
                       "@cod/web",
                       "@cod/web/**"
                     ],
-                    "message": "@cod/protocol \u306f\u6700\u4e0b\u5c64\u306e protocol package \u3067\u3059\u3002\u4ed6\u306e @cod package \u3078\u4f9d\u5b58\u3057\u306a\u3044\u3067\u304f\u3060\u3055\u3044\u3002"
+                    "message": "@cod/protocol は最下層の protocol package です。他の @cod package へ依存しないでください。"
                   }
                 ]
               }
@@ -84,7 +84,7 @@
                       "@cod/web",
                       "@cod/web/**"
                     ],
-                    "message": "@cod/engine-core \u306f\u30bf\u30a4\u30d7\u975e\u4f9d\u5b58\u306e L1 \u3067\u3059\u3002profile / app \u5b9f\u88c5\u306f\u30b3\u30f3\u30b9\u30c8\u30e9\u30af\u30bf\u6ce8\u5165\u3084\u516c\u958b\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9\u7d4c\u7531\u306b\u3057\u3066\u304f\u3060\u3055\u3044\u3002"
+                    "message": "@cod/engine-core はタイプ非依存の L1 です。profile / app 実装はコンストラクタ注入や公開インターフェース経由にしてください。"
                   },
                   {
                     "group": [
@@ -93,7 +93,7 @@
                       "three-mesh-bvh",
                       "@react-three/fiber"
                     ],
-                    "message": "@cod/engine-core \u306b\u63cf\u753b\u30fb\u7269\u7406\u5b9f\u88c5\u8a73\u7d30\u3092\u6301\u3061\u8fbc\u307e\u306a\u3044\u3067\u304f\u3060\u3055\u3044\u3002"
+                    "message": "@cod/engine-core に描画・物理実装詳細を持ち込まないでください。"
                   }
                 ]
               }
@@ -124,7 +124,7 @@
                       "@cod/web",
                       "@cod/web/**"
                     ],
-                    "message": "@cod/profile-fps \u306f L2 profile \u3067\u3059\u3002app \u5c64\u3084\u4ed6 profile \u3078\u4f9d\u5b58\u3057\u306a\u3044\u3067\u304f\u3060\u3055\u3044\u3002"
+                    "message": "@cod/profile-fps は L2 profile です。app 層や他 profile へ依存しないでください。"
                   }
                 ]
               }
@@ -155,7 +155,7 @@
                       "@cod/web",
                       "@cod/web/**"
                     ],
-                    "message": "@cod/profile-voxel \u306f L2 profile \u3067\u3059\u3002app \u5c64\u3084\u4ed6 profile \u3078\u4f9d\u5b58\u3057\u306a\u3044\u3067\u304f\u3060\u3055\u3044\u3002"
+                    "message": "@cod/profile-voxel は L2 profile です。app 層や他 profile へ依存しないでください。"
                   }
                 ]
               }
@@ -190,7 +190,7 @@
                       "@cod/web",
                       "@cod/web/**"
                     ],
-                    "message": "gamemodes/* \u306f gamemode-sdk \u306e\u307f import \u3067\u304d\u307e\u3059\uff08UGC sandbox\u5883\u754c\uff09\u3002"
+                    "message": "gamemodes/* は gamemode-sdk のみ import できます（UGC sandbox境界）。"
                   }
                 ]
               }
@@ -228,7 +228,7 @@
                       "three/**",
                       "three-mesh-bvh"
                     ],
-                    "message": "@cod/gamemode-api \u306f L1 core \u3067\u3059\u3002protocol \u306e\u307f\u4f9d\u5b58\u3001profile/app/sdk \u3078\u4f9d\u5b58\u3057\u306a\u3044\u3067\u304f\u3060\u3055\u3044\u3002"
+                    "message": "@cod/gamemode-api は L1 core です。protocol のみ依存、profile/app/sdk へ依存しないでください。"
                   }
                 ]
               }
@@ -266,7 +266,7 @@
                       "three/**",
                       "three-mesh-bvh"
                     ],
-                    "message": "@cod/gamemode-sdk \u306f gamemode-api \u306e facade \u3067\u3059\u3002api \u4ee5\u5916\u306e @cod package \u3078\u76f4\u63a5\u4f9d\u5b58\u3057\u306a\u3044\u3067\u304f\u3060\u3055\u3044\u3002"
+                    "message": "@cod/gamemode-sdk は gamemode-api の facade です。api 以外の @cod package へ直接依存しないでください。"
                   }
                 ]
               }
@@ -293,7 +293,8 @@
   "files": {
     "includes": [
       "**",
-      "!apps/web/**"
+      "!apps/web",
+      "!.agent"
     ]
   }
 }

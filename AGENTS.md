@@ -1,9 +1,10 @@
-# AGENT.md
+# AGENTS.md
 
 本ドキュメントは、AI Agent が本プロジェクトの開発・変更を行う際に**必ず遵守すべき開発規約**です。
 最優先事項は **「速く大量に作ること」ではなく「常に復旧可能で、壊れた状態を長時間維持しないこと」** です。
 
-本プロジェクトはブラウザ向け **マルチタイプ・ゲームプラットフォーム**（`voxel` / `fps`）です。現行コードは単一ルーム FPS の原型（移行元）。**理想形の仕様正本は [`docs/arch/`](docs/arch/README.md)**（入口 [`docs/arch/product.md`](docs/arch/product.md)）。旧 FPS 専用仕様は [`.archive/docs/`](.archive/docs/) にあり、正本としては使わない。
+本プロジェクトはブラウザ向け **FPS ゲームプラットフォーム**です。2026-09-24 より「CoD Mobile の仕組み・機能を Web で再現する」方向（計画: [`docs/planning/CODM_DEEP_RESEARCH_PLAN.md`](docs/planning/CODM_DEEP_RESEARCH_PLAN.md)、基準: [`docs/research/codm/00_scope.md`](docs/research/codm/00_scope.md) §1.4 ハイブリッド）で進行中。フロントエンドは **Next.js（`apps/web`）**（2026-10-03 に Vite+React クライアントを削除、`nextjs-frontend/SKILL.md`）。サーバー/シムは bun モノレポ（`packages/*` + `apps/gameserver`）。**仕様正本は [`docs/arch/`](docs/arch/README.md)**。旧仕様は [`.archive/docs/`](.archive/docs/) にあり、正本としては使わない。
+トピック別の詳細ルールは [`.agent/rules/`](.agent/rules/)（01 情報の正 / 02 Git / 03 doc-style / 04 検証）。
 
 ---
 
@@ -54,20 +55,22 @@
 ### 3.1 検証コマンドの実行
 - `package.json` に定義されたスクリプトのみを使用する（存在しないコマンドを捏造・実行しない）。
 - **パッケージ管理・スクリプトランナーは bun**（`bun install` / `bun run` / `bunx`）。ロックファイルは `bun.lock`。
-- 原則として commit 前に以下 4+3 種を全て pass させる：
+- 原則として commit 前に以下 4+3 種を全て pass させる。**一括実行は `bun run check:all` を推奨**（install 先行 → 残り並列、~50s、`logs/` に保存）：
   ```bash
-  bun run typecheck             # tsc --noEmit および tsc -p tsconfig.server.json
-  bunx biome lint .             # Biome 直接呼び出し（bun run lint より起動が速い）
+  bun run typecheck             # tsc --noEmit および tsc -p tsconfig.server.json（※ apps/web は含まない）
+  bunx biome lint .             # Biome 直接呼び出し（※ apps/web は対象外、ESLint が正）
   bun run test:unit             # vitest run（watch モードではない）
-  bun run build                 # vite build（production）
+  bun run build                 # packages + gameserver + apps/web（next build）
   bun run check:determinism     # SimProfile.step禁止API検出（EM01〜）
-  bun run test:coverage         # threshold 85/85/85/85（EM02〜、実績95.12%/87.97%/90.7%/96.8%）
+  bun run test:coverage         # threshold 85/85/85/85（EM02〜）
   bun run test:e2e -- --list    # E2E discovery、browser起動なし（PH1.5-C〜、Sandboxでも実行可）
+  # apps/web（Next.js）を触った場合は必ず追加（2026-10-03〜）
+  cd apps/web && bun run typecheck && bun run lint
   ```
 - **テストランナーは Vitest を使う。`bun test`（bun:test）は使わない**（jsdom + @testing-library/react の DOM テスト資産との互換を優先。bun はあくまでパッケージ管理・ランナーとして使用）。
 - **`vitest` を watch モードで起動しないこと**。commit 前検証には必ず `test:unit`（`vitest run`）を使う。
 - **E2E（Playwright）は Sandbox でbrowser実行不可**（§6.2 参照）。`test:e2e -- --list` discoveryはSandboxでも実行可、browser実行はCIのみ。`package.json` に `test:e2e` が無い限り捏造しない。
-- ビルドサイズは `bun run build` 後の `dist/assets/` を `ls -lh dist/assets` 等で直接確認する（3D エンジンはバンドルが大きい。chunk 分割・依存の重複に注意）。
+- apps/web のビルド成果物は `apps/web/.next/`（gitignore 済）。バンドル肥大は `next build` のルート表で確認する（3D エンジン導入後は chunk 分割・依存の重複に注意）。
 - ドキュメントのみの変更（コード無変更）では 4+3 検証はスキップ可。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。内部リンクはfenced/inline code除外、外部URLは公式URLをfetch_pageで200確認、proposal yml参照残存チェック（`docs-maintenance/SKILL.md`）。
 
 ### 3.2 エラー対応と品質維持
@@ -115,6 +118,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 - `git reset --hard FETCH_HEAD` は §4.3 の厳禁ルールの例外で、**サンドボックス再構築後の初回のみ**許可される（未コミット変更は元々存在しない状態のため）。
 - 再構築を判定するヒント：`git log --oneline` が起点コミット 1 個しか返ってこない / `git status` が大量の削除を示す / node_modules がない / **bun が未インストール**。
 - 復旧後は必ず `git log --oneline -5` と `bun run test:unit` で健全性を確認してから作業を再開する。
+- **別パターン「HEAD のみ巻き戻り」に注意**（頻発）: ワークツリーは最新のまま HEAD だけ古いコミットに戻る事象。この場合は `git reset --soft origin/<branch>` で復旧し、**`--hard` は厳禁**（最新ツリーを過去で潰す）。診断表は [`.agent/hooks/sandbox-rebuild-recovery.md`](.agent/hooks/sandbox-rebuild-recovery.md)。
 - 詳細手順は [`.agent/hooks/sandbox-rebuild-recovery.md`](.agent/hooks/sandbox-rebuild-recovery.md) ＋ [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh)。
 
 ### 4.2 コミットルール
@@ -173,14 +177,16 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 現行コード（R3F 単一ルーム FPS）と arch（Babylon プラットフォーム）が食い違う間は、**新規コードは arch に従う**。移行元の穴埋め（フェーズ 0）だけ現行ツリーを直す。
 
-### 6.1 環境・ツールチェーン
+### 6.1 環境・ツールチェーン（2026-10-03 現構成）
 - **ランタイム / パッケージ管理: bun**（`bun install` / `bun run` / `bunx`、ロックファイル `bun.lock`）。
-  - bun はサンドボックスにプリインストールされていない。**npm 経由で導入**（`bun.sh` は SSL で到達不可）。復旧は [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh)。バージョンは devDependency で固定。
-- **ビルド/Dev: Vite** + React + TypeScript（strict）。React はハブ・HUD・設定・メニュー（DOM）に限定する（ADR-003）。
-- **3D（理想）: Babylon.js**（`@babylonjs/core`）。voxel クライアントは `noa-engine`。現行コードの Three.js / R3F シーンは破棄対象であり、新規 3D を R3F で足さない。
+  - bun はサンドボックスにプリインストールされていない。**npm 経由で導入**（`bun.sh` は SSL で到達不可）。復旧は [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh)。バージョンは devDependency で固定。PATH から消えたら `export PATH=$PATH:/usr/local/bin`。
+- **フロントエンド: Next.js 16（App Router）+ React 19 + Tailwind 4 = `apps/web`**。旧 Vite+React クライアントは削除済み（git 履歴 ≤40b44eb）。運用詳細は `nextjs-frontend/SKILL.md`。
+  - apps/web は **app ローカルの ESLint + tsc** が正（root の Biome / typecheck 対象外）。e2b プレビューは `allowedDevOrigins` + `-H 0.0.0.0`。
+- **TypeScript: 標準の JS tsc のみ**（root devDependency `typescript@^6.0.3` にピン）。素の `bun add -d typescript` は Go 製 tsgo 7.x を拾うため禁止（proot でパスバグ）。lockfile に `@typescript/typescript-*` が増えたら誤入の証拠。apps/web ローカルの typescript 5.9.x（Next 要件）は別枠で可。
+- **3D（S フェーズで Next app に統合予定）: Babylon.js**（`@babylonjs/core`）。新規 3D を R3F で足さない。`@cod/profile-fps` の three / three-mesh-bvh は衝突判定用に維持（描画用ではない）。
 - **状態**: 毎フレーム値は React State に置かない。ハブ UI は Zustand 可。Context API は新規に使わない。
-- **Lint/Format**: Biome（ESLint/Prettier は使わない）。
-- **テスト**: **Vitest** + @testing-library/react。`bun test` は使わない。テストは `_tests_/` にソース構造をミラー。E2E は Playwright（未導入なら書かない。CI のみ）。
+- **Lint/Format**: Biome（`files.includes` で apps/web を除外）。apps/web のみ ESLint。
+- **テスト**: **Vitest**。`bun test` は使わない。テストは `_tests_/` にソース構造をミラー。E2E は Playwright（`e2e/main-menu.spec.ts`、webServer = next build + preview :4173。browser 実行は CI のみ）。
 - **ゲームサーバー: bun**（`Bun.serve` ネイティブ WebSocket）。
 - arch に無い主要ライブラリを導入する場合はユーザーに相談する。
 
@@ -214,13 +220,13 @@ bash .agent/hooks/restore-sandbox-env.sh
 - **L1（engine-core）に `if (type === 'voxel' | 'fps')` を書かない。** 書いたくなったら境界を見直して人間に確認する。
 - **Rules of Hooks 厳守**（早期 return の前に全 hook）。
 - **JSX 内で日本語と `{式}` を汚く混ぜない**。
-- ユーザー提供前は `bun run build && bun run preview` で確認する（現行クライアントがある場合）。
+- ユーザー提供前は dev サーバー（`apps/web` で `bun run dev` :3000）または `bun run build && bun run preview`（:4173）で確認する。
 
 ### 6.5 Biome 特有ルール
 - **`biome-ignore` は対象コードの直前の行**。
 - `<span>` に `aria-label` を付ける時は `role="img"`。
 - テスト（`_tests_/**` / `*.test.{ts,tsx}`）の non-null 緩和は biome.json の `overrides` で行う。プロダクションでは non-null assertion 禁止。overrides が未設定なら勝手に緩めない。
-- **`noConsole`**: `apps/web/src/game/babylon/**/*` と `apps/web/src/game/net/**/*` でerrorレベル（EM01-B）。`console.log` 3件はgameserver運用ログとして許容、BabylonGameのクライアント側はHUD代替で削除。Biomeで将来の残留を防止。
+- **`noConsole`**: Biome 対象範囲（packages / gameserver / scripts）で管理。`console.log` はgameserver運用ログのみ許容。※ 旧 `apps/web/src/game/**` の override は Vite クライアント削除（2026-10-03）に伴い撤去済み。apps/web は ESLint 側で管理。
 - **`noRestrictedImports` / `noPrivateImports`**: レイヤー境界を守る。`linter.rules.style.noRestrictedImports` 配下、scope packageは `**` で捕捉。`@cod/engine-core` 直接importはwebで禁止、`@cod/profile-fps` はengine-coreで禁止、詳細は `import-boundaries/SKILL.md`。
 - **any禁止**: biome-ignore + anyはprivate accessテストのみ許容、prodではany禁止（EM02）。
 
@@ -243,10 +249,10 @@ bash .agent/hooks/restore-sandbox-env.sh
 - ファイル追加時は `docs/README.md` と `docs/arch/README.md` を更新する。
 - Phase 番号は 2 桁。サブフェーズ = 1 commit を原則。
 
-### 6.8 計画書 > AGENT.md の優先順位
+### 6.8 計画書 > AGENTS.md の優先順位
 - 計画書と本ドキュメントが食い違う場合、**計画書を優先**する。
 - 計画書に無い事項は本節と `docs/arch/`（特に adr.md）。
-- 計画書は着手前合意、AGENT.md は作業の一般ルール。
+- 計画書は着手前合意、AGENTS.md + rules/ は作業の一般ルール。
 
 ### 6.9 計画書・タスク管理の形式（恒久ルール）
 - **進捗管理の唯一の正本は `docs/task-list.md`**。タスクは ID（P0-A 等）で管理し、状態（未着手/調査中/実装中/ローカル検証済み/実環境検証待ち/完了/保留/対象外）と完了条件・証拠（コミット SHA / テスト件数 / 実測値）を必ず記録・更新する。
@@ -280,10 +286,9 @@ bash .agent/hooks/restore-sandbox-env.sh
 3. **ファイル変更数**: `新規/変更ファイル (N files, +X / -Y)`
 4. **検証結果チェックリスト**:
    ```text
-   - ✅ bun run typecheck: 0 error
-   - ✅ bunx biome lint .: 0 error (N files)
-   - ✅ bun run test:unit: X passed / Y files
-   - ✅ bun run build (vite): built in Xs
+   - ✅ bun run check:all: 7/7 PASS（または 4+3 個別の結果）
+   - ✅ cd apps/web && bun run typecheck && bun run lint: 0 error（web 変更時）
+   - ✅ bun run build: packages + gameserver + next build 成功
    - ✅ push 済み（`prev..head`）
    ```
 5. **次のアクション**: 「次は何をしますか?」「Go を出していただければ〜」と提示、勝手に次のタスクを開始しない（§5 のタスク完了条件）。
@@ -342,21 +347,31 @@ bash .agent/hooks/restore-sandbox-env.sh
 
 - **`skills/` は Agent のスキルそのもの**。「このプロジェクトで何をどうやるとうまくいくか」という実践的な能力・コツ・手順・パターン・コードベース知識を貯める場所で、**仕様書の要約メモではない**。設計仕様の正本は `docs/arch/` にあり、スキルはそれを踏まえつつ「実際に手を動かすやり方」を持つ。
 
-### 8.1 ディレクトリ構成
+### 8.1 ディレクトリ構成（2026-10-03 TEMPLATE_REPO 統合後）
 
-| ディレクトリ | 役割 | 命名規則 |
+| ディレクトリ / ファイル | 役割 | 命名規則 |
 | :--- | :--- | :--- |
+| `.agent/settings.json` | チーム共有設定（permissions + `UserPromptSubmit`/`PreToolUse`/`PostToolUse`/`Stop` のフック登録） | 固定 |
+| `.agent/settings.local.json` | 個人オーバーライド（**gitignore**、コミットしない） | 固定 |
+| `.agent/rules/` | **トピック別ルール**（AGENTS.md の詳細版。`paths` frontmatter で発火条件） | `NN_kebab-case.md` |
 | `.agent/skills/` | **Agent のスキル**: このコードベース・この開発をうまく進めるためのノウハウ・テクニック・手順・パターン・コードベース知識 | `<kebab-case>/SKILL.md` |
-| `.agent/hooks/` | トリガー別の**定型手順/スクリプト**（pre-task, verify, log, recovery） | `kebab-case.md` / `.sh` / `settings.json` |
-| `.agent/logs/` | タスク完了毎の**実行記録** | `YYYY-MM-DD_kebab-case-summary.md` |
+| `.agent/agents/` | サブエージェント定義（explore / plan / code-reviewer / doc-editor / test-writer） | `kebab-case.md` |
+| `.agent/hooks/` | トリガー別の**定型手順/スクリプト**（pre-task, verify, log, recovery + edit guard） | `kebab-case.md` / `.sh` |
+| `.agent/commands/` | 旧 commands 互換の単一ファイルプロンプト（commit / review / test） | `kebab-case.md` |
+| `.agent/output-styles/` | 出力スタイル（concise / detailed = §7.2 準拠） | `kebab-case.md` |
+| `.agent/workflows/` | 動的ワークフロー（implement-task.js） | `kebab-case.js` |
+| `.agent/agent-memory/` | サブエージェント永続メモリ（自動生成、**gitignore**） | `<name>/MEMORY.md` |
+| `.agent/logs/` | タスク完了毎の**実行記録**（追加のみ） | `YYYY-MM-DD_kebab-case-summary.md` |
 
-各ディレクトリ直下に **`index.md`** を置き、一覧・参照条件を管理する（logs は除く）。
+`rules/` `skills/` `hooks/` には **`index.md`**（または README）を置き、一覧・参照条件を管理する（logs は日付ソートのため不要）。全体の見取り図は [`.agent/README.md`](.agent/README.md)。
 
-> ディレクトリ構造は Claude Code 準拠（概念のみ、物理パスは `.agent/` に統一、`.claude/` は使用しない）。**skills** は各スキルを `<スキル名>/SKILL.md` フォルダで持ち（`SKILL.md` 冒頭に `name` / `description` の YAML frontmatter）、**hooks** は実行スクリプト（`.sh`）を `.agent/hooks/` に置き、トリガー登録を [`settings.json`](.agent/hooks/settings.json)（Claude Code の `hooks.<event>` と同型）で行う。
+> ディレクトリ構造は Claude Code 公式の `.claude/` 構成に準拠（物理パスは `.agent/` に統一、`.claude/` は使用禁止）。**skills** は各スキルを `<スキル名>/SKILL.md` フォルダで持ち（`SKILL.md` 冒頭に `name` / `description` の YAML frontmatter）、**hooks** は手順 md（人間/Agent 参照用）+ 実行スクリプト `.sh`（自動実行）のハイブリッドで、トリガー登録を [`settings.json`](.agent/settings.json)（`hooks.<event>`）で行う。
 
 ### 8.2 `index.md` 起点のピンポイント読込（核心ワークフロー）
 - **タスク開始時**（[`.agent/hooks/pre-task.md`](.agent/hooks/pre-task.md)）: 現状把握後、[`.agent/skills/index.md`](.agent/skills/index.md) の「読み方ガイド」で**該当スキルだけ**を読む。全スキルを常に読み込まない（コンテキスト浪費）。
+- **編集前/編集後**: `settings.json` 登録の [`pre_edit_guard.sh`](.agent/hooks/pre_edit_guard.sh)（禁止領域ブロック）/ [`post_edit_verify.sh`](.agent/hooks/post_edit_verify.sh)（機密・目次・packageManager 検証）が自動実行される。手動でも実行可。
 - **トリガー発生時**: [`.agent/hooks/index.md`](.agent/hooks/index.md) の「対応表」で該当フックを特定し実行。
+- `rules/` は `paths` で発火条件を絞ってあるため、該当領域（docs / git / 検証対象）を触る時に該当ルールを読む。
 - 初回/全体把握が必要な時だけ `skills/project-overview/SKILL.md` → `skills/tech-stack/SKILL.md` の順。
 
 ### 8.3 記憶の同期（書き込みワークフロー）
@@ -364,16 +379,17 @@ bash .agent/hooks/restore-sandbox-env.sh
 - **知見のスキル化**: ログの「気づき」が再利用性の高いコードベース知識なら該当 `skills/*/SKILL.md` に反映し、`skills/index.md` の「最終更新」を更新する。新スキルは `skills/index.md` の「読み方ガイド」「一覧」両方に追記。
 - ログ・スキル・index の変更も commit/push 対象（セッションブランチへ）。
 
-### 8.4 AGENT.md / skills / docs/arch の役割分担
-- **AGENT.md（本ファイル）** = 「どう作業するか」の**規約**（コミット手順・Lint・Git 運用・コミュニケーション等）。常に正。
+### 8.4 AGENTS.md / rules / skills / docs/arch の役割分担
+- **AGENTS.md（本ファイル）** = 「どう作業するか」の**規約**（コミット手順・Lint・Git 運用・コミュニケーション等）。常に正。
+- **`.agent/rules/`** = 「いつ・どのファイルで何を守るか」の**トピック別詳細ルール**。AGENTS.md の詳細版であり、矛盾させない。
 - **`.agent/skills/`** = **Agent のスキル**。「このプロジェクトでうまくやるためのノウハウ・テクニック・手順・パターン」。実際に手を動かすための実践的な能力であり、仕様書の要約ではない。必要なら仕様書（docs/arch）を参照・引用する。
 - **`docs/arch/`** = 設計**仕様書**の正本（技術選定・プロトコル・アーキテクチャ・設計ルール）。
-- 役割の違い: 「こういう設計になっている」が仕様書（docs/arch）、「こうやるとうまく作れる/ハマらない」がスキル（skills）、「こう作業せよ」が規約（AGENT.md）。矛盾時は §6.8（計画書優先）に従う。
+- 役割の違い: 「こういう設計になっている」が仕様書（docs/arch）、「こうやるとうまく作れる/ハマらない」がスキル（skills）、「こう作業せよ」が規約（AGENTS.md + rules）。矛盾時は §6.8（計画書優先）に従う。
 
 ### 8.5 運用ルール
-- `.agent/` 配下は Git 追跡対象（永続化）。`.gitignore` で除外しない。**`.claude/` は廃止・使用禁止**、作成・参照しない。Claude だけでなくすべての agent に対応するため `.agent/` に統一する。
+- `.agent/` 配下は Git 追跡対象（永続化）。ただし **`settings.local.json` と `agent-memory/` は `.gitignore` で除外**（個人設定・自動生成のため）。**`.claude/` は廃止・使用禁止**、作成・参照しない。Claude だけでなくすべての agent に対応するため `.agent/` に統一する。
 - スキル/フックを更新したら対応 `index.md` も必ず更新する（腐らせない）。
 - ログは**追加のみ**（過去ログを書き換えない）。
   - ⚠️ **一括置換・リネーム系の指示が来ても、`.agent/logs/` の過去ログを置換対象に含めない。** 過去ログは「その時点で何が起きたか」の事実記録であり、旧ブランチ名・旧数値・旧パスが書かれているのは**正しい状態**。書き換えると記録が偽になる。
-  - 一括置換の射程は**現用ドキュメント**（`AGENTS.md` / `.agent/skills/` / `.agent/hooks/` / `docs/` の現用ファイル）に限定する。`.agent/logs/` と `docs/audit/` の時点記録に触れる必要がある場合は、**必ず事前にユーザーへ確認**する。
+  - 一括置換の射程は**現用ドキュメント**（`AGENTS.md` / `.agent/rules/` / `.agent/skills/` / `.agent/hooks/` / `.agent/agents/` / `.agent/commands/` / `docs/` の現用ファイル）に限定する。`.agent/logs/` と `docs/audit/` の時点記録に触れる必要がある場合は、**必ず事前にユーザーへ確認**する。
   - 当時の事実（旧ブランチ名など）を残す必要がある場合は、過去ログを書き換えるのではなく**当日の新規ログに記録**する。

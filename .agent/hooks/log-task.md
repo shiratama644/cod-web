@@ -36,11 +36,12 @@
 「3. 気づいたこと」が**再利用性の高いコードベース知識**なら、該当する `.agent/skills/*/SKILL.md` に反映する:
 - 既存スキルを更新 → [`../skills/index.md`](../skills/index.md) の該当行「最終更新」日付を更新。
 - 新スキルが必要 → 新規 `<kebab-case>/SKILL.md` 作成 → `skills/index.md` の「読み方ガイド」「一覧」両方に追記。
-- 2026-10-03時点のスキル一覧（19個）:
+- 2026-10-03時点のスキル一覧（21個）:
   - `project-overview`, `tech-stack`, `sandbox-constraints` (既存)
   - `bun-runtime`, `networking`, `deterministic-sim`, `zero-alloc`, `memory-leak`, `import-boundaries`, `testing`, `e2e`, `ci-quality-gates`, `docs-maintenance`, `babylon-engine`, `input-accumulation`, `physics-collision` (EM01/EM02/PH1/PH2で追加)
   - `gamemode-api` (PH3/PH4で追加)
   - `nextjs-frontend`, `codm-research` (2026-10-03 CoDM入れ替え方針 + Next主化で追加)
+  - `verify-doc-integrity`, `diff-review-report` (2026-10-03 TEMPLATE_REPO統合で追加)
   - 対応するログ: `adopt-bun`, `authoritative-server`, `bvh-kinematic`, `ph0-a/b/c`, `ph1-b/c/d/e/f`, `ph1-5-a/b/c/d`, `ph2-a/b/c/d/e`, `plat-em-em01`, `em1-complete`, `em2-coverage-85`, `doc-4/5/6`, `dr-1/2`, `ph3-*`, `ph4-*`, `codm-deep-research-plan-r0-hybrid-baseline`, `nextjs-frontend-adoption-and-vite-removal` 等
 - スキル化の判断基準:
   - Bun導入/復旧 → `bun-runtime`
@@ -71,4 +72,4 @@
 ## 運用メモ
 
 - ログは**追加のみ**（過去ログを書き換えない）。修正は新ログで。
-- ログの目的は「次回の自分（別セッション）が過去の判断経緯を追えること」。主観・推測も明記してよい（AGENT.md §7.3）。
+- ログの目的は「次回の自分（別セッション）が過去の判断経緯を追えること」。主観・推測も明記してよい（AGENTS.md §7.3）。

@@ -21,7 +21,8 @@ git log -5 --oneline
 ### 2. 知識のピンポイント読込（本 hook の核心）
 
 [`../skills/index.md`](../skills/index.md) の「読み方ガイド」で**該当スキルだけ**を読む。
-- 全スキルを常に読まない（コンテキスト浪費）。19スキルあるがタスクに必要な1-2個だけ読む。
+- 全スキルを常に読まない（コンテキスト浪費）。21スキルあるがタスクに必要な1-2個だけ読む。
+- 作業規約のトピック別詳細は [`../rules/`](../rules/)（01 情報の正 / 02 Git / 03 doc-style / 04 検証）。該当領域を触る時に読む。
 - 初回/全体把握が必要な時だけ `project-overview/SKILL.md` + `tech-stack/SKILL.md`。
 - 設計仕様 → **仕様書 [`docs/arch/`](../../docs/arch/README.md)**（product / protocol / engineering / adr / milestones）。環境制約 → `sandbox-constraints/SKILL.md`。
 - 計画書は [`docs/planning/`](../../docs/planning/)。進捗は [`docs/task-list.md`](../../docs/task-list.md)。欠ファイル `tech-stack.md` / `networking.md` / `game-engineering-principles.md` は正本ではない。
@@ -40,6 +41,7 @@ git log -5 --oneline
   - ゲームモードAPI/ハブUI → `gamemode-api/SKILL.md`
   - apps/web（Next.js）/プレビュー/ESLint/E2E webServer → `nextjs-frontend/SKILL.md`
   - CoDM リサーチ（R1〜R7）/仕様書作成 → `codm-research/SKILL.md`
+  - docs変更の機械検証 → `verify-doc-integrity/SKILL.md`、大きな変更のレビュー報告 → `diff-review-report/SKILL.md`
 - **2026-10-03 フロントエンド入れ替え注意**: apps/web は Next.js（Vite+React クライアントは削除済み、git 履歴 ≤40b44eb）。`babylon-engine` / `input-accumulation` / `testing` / `e2e` / `zero-alloc` 内の `apps/web/src/game/**` 参照は**旧クライアントの歴史的記録**。パターンは S フェーズ再統合時に再利用する。
 
 ### 3. docs/ と実コードの優先順位（AGENTS.md §6.8）
