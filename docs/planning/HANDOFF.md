@@ -51,6 +51,7 @@
 | D24 | matchmakerはPhase 4 mock、本実装は後続 | Phase 4では mock API (matchmaker-mock.ts)、本実装 Redis/HMACはPhase 5以降。Sandboxは公式拡張+UGC |
 | D25 | 異種ゲームタイプ追加を見据えた拡張性の常時維持 | 2026-10-03 ユーザー指示。voxel 等「全く異なるゲーム」を将来追加する前提で全実装を行う（SimProfile 注入・TYPE_SPECS 契約・L1 type分岐禁止・JSON マップ定義を崩さない）。ただし voxel 実装自体は現時点では絶対に追加しない（契約のみ維持） |
 | D26 | bun→pnpm 移行は同日取り消し、**bun 統一が正** | 2026-10-03 ユーザー指示で pnpm へ全面移行（c603528）→ 同日ユーザー指示で revert。PM・ランナーは bun（bun.lock・`bun run`・`bunx`）に復帰。移行時の pnpm 知見は `.agent/logs/2026-10-03_migrate-bun-to-pnpm.md` に保存 |
+| D27 | apps/web もリポジトリ標準構成に統一（**Biome + Vitest 5**、ESLint 廃止） | 2026-10-03 ユーザー指示。apps/web の lint は Biome（root biome.json、`!apps/web` 除外を撤廃）、コードスタイルも root 設定（single quote / semi asNeeded / lineWidth 100）で統一。ESLint・eslint-config-next は削除。パッケージ名は `@cod/web`。テストは Vitest **5**（root を ^4.1.11→^5.0.3 へ更新）で `_tests_/apps/web/` に集約。root biome.json に `css.parser.tailwindDirectives` 追加（Tailwind v4 `@theme` 対応） |
 
 ## 2. 事実確認（2026-09-22 Phase 4完了後）
 

@@ -1,11 +1,14 @@
 {
-  "name": "web",
+  "name": "@cod/web",
   "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
     "preview": "next start -H 0.0.0.0 -p 4173"
   },
@@ -25,8 +28,6 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "0.31.10",
-    "eslint": "9.39.4",
-    "eslint-config-next": "16.2.6",
     "postcss": "8.5.23",
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3"

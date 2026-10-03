@@ -54,6 +54,7 @@ export default defineConfig({
         'packages/gamemode-sdk/src/**/*.{ts,tsx}',
         'gamemodes/**/*.{ts,tsx}',
         'apps/gameserver/src/**/*.{ts,tsx}',
+        'apps/web/src/lib/**/*.{ts,tsx}',
       ],
       exclude: [
         // package public barrels: runtime behavior is covered through concrete modules.
