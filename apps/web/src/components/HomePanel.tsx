@@ -1,8 +1,10 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MODES, type ModeTab } from '@/lib/data'
+import { Modal, toast } from './feedback'
+import type { PlaceholderKey } from './PlaceholderPanel'
 import { Icon, OrangeButton, SteelButton } from './ui'
 
 type Props = {
@@ -13,6 +15,9 @@ type Props = {
   activeClassName: string
   onOpenLoadout: () => void
   onOpenGunsmith: () => void
+  onOpenPage: (p: PlaceholderKey) => void
+  onInvite: () => void
+  onChat: () => void
 }
 
 const TABS: { id: ModeTab; label: string; icon: string }[] = [
@@ -26,6 +31,9 @@ export default function HomePanel(p: Props) {
   const [searching, setSearching] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [ranked, setRanked] = useState(false)
+  const [found, setFound] = useState(false)
+  const [deploying, setDeploying] = useState(false)
+  const foundTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const modes = MODES[p.modeTab]
   const mode = modes.find((m) => m.id === p.modeId) ?? modes[0]
@@ -36,13 +44,45 @@ export default function HomePanel(p: Props) {
     return () => clearInterval(t)
   }, [searching])
 
+  // マッチメイキングのモック: 5〜8 秒で対戦相手が見つかる
+  useEffect(() => {
+    if (!searching) return
+    foundTimer.current = setTimeout(() => setFound(true), 5000 + Math.random() * 3000)
+    return () => {
+      if (foundTimer.current) clearTimeout(foundTimer.current)
+    }
+  }, [searching])
+
   const startStop = () => {
     if (searching) {
       setSearching(false)
+      setFound(false)
+      toast({ kind: 'info', title: 'マッチメイキングをキャンセルしました' })
     } else {
       setElapsed(0)
       setSearching(true)
     }
+  }
+
+  const acceptMatch = () => {
+    setFound(false)
+    setSearching(false)
+    setDeploying(true)
+    setTimeout(() => {
+      setDeploying(false)
+      toast({
+        kind: 'info',
+        title: 'デモはここまでです',
+        desc: '実際の対戦はゲームサーバー(バックエンド)実装後にプレイできます',
+        duration: 5000,
+      })
+    }, 2600)
+  }
+
+  const declineMatch = () => {
+    setFound(false)
+    setSearching(false)
+    toast({ kind: 'warn', title: 'マッチを辞退しました' })
   }
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0')
@@ -121,13 +161,38 @@ export default function HomePanel(p: Props) {
           icon="workspace_premium"
           progress={84}
           accent
+          onClick={() => p.onOpenPage('battlepass')}
         />
-        <Banner title="EVENTS" sub="3 NEW REWARDS AVAILABLE" icon="event" badge />
-        <Banner title="SEASONAL CHALLENGE" sub="GET 30 KILLS WITH AR" icon="target" progress={46} />
-        <div className="steel-panel clip-tac-sm flex items-center gap-2 px-3 py-2 text-xs text-steel-300">
+        <Banner
+          title="EVENTS"
+          sub="3 NEW REWARDS AVAILABLE"
+          icon="event"
+          badge
+          onClick={() => p.onOpenPage('events')}
+        />
+        <Banner
+          title="SEASONAL CHALLENGE"
+          sub="GET 30 KILLS WITH AR"
+          icon="target"
+          progress={46}
+          onClick={() => p.onOpenPage('challenges')}
+        />
+        <motion.button
+          type="button"
+          whileHover={{ x: 4, filter: 'brightness(1.2)' }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() =>
+            toast({
+              kind: 'info',
+              title: 'ダブル XP ウィークエンド開催中',
+              desc: '月曜 09:00 まで、全モードで獲得 XP が 2 倍になります',
+            })
+          }
+          className="steel-panel clip-tac-sm flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs text-steel-300"
+        >
           <Icon name="campaign" size={16} className="text-cod-400" />
           <span className="truncate">Double XP weekend is LIVE until Monday 09:00</span>
-        </div>
+        </motion.button>
       </motion.div>
 
       {/* Right column: squad */}
@@ -140,17 +205,21 @@ export default function HomePanel(p: Props) {
       >
         <div className="text-[11px] font-bold tracking-[0.3em] text-steel-400">SQUAD 1/5</div>
         <div className="flex flex-col gap-2">
-          {[0, 1, 2, 3].map((i) => (
+          {[0, 1, 2, 3].map((slot) => (
             <SteelButton
-              key={i}
+              key={`squad-${slot}`}
+              onClick={p.onInvite}
               className="flex h-11 w-11 items-center justify-center text-steel-400"
-              aria-label="Invite"
+              aria-label="フレンドを招待"
             >
               <Icon name="person_add" size={20} />
             </SteelButton>
           ))}
         </div>
-        <SteelButton className="mt-2 flex h-9 items-center gap-2 px-3 text-xs font-bold tracking-wider text-steel-300">
+        <SteelButton
+          onClick={p.onChat}
+          className="mt-2 flex h-9 items-center gap-2 px-3 text-xs font-bold tracking-wider text-steel-300"
+        >
           <Icon name="forum" size={16} /> CHAT
         </SteelButton>
       </motion.div>
@@ -175,10 +244,23 @@ export default function HomePanel(p: Props) {
           label="GUNSMITH"
           onClick={() => !searching && p.onOpenGunsmith()}
         />
-        <NavTile icon="person_apron" label="OPERATORS" />
-        <NavTile icon="storefront" label="STORE" dot />
-        <NavTile icon="shield" label="CLAN" />
-        <NavTile icon="leaderboard" label="RANKINGS" />
+        <NavTile
+          icon="person_apron"
+          label="OPERATORS"
+          onClick={() => !searching && p.onOpenPage('operators')}
+        />
+        <NavTile
+          icon="storefront"
+          label="STORE"
+          dot
+          onClick={() => !searching && p.onOpenPage('store')}
+        />
+        <NavTile icon="shield" label="CLAN" onClick={() => !searching && p.onOpenPage('clan')} />
+        <NavTile
+          icon="leaderboard"
+          label="RANKINGS"
+          onClick={() => !searching && p.onOpenPage('rankings')}
+        />
       </motion.div>
 
       {/* Bottom-right: mode card + start */}
@@ -379,6 +461,74 @@ export default function HomePanel(p: Props) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* MATCH FOUND modal */}
+      <AnimatePresence>
+        {found && (
+          <Modal title="MATCH FOUND" icon="swords" onClose={declineMatch} width={520}>
+            <div className="flex items-center gap-4">
+              <div
+                className="clip-tac-sm relative h-24 w-36 shrink-0 overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, #2a2e34, #13151a)' }}
+              >
+                <div className="grid-bg absolute inset-0 opacity-60" />
+                <Icon name="map" size={64} className="absolute -bottom-2 -right-2 text-white/10" />
+                <div className="absolute bottom-2 left-2 text-[10px] font-bold tracking-[0.3em] text-cod-400">
+                  {mode.map}
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="font-display text-4xl leading-none tracking-wide">{mode.name}</div>
+                <div className="mt-1 text-xs text-steel-300">
+                  {ranked ? 'RANKED' : 'CASUAL'} · {p.modeTab.toUpperCase()} · PING 32ms
+                </div>
+                <div className="mt-2 flex items-center gap-1 text-[11px] text-steel-400">
+                  <Icon name="group" size={14} className="text-cod-400" />
+                  プレイヤー 10/10 — 全員準備完了
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <SteelButton
+                onClick={declineMatch}
+                className="h-11 px-5 text-sm font-bold tracking-wider text-steel-300"
+              >
+                辞退する
+              </SteelButton>
+              <OrangeButton onClick={acceptMatch} className="h-11 px-7">
+                <span className="flex items-center gap-2 text-xl">
+                  <Icon name="check_circle" size={20} /> ACCEPT
+                </span>
+              </OrangeButton>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      {/* deploy loading overlay */}
+      <AnimatePresence>
+        {deploying && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm"
+          >
+            <div className="font-display text-5xl tracking-[0.2em] glow-text">DEPLOYING…</div>
+            <div className="mt-2 text-xs tracking-[0.3em] text-steel-400">
+              {mode.map} — {mode.name}
+            </div>
+            <div className="mt-6 h-1.5 w-72 overflow-hidden rounded-full bg-steel-700">
+              <motion.div
+                className="h-full bg-gradient-to-r from-cod-600 to-cod-300"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 2.4, ease: 'easeInOut' }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -390,6 +540,7 @@ function Banner({
   progress,
   accent,
   badge,
+  onClick,
 }: {
   title: string
   sub: string
@@ -397,11 +548,13 @@ function Banner({
   progress?: number
   accent?: boolean
   badge?: boolean
+  onClick: () => void
 }) {
   return (
     <motion.button
       whileHover={{ x: 4, filter: 'brightness(1.2)' }}
       whileTap={{ scale: 0.97 }}
+      onClick={onClick}
       className="steel-panel clip-tac-sm relative flex cursor-pointer items-center gap-3 overflow-hidden p-2.5 text-left"
     >
       <div

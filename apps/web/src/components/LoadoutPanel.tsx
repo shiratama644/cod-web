@@ -15,6 +15,7 @@ import {
   TACTICALS,
   WEAPONS,
 } from '@/lib/data'
+import { toast } from './feedback'
 import { Icon, OrangeButton, SteelButton } from './ui'
 
 type Props = {
@@ -114,20 +115,31 @@ export default function LoadoutPanel({
                 </motion.button>
               )
             })}
-            {[0, 1, 2].map((i) => (
-              <div
-                key={`l${i}`}
-                className="steel-btn clip-tac-sm flex h-[52px] items-center gap-3 px-3 opacity-40"
-              >
-                <span className="font-display text-2xl text-steel-500">
-                  {String(classes.length + i + 1).padStart(2, '0')}
-                </span>
-                <Icon name="lock" size={18} className="text-steel-400" />
-                <span className="text-xs font-bold tracking-widest text-steel-400">
-                  UNLOCK AT LV {60 + i * 20}
-                </span>
-              </div>
-            ))}
+            {[0, 1, 2].map((i) => {
+              const lv = 60 + i * 20
+              return (
+                <button
+                  type="button"
+                  key={`l${i}`}
+                  onClick={() =>
+                    toast({
+                      kind: 'warn',
+                      title: `クラススロット ${String(classes.length + i + 1).padStart(2, '0')} はロック中`,
+                      desc: `プレイヤーレベル ${lv} で解放されます(現在 LV150 のモック表示)`,
+                    })
+                  }
+                  className="steel-btn clip-tac-sm flex h-[52px] cursor-pointer items-center gap-3 px-3 opacity-40 transition hover:opacity-70"
+                >
+                  <span className="font-display text-2xl text-steel-500">
+                    {String(classes.length + i + 1).padStart(2, '0')}
+                  </span>
+                  <Icon name="lock" size={18} className="text-steel-400" />
+                  <span className="text-xs font-bold tracking-widest text-steel-400">
+                    UNLOCK AT LV {lv}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </motion.div>
 

@@ -1,23 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cod-50: #fff6e8;
-  --color-cod-200: #ffd48a;
-  --color-cod-300: #ffbe4d;
-  --color-cod-400: #ffa51f;
-  --color-cod-500: #f58a07;
-  --color-cod-600: #d86d00;
-  --color-cod-700: #a84f00;
-  --color-cod-800: #6e3300;
+  --color-cod-50: #fff8ec;
+  --color-cod-200: #ffd98f;
+  --color-cod-300: #ffc252;
+  --color-cod-400: #ffa826;
+  --color-cod-500: #f78e0a;
+  --color-cod-600: #d97005;
+  --color-cod-700: #a85302;
+  --color-cod-800: #6e3600;
 
-  --color-steel-300: #a7adb5;
-  --color-steel-400: #7c838c;
-  --color-steel-500: #555b63;
-  --color-steel-600: #3a3f46;
-  --color-steel-700: #2a2e34;
-  --color-steel-800: #1c1f24;
-  --color-steel-900: #13151a;
-  --color-steel-950: #0b0c0f;
+  --color-steel-300: #aab1bb;
+  --color-steel-400: #7e8692;
+  --color-steel-500: #565d68;
+  --color-steel-600: #383e47;
+  --color-steel-700: #262b33;
+  --color-steel-800: #181c22;
+  --color-steel-900: #101318;
+  --color-steel-950: #090b0e;
 
   --font-display: "Teko", "Rajdhani", system-ui, sans-serif;
   --font-tac: "Rajdhani", system-ui, sans-serif;
@@ -52,56 +52,65 @@ body {
     "opsz" 24;
 }
 
-/* Metallic orange CTA */
+/* ─── Modern amber CTA: ソフトなグラデ+微細なインナーライト ─── */
 .metal-orange {
-  background: linear-gradient(
-    180deg,
-    #ffd27a 0%,
-    #ffa51f 22%,
-    #f58a07 52%,
-    #c96200 53%,
-    #e07a00 100%
-  );
+  background: linear-gradient(165deg, #ffc252 0%, #f78e0a 55%, #e07a04 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.35),
-    0 0 18px rgba(245, 138, 7, 0.45),
-    0 4px 10px rgba(0, 0, 0, 0.6);
-  color: #1a0d00;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 0 24px rgba(247, 142, 10, 0.35),
+    0 6px 16px rgba(0, 0, 0, 0.45);
+  color: #180d00;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-/* Dark steel panel with emboss */
+/* ─── Glass panel: すりガラス+ヘアライン境界 ─── */
 .steel-panel {
-  background: linear-gradient(180deg, rgba(42, 46, 52, 0.88) 0%, rgba(19, 21, 26, 0.92) 100%);
+  background: linear-gradient(170deg, rgba(34, 39, 47, 0.72) 0%, rgba(13, 15, 19, 0.82) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.6),
-    0 6px 18px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(6px);
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 12px 32px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px) saturate(1.2);
 }
 
 .steel-btn {
-  background: linear-gradient(180deg, #3a3f46 0%, #24282e 50%, #1a1d22 51%, #22262c 100%);
+  background: linear-gradient(170deg, rgba(56, 62, 71, 0.85) 0%, rgba(22, 25, 31, 0.9) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.7),
-    0 3px 8px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.steel-btn:hover {
+  border-color: rgba(255, 168, 38, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.5),
+    0 0 14px rgba(247, 142, 10, 0.12);
+}
+
+/* キーボード操作時のフォーカスリング(全ボタン共通) */
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible {
+  outline: 2px solid rgba(255, 168, 38, 0.8);
+  outline-offset: 2px;
 }
 
 .emboss-text {
   text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.12),
-    0 -1px 0 rgba(0, 0, 0, 0.8),
-    0 2px 6px rgba(0, 0, 0, 0.6);
+    0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.65);
 }
 
 .glow-text {
   text-shadow:
-    0 0 12px rgba(255, 165, 31, 0.65),
-    0 2px 2px rgba(0, 0, 0, 0.8);
+    0 0 14px rgba(255, 168, 38, 0.55),
+    0 2px 3px rgba(0, 0, 0, 0.8);
 }
 
 .clip-tac {
@@ -124,15 +133,15 @@ body {
 .scanlines {
   background-image: repeating-linear-gradient(
     0deg,
-    rgba(255, 255, 255, 0.025) 0 1px,
+    rgba(255, 255, 255, 0.02) 0 1px,
     transparent 1px 3px
   );
 }
 
 .grid-bg {
   background-image:
-    linear-gradient(rgba(255, 165, 31, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 165, 31, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(255, 168, 38, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 168, 38, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
@@ -141,6 +150,22 @@ body {
 }
 .no-scrollbar {
   scrollbar-width: none;
+}
+
+/* 細身のモダンスクロールバー(リスト用) */
+.slim-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.slim-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.slim-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 168, 38, 0.35);
+  border-radius: 2px;
+}
+.slim-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 168, 38, 0.35) transparent;
 }
 
 /* Landscape-only enforcement */

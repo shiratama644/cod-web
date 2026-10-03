@@ -13,12 +13,21 @@ import {
   type StatKey,
   WEAPONS,
 } from '@/lib/data'
+import { toast } from './feedback'
 import { Icon, SteelButton } from './ui'
 
 type Props = {
   cls: ClassLoadout
   update: (patch: Partial<ClassLoadout>) => void
 }
+
+const CAMOS = [
+  { name: 'ブレイズ', color: '#f58a07' },
+  { name: 'ガンメタル', color: '#3a3f46' },
+  { name: 'ウッドランド', color: '#6b7d4f' },
+  { name: 'デザート', color: '#b8a07a' },
+  { name: 'アークティック', color: '#1f6fd1' },
+]
 
 const ANCHORS: Record<SlotKey, { x: number; y: number }> = {
   optic: { x: 46, y: 40 },
@@ -36,6 +45,7 @@ export default function GunsmithPanel({ cls, update }: Props) {
   const [slot, setSlot] = useState<SlotKey>('muzzle')
   const [hover, setHover] = useState<string | null>(null)
   const [warn, setWarn] = useState(false)
+  const [camo, setCamo] = useState(1)
   const weapon = WEAPONS.find((w) => w.id === cls.primary) ?? WEAPONS[0]
   const count = Object.values(cls.attachments).filter(Boolean).length
 
@@ -108,12 +118,25 @@ export default function GunsmithPanel({ cls, update }: Props) {
           <div className="steel-panel clip-tac-sm mt-auto p-3">
             <div className="text-[10px] font-bold tracking-[0.3em] text-steel-400">CAMO</div>
             <div className="mt-2 flex gap-1.5">
-              {['#f58a07', '#3a3f46', '#6b7d4f', '#b8a07a', '#1f6fd1'].map((c, i) => (
-                <motion.div
+              {CAMOS.map((c, i) => (
+                <motion.button
+                  type="button"
                   whileHover={{ scale: 1.15 }}
-                  key={c}
-                  className={`h-6 w-6 cursor-pointer rounded-sm ${i === 1 ? 'ring-2 ring-cod-400' : ''}`}
-                  style={{ background: c }}
+                  whileTap={{ scale: 0.92 }}
+                  key={c.color}
+                  onClick={() => {
+                    setCamo(i)
+                    toast({
+                      kind: 'success',
+                      title: `カモ「${c.name}」を装備しました`,
+                      desc: '見た目のみのデモです(武器性能は変わりません)',
+                    })
+                  }}
+                  className={`h-6 w-6 cursor-pointer rounded-sm transition ${
+                    camo === i ? 'ring-2 ring-cod-400 ring-offset-1 ring-offset-black' : ''
+                  }`}
+                  style={{ background: c.color }}
+                  aria-label={`カモ ${c.name}`}
                 />
               ))}
             </div>

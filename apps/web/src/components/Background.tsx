@@ -8,7 +8,7 @@ function seeded(i: number) {
   return x - Math.floor(x)
 }
 
-export default function Background({ variant }: { variant: 'home' | 'loadout' | 'gunsmith' }) {
+export default function Background({ variant }: { variant: 'home' | 'sub' }) {
   const embers = useMemo(
     () =>
       Array.from({ length: 28 }, (_, i) => ({
