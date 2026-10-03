@@ -14,7 +14,6 @@
   ],
   "scripts": {
     "dev": "cd apps/web && bun run dev",
-    "dev:next": "cd apps/web-next && bun run dev",
     "build": "bun run build:packages && bun run build:apps",
     "build:packages": "cd packages/protocol && bun run build && cd ../engine-core && bun run build && cd ../profile-fps && bun run build",
     "build:apps": "cd apps/gameserver && bun run build && cd ../web && bun run build",
@@ -34,13 +33,10 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "nipplejs": "^1.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "screenfull": "^6.0.2",
     "three": "^0.185.1",
-    "three-mesh-bvh": "^0.9.14",
-    "zustand": "^5.0.15"
+    "three-mesh-bvh": "^0.9.14"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",

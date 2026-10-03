@@ -33,9 +33,6 @@
       "@cod/profile-fps/*": [
         "./packages/profile-fps/src/*"
       ],
-      "@/*": [
-        "./apps/web/src/*"
-      ],
       "@cod/gamemode-api": [
         "./packages/gamemode-api/src/index.ts"
       ],

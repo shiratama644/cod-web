@@ -1,5 +1,5 @@
 > bun install --frozen-lockfile
-> started: 2026/9/24 7:24:25 (JST)
+> started: 2026/10/3 11:50:20 (JST)
 > log: logs/01-install.log
 ------------------------------------------------------------
 > use setsid: true
@@ -7,8 +7,8 @@ bun install v1.4.0 (34cbb9a40)
 
 $ husky
 
-Checked 168 installs across 208 packages (no changes) [38.00ms]
+Checked 532 installs across 710 packages (no changes) [60.00ms]
 ------------------------------------------------------------
-> finished: 2026/9/24 7:24:25 (JST)
-> duration: 43ms
+> finished: 2026/10/3 11:50:20 (JST)
+> duration: 64ms
 > exit: 0   OK

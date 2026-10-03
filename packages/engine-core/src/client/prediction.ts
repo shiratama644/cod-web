@@ -16,10 +16,10 @@ import type { TypeSpec } from '@cod/protocol/protocol/type-specs'
 import type { PlayerState } from '@cod/protocol/types'
 
 /**
- * web client が使う profile-like seam。
+ * client が使う profile-like seam。
  *
- * `@cod/web` は `@cod/engine-core` へ直接依存しないため、engine-core の SimProfile 型は
- * import せず、ClientPrediction に必要な最小 shape だけを受け取る。
+ * engine-core の SimProfile 型へは依存せず、ClientPrediction に必要な最小 shape
+ * だけを受け取る（protocol のみに依存する純粋ロジック。旧 apps/web から移設）。
  */
 export interface ClientPredictionProfile<TWorld> {
   readonly typeSpec: Pick<TypeSpec, 'simHz'>

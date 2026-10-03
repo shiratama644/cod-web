@@ -10,7 +10,6 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(rootDir, 'apps/web/src'),
       '@cod/protocol': path.resolve(rootDir, 'packages/protocol/src'),
       '@cod/engine-core': path.resolve(rootDir, 'packages/engine-core/src'),
       '@cod/profile-fps': path.resolve(rootDir, 'packages/profile-fps/src'),
@@ -54,18 +53,11 @@ export default defineConfig({
         'packages/gamemode-api/src/**/*.{ts,tsx}',
         'packages/gamemode-sdk/src/**/*.{ts,tsx}',
         'gamemodes/**/*.{ts,tsx}',
-        'apps/web/src/**/*.{ts,tsx}',
         'apps/gameserver/src/**/*.{ts,tsx}',
       ],
       exclude: [
         // package public barrels: runtime behavior is covered through concrete modules.
         'packages/*/src/index.ts',
-        // browser entrypoint: verified by build/E2E, not by jsdom unit coverage.
-        'apps/web/src/main.tsx',
-        // type-only transport contract; concrete behavior is in websocket.ts.
-        'apps/web/src/game/net/transport.ts',
-        // ambient references only.
-        'apps/web/src/vite-env.d.ts',
       ],
       thresholds: {
         // EM2: meaningful coverage 85% for all metrics (statements/branches/functions/lines)

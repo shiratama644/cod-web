@@ -4,8 +4,8 @@ import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
 import type { PlayerInput, Snapshot, SnapshotPlayer } from '@cod/protocol/protocol/messages'
 import { TYPE_SPECS } from '@cod/protocol/protocol/type-specs'
 import { createPlayerState, type PlayerState } from '@cod/protocol/types'
-import { ClientPrediction, type ClientPredictionProfile } from '@/game/net/prediction'
-import { Interpolator } from '@/game/net/interpolation'
+import { ClientPrediction, type ClientPredictionProfile } from '@cod/engine-core/client/prediction'
+import { Interpolator } from '@cod/engine-core/client/interpolation'
 
 function moveInput(partial: Partial<PlayerInput> = {}) {
   return {

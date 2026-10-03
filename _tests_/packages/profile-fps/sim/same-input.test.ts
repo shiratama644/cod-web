@@ -6,7 +6,7 @@ import { createPlaneWorld } from '@cod/profile-fps/sim/collisionWorld'
 import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
 import { Room } from '@cod/engine-core/room/Room'
 import { Simulation } from '@cod/engine-core/sim/Simulation'
-import { ClientPrediction } from '../../../../apps/web/src/game/net/prediction'
+import { ClientPrediction } from '@cod/engine-core/client/prediction'
 
 function makeRng(seed: number) {
   let s = seed >>> 0

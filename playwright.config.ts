@@ -31,20 +31,12 @@ export default defineConfig({
   webServer: shouldStartLocalServer
     ? [
         {
-          command: 'bun run server',
-          url: 'http://127.0.0.1:8080',
-          reuseExistingServer: !process.env.CI,
-          timeout: 120_000,
-          stdout: 'pipe',
-          stderr: 'pipe',
-          gracefulShutdown: { signal: 'SIGTERM', timeout: 1_000 },
-        },
-        {
-          // preview proxies /ws to gameserver (vite.config.ts)
-          command: 'bun run preview',
+          // Next.js production server (requires `next build` first — the
+          // command chains build + start so e2e is self-contained).
+          command: 'cd apps/web && bun run build && bun run preview',
           url: localBaseURL,
           reuseExistingServer: !process.env.CI,
-          timeout: 120_000,
+          timeout: 300_000,
           stdout: 'pipe',
           stderr: 'pipe',
           gracefulShutdown: { signal: 'SIGTERM', timeout: 1_000 },

@@ -1,11 +1,11 @@
 > bun run check:determinism
-> started: 2026/9/24 7:24:25 (JST)
+> started: 2026/10/3 11:50:20 (JST)
 > log: logs/03-check-determinism.log
 ------------------------------------------------------------
 > use setsid: true
 $ bun run scripts/check-determinism.ts
 ✅ Determinism check passed (no forbidden patterns in SimProfile / L1)
 ------------------------------------------------------------
-> finished: 2026/9/24 7:24:25 (JST)
-> duration: 54ms
+> finished: 2026/10/3 11:50:20 (JST)
+> duration: 42ms
 > exit: 0   OK

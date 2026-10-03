@@ -1,11 +1,48 @@
 > bun run lint
-> started: 2026/9/24 7:24:25 (JST)
+> started: 2026/10/3 11:50:20 (JST)
 > log: logs/02-lint.log
 ------------------------------------------------------------
 > use setsid: true
 $ biome lint .
-Checked 134 files in 777ms. No fixes applied.
+biome.json:2:14 deserialize ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  i The configuration schema version does not match the CLI version 2.5.15
+  
+    1 │ {
+  > 2 │   "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+      │              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │   "vcs": {
+    4 │     "enabled": true,
+  
+  i   Expected:                     2.5.15
+      Found:                        2.5.12
+  
+  
+  i Run the command biome migrate to migrate the configuration file.
+  
+
+biome.json:296:7 lint/suspicious/useBiomeIgnoreFolder  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Incorrect usage of ignore a folder found.
+  
+    294 │     "includes": [
+    295 │       "**",
+  > 296 │       "!apps/web/**"
+        │       ^^^^^^^^^^^^^^
+    297 │     ]
+    298 │   }
+  
+  i Since version 2.2.0, ignoring folders doesn't require the use the trailing /**. This is a bug that affects version prior v2.2.0.
+  
+  i Safe fix: If you want to ignore a folder, use the following pattern instead: !apps/web.
+  
+    296 │ ······"!apps/web/**"
+        │                 --- 
+
+Checked 90 files in 578ms. No fixes applied.
+Found 1 warning.
+Found 1 info.
 ------------------------------------------------------------
-> finished: 2026/9/24 7:24:26 (JST)
-> duration: 940ms
+> finished: 2026/10/3 11:50:20 (JST)
+> duration: 811ms
 > exit: 0   OK

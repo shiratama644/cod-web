@@ -5,10 +5,10 @@
  *
  * 次を順に実行する:
  *   1. `bun install`。失敗したらそこで停止。
- *   2. `bun run build`（vite build）。失敗したらそこで停止してサーバは起動しない。
+ *   2. `bun run build`（packages + gameserver + next build）。失敗したらそこで停止してサーバは起動しない。
  *   3. ビルド成功後、次の 2 プロセスを並列起動する:
  *        - game server : `bun run server` （権威ゲームサーバ・:8080）
- *        - web client  : `bun run preview`（vite preview・:4173、/ws を 8080 へプロキシ）
+ *        - web client  : `bun run preview`（next start・:4173）
  *
  * 各プロセスの stdout/stderr は **プロセスごとに色分けしてタグ付け**して
  * 自プロセスの stdout へ流す。Ctrl+C 等で終了したら子プロセスをすべて後始末する。
@@ -26,7 +26,7 @@ const colors = {
   build: { tag: 'BUILD', fg: '\x1b[36m' },
   // ゲームサーバ: 緑
   server: { tag: 'SERVER', fg: '\x1b[32m' },
-  // Web クライアント（vite preview）: マゼンタ
+  // Web クライアント（next start）: マゼンタ
   client: { tag: 'CLIENT', fg: '\x1b[35m' },
 } as const
 
@@ -151,7 +151,7 @@ async function main(): Promise<number> {
   logLine('install', 'OK Install succeeded.')
 
   // ── 2. ビルド ─────────────────────────────────────────────────────────
-  logLine('build', 'Starting production build... (vite build)')
+  logLine('build', 'Starting production build... (packages + gameserver + next build)')
   const build = Bun.spawn(['bun', 'run', 'build'], {
     cwd: process.cwd(),
     stdout: 'pipe',
@@ -166,7 +166,7 @@ async function main(): Promise<number> {
   }
   logLine('build', 'OK Build succeeded. Starting game server and client...')
 
-  // ── 3. game server と vite preview を並列起動 ──────────────────────────
+  // ── 3. game server と next preview を並列起動 ──────────────────────────
   const server = spawn('server', ['bun', 'run', 'server'])
   const client = spawn('client', ['bun', 'run', 'preview'])
 
