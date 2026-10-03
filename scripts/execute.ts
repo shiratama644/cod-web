@@ -2,13 +2,17 @@
  * 一括起動スクリプト（本番構成）。
  *
  *   bun run scripts/execute.ts   （または `bun run start`）
+ *   bun run start --no-db        （PostgreSQL を起動せずに実行）
  *
  * 次を順に実行する:
  *   1. `bun install`。失敗したらそこで停止。
- *   2. `bun run build`（packages + gameserver + next build）。失敗したらそこで停止してサーバは起動しない。
- *   3. ビルド成功後、次の 2 プロセスを並列起動する:
+ *   2. PostgreSQL（Docker）起動: `docker compose up -d --wait postgres` → `bun run db:push`。
+ *      `--no-db` 指定時はスキップ。docker が無い/起動失敗の場合は警告して **DB なしで続行**
+ *      （/api/loadouts はインメモリフォールバック）。起動を止めない。
+ *   3. `bun run build`（packages + gameserver + next build）。失敗したらそこで停止してサーバは起動しない。
+ *   4. ビルド成功後、次の 2 プロセスを並列起動する:
  *        - game server : `bun run server` （権威ゲームサーバ・:8080）
- *        - web client  : `bun run preview`（next start・:4173）
+ *        - web client  : `bun run preview`（next start・:4173、DB 起動時は DATABASE_URL を注入）
  *
  * 各プロセスの stdout/stderr は **プロセスごとに色分けしてタグ付け**して
  * 自プロセスの stdout へ流す。Ctrl+C 等で終了したら子プロセスをすべて後始末する。
@@ -22,6 +26,8 @@ const DIM = '\x1b[2m'
 const colors = {
   // インストール: 黄
   install: { tag: 'INSTALL', fg: '\x1b[33m' },
+  // データベース: 青
+  db: { tag: 'DB', fg: '\x1b[34m' },
   // ビルド: シアン
   build: { tag: 'BUILD', fg: '\x1b[36m' },
   // ゲームサーバ: 緑
@@ -77,9 +83,10 @@ function pipeOutput(
 }
 
 /** bun のサブコマンドを実行する（npm script を経由せず直接バイナリへ）。 */
-function spawn(kind: Kind, cmd: string[], cwd = process.cwd()) {
+function spawn(kind: Kind, cmd: string[], cwd = process.cwd(), env?: Record<string, string>) {
   const proc = Bun.spawn(cmd, {
     cwd,
+    env: env ? { ...process.env, ...env } : undefined,
     // 出力は親にパイプして色分けする。
     stdout: 'pipe',
     stderr: 'pipe',
@@ -87,6 +94,53 @@ function spawn(kind: Kind, cmd: string[], cwd = process.cwd()) {
   })
   pipeOutput(kind, proc)
   return proc
+}
+
+// ── PostgreSQL（Docker）起動 ─────────────────────────────────────────────
+
+/** compose.yaml のデフォルトと一致する接続文字列（環境変数があれば尊重する）。 */
+const DEFAULT_DATABASE_URL = [
+  'postgresql://',
+  process.env.POSTGRES_USER ?? 'postgres',
+  ':',
+  process.env.POSTGRES_PASSWORD ?? 'postgres',
+  '@127.0.0.1:',
+  process.env.POSTGRES_PORT ?? '5432',
+  '/',
+  process.env.POSTGRES_DB ?? 'app_db',
+].join('')
+
+/**
+ * PostgreSQL を docker compose で起動し、スキーマを反映する。
+ * 失敗しても全体を止めず false を返す（/api/loadouts はインメモリへフォールバック）。
+ */
+async function startDatabase(): Promise<boolean> {
+  if (!Bun.which('docker')) {
+    logLine('db', '! docker not found. Starting WITHOUT a database (in-memory fallback).')
+    logLine('db', '  Install Docker, or use `bun run start --no-db` to silence this message.')
+    return false
+  }
+
+  logLine('db', 'Starting PostgreSQL... (docker compose up -d --wait postgres)')
+  const up = spawn('db', ['docker', 'compose', 'up', '-d', '--wait', 'postgres'])
+  const upExit = await up.exited
+  if (upExit !== 0) {
+    logLine('db', `! PostgreSQL startup failed (exit ${upExit}). Continuing WITHOUT a database.`)
+    logLine('db', '  Check: docker daemon running? port in use? -> `bun run db:logs`')
+    return false
+  }
+
+  logLine('db', 'OK PostgreSQL is healthy. Applying schema... (bun run db:push)')
+  const push = spawn('db', ['bun', 'run', 'db:push'])
+  const pushExit = await push.exited
+  if (pushExit !== 0) {
+    // DB 自体は起動済みなので true のまま続行する（ルート側は失敗時 null/catch 済み）。
+    logLine('db', `! Schema push failed (exit ${pushExit}). The server will still start;`)
+    logLine('db', '  /api/loadouts may fall back until `bun run db:push` succeeds.')
+    return true
+  }
+  logLine('db', 'OK Schema is up to date.')
+  return true
 }
 
 async function runInstallWithLogs(
@@ -134,6 +188,9 @@ async function runInstallWithLogs(
 }
 
 async function main(): Promise<number> {
+  // `bun run start --no-db` / `bun run scripts/execute.ts --no-db` で DB 起動をスキップ
+  const noDb = process.argv.includes('--no-db')
+
   // ── 1. 依存関係のインストール ──────────────────────────────────────────
   // まずは frozen-lockfile で決定的に。失敗したら verbose で原因を出す。
   logLine('install', 'Installing dependencies... (bun install --frozen-lockfile)')
@@ -165,7 +222,15 @@ async function main(): Promise<number> {
   }
   logLine('install', 'OK Install succeeded.')
 
-  // ── 2. ビルド ─────────────────────────────────────────────────────────
+  // ── 2. PostgreSQL（Docker）起動（任意・失敗しても続行） ────────────────
+  let dbReady = false
+  if (noDb) {
+    logLine('db', 'Skipping PostgreSQL startup (--no-db). /api/loadouts uses in-memory fallback.')
+  } else {
+    dbReady = await startDatabase()
+  }
+
+  // ── 3. ビルド ─────────────────────────────────────────────────────────
   logLine('build', 'Starting production build... (packages + gameserver + next build)')
   const build = Bun.spawn(['bun', 'run', 'build'], {
     cwd: process.cwd(),
@@ -181,9 +246,16 @@ async function main(): Promise<number> {
   }
   logLine('build', 'OK Build succeeded. Starting game server and client...')
 
-  // ── 3. game server と next preview を並列起動 ──────────────────────────
+  // ── 4. game server と next preview を並列起動 ──────────────────────────
+  // DB が起動できた場合、未設定なら DATABASE_URL を注入して永続化を有効にする
+  // （apps/web/.env 等で明示設定済みならそちらを優先する）。
+  const clientEnv: Record<string, string> = {}
+  if (dbReady && !process.env.DATABASE_URL) {
+    clientEnv.DATABASE_URL = DEFAULT_DATABASE_URL
+    logLine('db', 'DATABASE_URL injected into web client (compose defaults).')
+  }
   const server = spawn('server', ['bun', 'run', 'server'])
-  const client = spawn('client', ['bun', 'run', 'preview'])
+  const client = spawn('client', ['bun', 'run', 'preview'], process.cwd(), clientEnv)
 
   // どちらかが落ちたら全体を終扱いにする。
   const children = [

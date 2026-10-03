@@ -17,8 +17,10 @@
 ```bash
 bun install                          # 依存インストール (bun@1.4.0, bun.lock)
 
-# 本番構成: install → build → gameserver :8080 + preview :4173 を並列起動
+# 本番構成: install → PostgreSQL(Docker) → build → gameserver :8080 + preview :4173
 bun run start                        # = bun run scripts/execute.ts
+bun run start --no-db                # PostgreSQL を起動せずに実行(インメモリ保存)
+# ※ docker が無い環境では自動的に DB なしで続行する(警告のみ・停止しない)
 
 # 開発時
 bun run dev                          # apps/web Vite :5173 (/ws を :8080 へプロキシ)
