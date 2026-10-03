@@ -10,7 +10,9 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
-    "preview": "next start -H 0.0.0.0 -p 4173"
+    "preview": "next start -H 0.0.0.0 -p 4173",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "dotenv": "17.3.1",

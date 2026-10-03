@@ -48,6 +48,32 @@ bun run test:e2e                     # E2E実行 (要 browser, CI/実環境)
 
 テストは `./_tests_/` にソース構造をミラー。エイリアスは `@` → `apps/web/src`, `@cod/protocol`, `@cod/engine-core`, `@cod/profile-fps`。ランタイムは bun。テストランナーは Vitest（`bun test` は使わない）。
 
+## データベース (PostgreSQL)
+
+`apps/web` のロードアウト永続化 (`/api/loadouts`) は PostgreSQL + Drizzle を使う。
+ローカルではルートの `compose.yaml` で簡単に起動できる（要 Docker + Compose v2）。
+
+```bash
+# 1. PostgreSQL 起動（postgres:17-alpine, healthy になるまで待機）
+bun run db:up
+
+# 2. 接続設定（compose のデフォルトと一致済み）
+cp apps/web/.env.example apps/web/.env
+
+# 3. スキーマ反映（drizzle-kit push → loadouts テーブル作成）
+bun run db:push
+
+# 運用
+bun run db:logs                      # ログ追尾
+bun run db:psql                      # psql シェル (app_db)
+bun run db:down                      # 停止（データは volume に保持）
+bun run db:destroy                   # 停止 + データ削除
+cd apps/web && bun run db:studio     # Drizzle Studio（GUI ブラウザ）
+```
+
+- 接続先: `postgresql://postgres:postgres@127.0.0.1:5432/app_db`（`POSTGRES_PORT` 等の環境変数で上書き可）
+- `DATABASE_URL` 未設定でもアプリは動く（`/api/loadouts` はインメモリ保存にフォールバック）。`/api/health` の `db` フィールドで接続状態を確認できる。
+
 ## 理想形の要点
 
 | 層 | 内容 |
