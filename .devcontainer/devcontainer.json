@@ -1,0 +1,52 @@
+{
+  "name": "cod-web (Node 22 + bun, Next.js web + Bun gameserver)",
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": "..",
+    "target": "development",
+    "args": {
+      "NODE_VERSION": "22",
+      "BUN_VERSION": "1.4.0"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "biomejs.biome",
+        "streetsidesoftware.code-spell-checker",
+        "bradlc.vscode-tailwindcss",
+        "GitHub.vscode-pull-request-github"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "biomejs.biome",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.biome": "explicit",
+          "source.organizeImports.biome": "explicit"
+        },
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true
+      }
+    }
+  },
+  "forwardPorts": [3000, 4173, 8080, 5432],
+  "portsAttributes": {
+    "3000": { "label": "Next.js dev (apps/web)", "onAutoForward": "notify" },
+    "4173": { "label": "Next.js preview", "onAutoForward": "silent" },
+    "8080": { "label": "Gameserver (WebSocket)", "onAutoForward": "silent" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "silent" }
+  },
+  "postCreateCommand": "bun install",
+  "postStartCommand": "bun run check:determinism",
+  "remoteUser": "node",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": { "version": "latest" },
+    "ghcr.io/devcontainers/features/github-cli:1": { "version": "latest" },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "4gb",
+    "storage": "16gb"
+  }
+}

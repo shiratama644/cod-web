@@ -71,4 +71,21 @@
 | knip / jscpd / stryker(mutation) / type-coverage / dep-cruise | 不採用（ゲート過多。Biome + coverage 85% + 決定論ガードで回帰は検知可能。必要になれば個別導入） |
 | size-limit / publint / changesets / release / taze / renovate | 不採用（npm 公開パッケージではない。依存更新は `security:check` + 手動） |
 | lighthouse / a11y / visual / bundle-size / preview / stale / automerge / label の各 workflow | 不採用（デプロイ先・PR 流量が前提。bundle 監視は `next build` ルート表で代替） |
-| docker / devcontainer / bin/create-template.mjs / FUNDING | 不採用（対象外） |
+| docker / devcontainer / bin/create-template.mjs / FUNDING | 不採用（対象外）→ **docker/devcontainer は第3弾でユーザー指示により採用へ転換** |
+
+## TEMPLATE_REPO からの追加採用（第3弾: Docker / devcontainer / commitlint、2026-10-03）
+
+ユーザー指示「使えるものがあれば導入。Docker Compose etc.」により、第2弾で不採用だった
+Docker 系を採用へ転換。いずれも pnpm/Node24 前提を bun + 本モノレポ構成に書き直した。
+
+| テンプレ資産 | 判断 |
+|---|---|
+| Dockerfile | 採用（multi-stage を bun 版に書き直し。base = node:22-alpine + bun、targets = deps/development/build/web/gameserver） |
+| docker-compose.yml | 採用（既存 compose.yaml に統合。web/gameserver は profile `app` で分離し、postgres 単体運用 `db:up` は不変） |
+| .dockerignore | 採用（bun / Next.js / .agent 構成に書き換え） |
+| .devcontainer/ | 採用（development ターゲット + bun install、ポート 3000/4173/8080/5432、Biome/cspell 拡張） |
+| commitlint.config.js + .husky/commit-msg | 採用（Conventional Commits 規約=AGENTS.md §4.2 の機械的強制。日本語 subject 許可） |
+| CONTRIBUTING.md | 不採用（AGENTS.md と重複。規約の正本は AGENTS.md に一本化） |
+| .gitleaks.toml | 不採用（scripts/check-security.ts のシークレットスキャンで代替済み） |
+| scripts/dev.ts / build.ts / check.ts | 不採用（フレームワーク自動検出基盤は構成固定の本リポジトリに不要。check.ts はそもそも本リポジトリの check-all.ts 由来） |
+| .changeset / renovate / knip 等 | 不採用維持（第2弾の判断どおり） |

@@ -74,6 +74,25 @@ cd apps/web && bun run db:studio     # Drizzle Studio（GUI ブラウザ）
 - 接続先: `postgresql://postgres:postgres@127.0.0.1:5432/app_db`（`POSTGRES_PORT` 等の環境変数で上書き可）
 - `DATABASE_URL` 未設定でもアプリは動く（`/api/loadouts` はインメモリ保存にフォールバック）。`/api/health` の `db` フィールドで接続状態を確認できる。
 
+## Docker（フルスタック実行 / イメージビルド）
+
+`Dockerfile` はマルチステージ構成（base = node:22-alpine + bun）。
+ターゲット: `web`（Next.js 本番 :3000）/ `gameserver`（Bun 権威サーバ :8080）/ `development`（devcontainer 用）。
+
+```bash
+# web + gameserver + postgres をまとめてコンテナ起動（compose profile: app）
+bun run app:up                       # = docker compose --profile app up --build -d
+bun run app:logs                     # 全サービスのログ追尾
+bun run app:down                     # 停止
+
+# 個別イメージビルド
+bun run docker:build:web             # -> cod-web-web
+bun run docker:build:gameserver      # -> cod-web-gameserver
+```
+
+- コンテナ内の web は `DATABASE_URL` をサービス名 `postgres` で解決する（compose が注入、手動設定不要）
+- VS Code の **Dev Containers** にも対応: `.devcontainer/devcontainer.json`（development ターゲット + bun install、ポート 3000/4173/8080/5432 転送）
+
 ## 理想形の要点
 
 | 層 | 内容 |

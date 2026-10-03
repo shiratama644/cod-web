@@ -1,0 +1,41 @@
+# dependencies / build outputs
+node_modules
+**/node_modules
+dist
+dist-ssr
+**/.next
+coverage
+.vitest
+playwright-report
+test-results
+reports
+
+# VCS / CI / agent memory (not needed inside images)
+.git
+.gitignore
+.github
+.husky/_
+.agent
+.archive
+docs
+logs
+e2e
+bench
+
+# env & secrets (DATABASE_URL etc. are injected via compose)
+.env
+.env.local
+.env.*.local
+
+# editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.log
+*.tsbuildinfo
+
+# docker itself
+Dockerfile
+compose.yaml
+.dockerignore

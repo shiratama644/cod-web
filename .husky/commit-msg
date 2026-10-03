@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# commit-msg hook: commitlint で Conventional Commits を検証(TEMPLATE_REPO 由来)
+
+bunx commitlint --edit "$1"

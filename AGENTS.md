@@ -136,6 +136,8 @@ bash .agent/hooks/restore-sandbox-env.sh
 - **コミットメッセージ**: Conventional Commits 形式に従う。
   - `feat:`, `fix:`, `refactor:`, `perf:`, `test:`, `docs:`, `chore:`, `build:`, `ci:`
   - タスク ID がある場合はスコープに含める（例: `feat(PH1-A): binary reader bounds`）。
+  - `.husky/commit-msg` の **commitlint**（`commitlint.config.js`）が形式を機械的に検証する
+    （日本語 subject 可。type 不正・subject 欠落はコミット不可）。
 
 ### 4.3 厳禁なGit操作（明示的な指示がない限り実行禁止）
 以下の破壊的・履歴改変コマンドは**絶対に実行してはならない**。
