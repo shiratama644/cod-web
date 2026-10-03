@@ -8,10 +8,11 @@
  *
  * 実行内容（各ステップは冪等。失敗しても可能な限り続行するフェイルソフト設計）:
  *   1. 環境診断     : bun / node / docker / apt の有無とバージョンを表示
- *   2. システム依存 : apt が使える環境でのみ実行
+ *   2. システム依存 : apt が使える環境でのみ実行（nala があれば apt-get より優先して使う）
  *        - docker なし → **Docker 公式 apt リポジトリを設定して docker-ce 一式を導入**
  *          （/etc/apt/keyrings/docker.asc + sources.list.d/docker.list、公式手順準拠。
- *           非 root なら docker グループへ追加）。`--no-docker` でスキップ可
+ *           非 root なら docker グループへ追加。グループは再ログインまで反映されないため、
+ *           導入直後の daemon 確認と compose pull は sudo 経由で行う）。`--no-docker` でスキップ可
  *        - docker が使える（daemon 起動確認済み）→ PostgreSQL は compose が提供する
  *          ため apt では入れない（ホスト postgres と :5432 の衝突を避ける）
  *        - docker が使えない（導入失敗 / proot 等で daemon 不可）→ フォールバックとして
@@ -85,6 +86,9 @@ function runQuiet(cmd: string[]): { ok: boolean; out: string } {
 const isRoot = typeof process.getuid === 'function' && process.getuid() === 0
 const hasSudo = Boolean(Bun.which('sudo'))
 
+/** apt フロントエンド: nala があれば nala を優先し、無ければ apt-get を使う。 */
+const aptBin = Bun.which('nala') ? 'nala' : 'apt-get'
+
 /** root ならそのまま、非 root なら sudo を前置する（sudo も無ければ null）。 */
 function privileged(cmd: string[]): string[] | null {
   if (isRoot) return cmd
@@ -122,10 +126,39 @@ async function readOsRelease(): Promise<{ id: string; codename: string }> {
   }
 }
 
+/**
+ * docker daemon への到達状況。
+ *   up      : daemon に到達できた（直接 or sudo 経由）
+ *   viaSudo : 直接は不可だが sudo 経由なら到達できた
+ *             （docker グループ追加直後は再ログインまで反映されないため、
+ *               インストール直後のシェルではこの状態が正常）
+ */
+type DockerAccess = { up: boolean; viaSudo: boolean }
+
 /** docker daemon に到達できるか（CLI があっても proot/WSL 等では daemon が動かない）。 */
-function dockerDaemonUp(): boolean {
-  if (!Bun.which('docker')) return false
-  return runQuiet(['docker', 'info', '--format', '{{.ServerVersion}}']).ok
+function dockerAccess(): DockerAccess {
+  if (!Bun.which('docker')) return { up: false, viaSudo: false }
+  if (runQuiet(['docker', 'info', '--format', '{{.ServerVersion}}']).ok) {
+    return { up: true, viaSudo: false }
+  }
+  // 非 root で docker グループ未反映でも、sudo 経由なら daemon に到達できる
+  // （-n: パスワード入力待ちでハングさせない）
+  if (!isRoot && hasSudo) {
+    if (runQuiet(['sudo', '-n', 'docker', 'info', '--format', '{{.ServerVersion}}']).ok) {
+      return { up: true, viaSudo: true }
+    }
+  }
+  return { up: false, viaSudo: false }
+}
+
+/** service 起動直後は socket 準備中のことがあるため、daemon 到達を最大 timeoutSec 秒待つ。 */
+function waitForDockerDaemon(timeoutSec: number): DockerAccess {
+  let access = dockerAccess()
+  for (let i = 0; i < timeoutSec && !access.up; i++) {
+    Bun.sleepSync(1000)
+    access = dockerAccess()
+  }
+  return access
 }
 
 /**
@@ -151,7 +184,7 @@ async function installDockerOfficialRepo(): Promise<boolean> {
   }
 
   logLine('sys', `Docker 公式リポジトリを設定します... (${os.id} ${os.codename})`)
-  const prereq = privileged(['apt-get', 'install', '-y', 'ca-certificates', 'curl'])
+  const prereq = privileged([aptBin, 'install', '-y', 'ca-certificates', 'curl'])
   if (!prereq) {
     logLine('sys', '! root でも sudo でもないため Docker を導入できません。')
     return false
@@ -185,10 +218,10 @@ async function installDockerOfficialRepo(): Promise<boolean> {
   if (!writeList || (await run('sys', writeList)) !== 0) return false
   logLine('sys', `/etc/apt/sources.list.d/docker.list を設定しました: ${repoLine}`)
 
-  const update = privileged(['apt-get', 'update'])
+  const update = privileged([aptBin, 'update'])
   if (!update || (await run('sys', update)) !== 0) return false
   const install = privileged([
-    'apt-get',
+    aptBin,
     'install',
     '-y',
     'docker-ce',
@@ -211,6 +244,7 @@ async function installDockerOfficialRepo(): Promise<boolean> {
     const usermod = privileged(['usermod', '-aG', 'docker', process.env.USER])
     if (usermod && (await run('sys', usermod)) === 0) {
       logLine('sys', `${process.env.USER} を docker グループに追加しました(再ログイン後に有効)。`)
+      logLine('sys', '  反映されるまでの間、このセットアップは sudo 経由で docker を使います。')
     }
   }
   logLine('sys', 'OK Docker(公式リポジトリ)の導入が完了しました。')
@@ -225,8 +259,7 @@ function record(step: string, status: Status, note = ''): void {
 
 /** apt 環境で PostgreSQL をインストールし、ユーザー/DB/.env/スキーマまで整える。 */
 async function setupAptPostgres(): Promise<void> {
-  logLine('db', 'docker が見つからないため、PostgreSQL を apt でセットアップします。')
-  const install = privileged(['apt-get', 'install', '-y', 'postgresql', 'postgresql-client'])
+  const install = privileged([aptBin, 'install', '-y', 'postgresql', 'postgresql-client'])
   if (!install) {
     logLine('db', '! root でも sudo でもないため apt install できません。スキップします。')
     record('PostgreSQL (apt)', 'WARN', 'root/sudo なし')
@@ -282,13 +315,20 @@ async function main(): Promise<number> {
   const nodeVer = runQuiet(['node', '--version'])
   const hasApt = Boolean(Bun.which('apt-get'))
   const hasDockerCli = Boolean(Bun.which('docker'))
-  let dockerUsable = dockerDaemonUp()
+  let docker = dockerAccess()
   logLine('setup', `bun ${bunVer.out || '不明'} / node ${nodeVer.out || 'なし'}`)
+  const dockerLabel = hasDockerCli
+    ? docker.up
+      ? docker.viaSudo
+        ? 'あり(daemon 稼働中・sudo 経由)'
+        : 'あり(daemon 稼働中)'
+      : 'CLI のみ(daemon 停止)'
+    : 'なし'
   logLine(
     'setup',
-    `docker: ${hasDockerCli ? (dockerUsable ? 'あり(daemon 稼働中)' : 'CLI のみ(daemon 停止)') : 'なし'} / apt: ${hasApt ? 'あり' : 'なし'}`,
+    `docker: ${dockerLabel} / apt: ${hasApt ? (aptBin === 'nala' ? 'あり(nala 使用)' : 'あり') : 'なし'}`,
   )
-  record('環境診断', 'OK', `bun ${bunVer.out}, docker ${dockerUsable ? '可用' : 'なし/不可'}`)
+  record('環境診断', 'OK', `bun ${bunVer.out}, docker ${docker.up ? '可用' : 'なし/不可'}`)
 
   // ── 2. システム依存(apt)─────────────────────────────────────────────
   if (noApt) {
@@ -300,9 +340,9 @@ async function main(): Promise<number> {
     record('システム依存 (apt)', 'SKIP', 'apt なし')
     record('Docker (公式リポジトリ)', 'SKIP', 'apt なし')
   } else {
-    const update = privileged(['apt-get', 'update'])
+    const update = privileged([aptBin, 'update'])
     if (update && (await run('sys', update)) !== 0) {
-      logLine('sys', '! apt-get update に失敗しました(ネットワーク?)。続行します。')
+      logLine('sys', `! ${aptBin} update に失敗しました(ネットワーク?)。続行します。`)
     }
 
     // ── 2a. Docker(公式 apt リポジトリ経由)──────────────────────────
@@ -314,11 +354,17 @@ async function main(): Promise<number> {
     } else {
       const installed = await installDockerOfficialRepo()
       if (installed) {
-        dockerUsable = dockerDaemonUp()
+        // グループ未反映のシェルでは sudo 経由で再評価する。
+        // service 直後は socket 準備中のことがあるため最大 15 秒待つ。
+        docker = waitForDockerDaemon(15)
         record(
           'Docker (公式リポジトリ)',
           'OK',
-          dockerUsable ? 'daemon 稼働確認済み' : 'インストール済み(daemon 未稼働)',
+          docker.up
+            ? docker.viaSudo
+              ? 'daemon 稼働確認済み(sudo 経由。再ログイン後は sudo 不要)'
+              : 'daemon 稼働確認済み'
+            : 'インストール済み(daemon 未稼働)',
         )
       } else {
         record('Docker (公式リポジトリ)', 'WARN', '導入失敗 → apt postgresql へフォールバック')
@@ -326,7 +372,7 @@ async function main(): Promise<number> {
     }
 
     // ── 2b. PostgreSQL(docker 可用なら compose 任せ、不可なら apt)────
-    if (dockerUsable) {
+    if (docker.up) {
       logLine('sys', 'docker が使えるため PostgreSQL は compose が提供します(apt では入れません)。')
       record('システム依存 (apt)', 'OK', 'docker 可用 → apt postgresql 不要')
     } else {
@@ -357,9 +403,10 @@ async function main(): Promise<number> {
   }
 
   // ── 5. docker compose イメージ取得(起動はしない)─────────────────────
-  if (dockerUsable) {
+  if (docker.up) {
     logLine('db', 'Pulling PostgreSQL image... (docker compose pull postgres)')
-    const code = await run('db', ['docker', 'compose', 'pull', 'postgres'])
+    const pull = ['docker', 'compose', 'pull', 'postgres']
+    const code = await run('db', docker.viaSudo ? ['sudo', '-n', ...pull] : pull)
     record('postgres イメージ取得', code === 0 ? 'OK' : 'WARN', code === 0 ? '' : 'pull 失敗')
   } else {
     record('postgres イメージ取得', 'SKIP', 'docker 不可用')
@@ -378,6 +425,13 @@ async function main(): Promise<number> {
   record('check:env', check === 0 ? 'OK' : 'WARN', check === 0 ? '' : '診断で警告あり')
 
   printSummary()
+  if (docker.viaSudo) {
+    logLine(
+      'setup',
+      '注意: docker グループは再ログイン(または `newgrp docker`)まで反映されません。',
+    )
+    logLine('setup', '      それまで docker コマンドを直接使う場合は sudo を付けてください。')
+  }
   logLine('setup', '次の手順:')
   logLine('setup', '  bun run start          # DB(Docker) + build + サーバ一括起動')
   logLine('setup', '  bun run start --no-db  # DB なしで起動(インメモリ保存)')

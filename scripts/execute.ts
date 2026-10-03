@@ -121,8 +121,30 @@ async function startDatabase(): Promise<boolean> {
     return false
   }
 
-  logLine('db', 'Starting PostgreSQL... (docker compose up -d --wait postgres)')
-  const up = spawn('db', ['docker', 'compose', 'up', '-d', '--wait', 'postgres'])
+  // docker グループ追加が未反映のシェル（セットアップ直後など）では、
+  // 直接の docker 呼び出しは権限エラーになるが sudo 経由なら daemon に到達できる。
+  const direct = Bun.spawnSync(['docker', 'info', '--format', '{{.ServerVersion}}'], {
+    stdout: 'pipe',
+    stderr: 'pipe',
+  })
+  let composeCmd = ['docker', 'compose', 'up', '-d', '--wait', 'postgres']
+  if (direct.exitCode !== 0 && Bun.which('sudo')) {
+    const viaSudo = Bun.spawnSync(
+      ['sudo', '-n', 'docker', 'info', '--format', '{{.ServerVersion}}'],
+      {
+        stdout: 'pipe',
+        stderr: 'pipe',
+      },
+    )
+    if (viaSudo.exitCode === 0) {
+      logLine('db', 'docker group not active in this shell yet; using sudo for docker compose.')
+      logLine('db', '  (Re-login or `newgrp docker` to drop the sudo requirement.)')
+      composeCmd = ['sudo', '-n', ...composeCmd]
+    }
+  }
+
+  logLine('db', `Starting PostgreSQL... (${composeCmd.join(' ')})`)
+  const up = spawn('db', composeCmd)
   const upExit = await up.exited
   if (upExit !== 0) {
     logLine('db', `! PostgreSQL startup failed (exit ${upExit}). Continuing WITHOUT a database.`)
