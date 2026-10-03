@@ -24,8 +24,14 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
+  // JSON として解釈できないボディはクライアント起因 → 400(500 にしない)
+  let body: { data: unknown };
   try {
-    const body = (await req.json()) as { data: unknown };
+    body = (await req.json()) as { data: unknown };
+  } catch {
+    return NextResponse.json({ error: "invalid json" }, { status: 400 });
+  }
+  try {
     if (!body || typeof body !== "object" || !("data" in body)) {
       return NextResponse.json({ error: "invalid" }, { status: 400 });
     }

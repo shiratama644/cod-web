@@ -66,7 +66,7 @@ export default function GunsmithPanel({ cls, update }: Props) {
     update({ attachments: { ...cls.attachments, [slot]: id } });
   };
 
-  const slotMeta = ATTACHMENT_SLOTS.find((s) => s.key === slot)!;
+  const slotMeta = ATTACHMENT_SLOTS.find((s) => s.key === slot) ?? ATTACHMENT_SLOTS[0];
 
   return (
     <div className="absolute inset-0 px-6 pb-6 pt-[84px]">
@@ -142,7 +142,7 @@ export default function GunsmithPanel({ cls, update }: Props) {
           </AnimatePresence>
 
           {/* connector lines */}
-          <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             {ATTACHMENT_SLOTS.map((s) => {
               const a = ANCHORS[s.key];
               const active = s.key === slot;

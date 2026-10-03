@@ -14,6 +14,38 @@ type Panel = "home" | "loadout" | "gunsmith";
 
 type Saved = { classes: ClassLoadout[]; equipped: number };
 
+/** Merge a persisted class with defaults so malformed/legacy data can never crash the UI. */
+function sanitizeClass(raw: unknown, fallback: ClassLoadout): ClassLoadout {
+  if (typeof raw !== "object" || raw === null) return fallback;
+  const r = raw as Partial<Record<keyof ClassLoadout, unknown>>;
+  const str = (v: unknown, d: string) => (typeof v === "string" && v.length > 0 ? v : d);
+  const perksRaw = Array.isArray(r.perks) ? r.perks : [];
+  const perks = fallback.perks.map((d, i) => str(perksRaw[i], d)) as [string, string, string];
+  const attachments: ClassLoadout["attachments"] = {};
+  if (typeof r.attachments === "object" && r.attachments !== null) {
+    for (const [k, v] of Object.entries(r.attachments)) {
+      if (typeof v === "string") attachments[k as keyof ClassLoadout["attachments"]] = v;
+    }
+  }
+  return {
+    name: str(r.name, fallback.name),
+    primary: str(r.primary, fallback.primary),
+    secondary: str(r.secondary, fallback.secondary),
+    lethal: str(r.lethal, fallback.lethal),
+    tactical: str(r.tactical, fallback.tactical),
+    skill: str(r.skill, fallback.skill),
+    perks,
+    attachments,
+  };
+}
+
+function sanitizeSaved(data: Saved): Saved {
+  const classes = data.classes.map((c, i) => sanitizeClass(c, DEFAULT_CLASSES[i % DEFAULT_CLASSES.length]));
+  const max = classes.length - 1;
+  const eq = Number.isInteger(data.equipped) ? Math.min(Math.max(data.equipped, 0), max) : 0;
+  return { classes, equipped: eq };
+}
+
 export default function MainMenu() {
   const [panel, setPanel] = useState<Panel>("home");
   const [history, setHistory] = useState<Panel[]>([]);
@@ -22,18 +54,22 @@ export default function MainMenu() {
   const [classes, setClasses] = useState<ClassLoadout[]>(DEFAULT_CLASSES);
   const [selected, setSelected] = useState(0);
   const [equipped, setEquipped] = useState(0);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const loaded = useRef(false);
+  // Snapshot of the last payload known to be persisted — skips redundant echo saves.
+  const lastSaved = useRef<string | null>(null);
 
   // Load persisted loadouts
   useEffect(() => {
     fetch("/api/loadouts")
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((j: { data: Saved | null }) => {
         if (j.data && Array.isArray(j.data.classes) && j.data.classes.length) {
-          setClasses(j.data.classes);
-          setEquipped(j.data.equipped ?? 0);
-          setSelected(j.data.equipped ?? 0);
+          const safe = sanitizeSaved(j.data);
+          lastSaved.current = JSON.stringify(safe);
+          setClasses(safe.classes);
+          setEquipped(safe.equipped);
+          setSelected(safe.equipped);
         }
       })
       .catch(() => {})
@@ -45,15 +81,24 @@ export default function MainMenu() {
   // Debounced save
   useEffect(() => {
     if (!loaded.current) return;
+    const payload = JSON.stringify({ classes, equipped } satisfies Saved);
+    if (payload === lastSaved.current) return;
     setSaveState("saving");
     const t = setTimeout(() => {
       fetch("/api/loadouts", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: { classes, equipped } satisfies Saved }),
+        body: `{"data":${payload}}`,
       })
-        .then(() => setSaveState("saved"))
-        .catch(() => setSaveState("idle"));
+        .then((r) => {
+          if (r.ok) {
+            lastSaved.current = payload;
+            setSaveState("saved");
+          } else {
+            setSaveState("error");
+          }
+        })
+        .catch(() => setSaveState("error"));
     }, 600);
     return () => clearTimeout(t);
   }, [classes, equipped]);
@@ -120,7 +165,7 @@ export default function MainMenu() {
             {panel === "loadout" && (
               <LoadoutPanel classes={classes} selected={selected} setSelected={setSelected} equipped={equipped} setEquipped={setEquipped} update={update} onGunsmith={() => go("gunsmith")} />
             )}
-            {panel === "gunsmith" && <GunsmithPanel cls={classes[selected]} update={(p) => update(selected, p)} />}
+            {panel === "gunsmith" && <GunsmithPanel cls={classes[selected] ?? classes[0]} update={(p) => update(selected, p)} />}
           </motion.div>
         </AnimatePresence>
 
@@ -139,14 +184,18 @@ export default function MainMenu() {
         {panel !== "home" && (
           <div className="absolute bottom-1.5 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 text-[10px] font-bold tracking-[0.25em] text-steel-500">
             <span>HOME</span>
-            {[...history.slice(1), panel].map((h) => (
-              <span key={h} className="flex items-center gap-3">
+            {[...history.slice(1), panel].map((h, i) => (
+              <span key={`${i}-${h}`} className="flex items-center gap-3">
                 <Icon name="chevron_right" size={12} /> <span className={h === panel ? "text-cod-400" : ""}>{h.toUpperCase()}</span>
               </span>
             ))}
             <span className="ml-3 flex items-center gap-1">
-              <Icon name={saveState === "saving" ? "cloud_sync" : "cloud_done"} size={14} className={saveState === "saving" ? "text-cod-400" : "text-green-500"} />
-              {saveState === "saving" ? "SYNCING" : "SAVED"}
+              <Icon
+                name={saveState === "saving" ? "cloud_sync" : saveState === "error" ? "cloud_off" : "cloud_done"}
+                size={14}
+                className={saveState === "saving" ? "text-cod-400" : saveState === "error" ? "text-red-400" : "text-green-500"}
+              />
+              {saveState === "saving" ? "SYNCING" : saveState === "error" ? "SYNC FAILED" : "SAVED"}
             </span>
             <span className="text-steel-600">ESC · BACK</span>
           </div>

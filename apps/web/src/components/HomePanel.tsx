@@ -57,6 +57,7 @@ export default function HomePanel(p: Props) {
           return (
             <button
               key={t.id}
+              type="button"
               onClick={() => {
                 if (searching) return;
                 p.setModeTab(t.id);
@@ -139,8 +140,9 @@ export default function HomePanel(p: Props) {
         exit={{ opacity: 0, y: 40 }}
         transition={{ duration: 0.4, delay: 0.05 }}
       >
-        <NavTile icon="backpack" label="LOADOUT" onClick={p.onOpenLoadout} highlight />
-        <NavTile icon="construction" label="GUNSMITH" onClick={p.onOpenGunsmith} />
+        {/* マッチメイキング中の画面遷移は検索が黙殺されるためガード(他 UI と同じ挙動) */}
+        <NavTile icon="backpack" label="LOADOUT" onClick={() => !searching && p.onOpenLoadout()} highlight />
+        <NavTile icon="construction" label="GUNSMITH" onClick={() => !searching && p.onOpenGunsmith()} />
         <NavTile icon="person_apron" label="OPERATORS" />
         <NavTile icon="storefront" label="STORE" dot />
         <NavTile icon="shield" label="CLAN" />
@@ -160,7 +162,7 @@ export default function HomePanel(p: Props) {
             {["CASUAL", "RANKED"].map((r) => {
               const active = (r === "RANKED") === ranked;
               return (
-                <button key={r} onClick={() => !searching && setRanked(r === "RANKED")} className="relative cursor-pointer px-5 font-display text-lg tracking-wide">
+                <button key={r} type="button" onClick={() => !searching && setRanked(r === "RANKED")} className="relative cursor-pointer px-5 font-display text-lg tracking-wide">
                   {active && <motion.div layoutId="rankTab" className="absolute inset-0 bg-steel-500/70" />}
                   <span className={`relative ${active ? "text-cod-300" : "text-steel-400"}`}>{r}</span>
                 </button>

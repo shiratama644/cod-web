@@ -24,6 +24,7 @@ export function SteelButton({ children, className = "", ...rest }: BtnProps) {
       whileTap={{ scale: 0.95 }}
       transition={{ type: "spring", stiffness: 500, damping: 25 }}
       className={`steel-btn clip-tac-sm relative cursor-pointer ${className}`}
+      type="button"
       {...rest}
     >
       {children}
@@ -38,6 +39,7 @@ export function OrangeButton({ children, className = "", ...rest }: BtnProps) {
       whileTap={{ scale: 0.96 }}
       transition={{ type: "spring", stiffness: 400, damping: 20 }}
       className={`metal-orange clip-tac relative cursor-pointer overflow-hidden ${className}`}
+      type="button"
       {...rest}
     >
       <motion.span
