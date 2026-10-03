@@ -60,8 +60,8 @@ for md in pathlib.Path('docs').rglob('*.md'):
 | Playwright CI | https://playwright.dev/docs/ci | - | 公式 |
 | Playwright webServer | https://playwright.dev/docs/test-webserver | - | 公式 |
 | Vitest coverage | https://vitest.dev/config/coverage | https://v2.vitest.dev/config/coverage 404 | v2は404、公式に置換 |
-| Bun install | https://bun.com/docs/pm/cli/install | - | 公式 |
-| setup-bun | https://github.com/oven-sh/setup-bun | - | 公式 |
+| pnpm install | https://pnpm.io/cli/install | - | 公式 |
+| pnpm/action-setup | https://github.com/pnpm/action-setup | - | 公式 |
 | GitHub workflow syntax | https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax | - | 公式 |
 
 ### 検証方法

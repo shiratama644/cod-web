@@ -1,19 +1,20 @@
 /**
  * 環境ドクタースクリプト(cod-web版)。
- * TEMPLATE_REPO の check-env.ts(Termux/キャッシュ診断)を、本リポジトリで実際に
- * 起きた環境事故(tsgo 混入・@types/react 二重化・PATH 消失)の検出器として書き直したもの。
+ * 本リポジトリで実際に起きた環境事故(tsgo 混入・@types/react 二重化・PATH 消失)の検出器。
+ * 2026-10-03 bun→pnpm 移行: パッケージマネージャ検査を pnpm に変更。
  *
  * 検証内容:
- *   (1) bun が利用可能か(サンドボックスでは PATH 復元が必要)
+ *   (1) Node / pnpm が利用可能で packageManager 宣言と整合するか
  *   (2) TypeScript が標準 tsc 6.x か(tsgo 7.x = @typescript/native-preview 禁止)
  *   (3) @types/react の二重インストール検出(root と apps/web でメジャー不一致を警告)
  *   (4) Biome のスキーマバージョンと CLI バージョンの乖離(警告のみ)
- *   (5) bun.lock / husky フックの存在
+ *   (5) pnpm-lock.yaml / husky フック / bun ランタイム(gameserver 用)の存在
  *
- * 実行: bun run check:env
+ * 実行: pnpm run check:env
  * 終了コード: 0 = OK(警告含む) / 1 = 致命的な問題あり
  */
 
+import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -54,20 +55,30 @@ function pkgVersion(dir: string): string | null {
 export function runCheckEnv(root = process.cwd()): boolean {
   console.log(`${CYAN}=== check:env — cod-web 環境ドクター ===${RESET}\n`)
 
-  // (1) ランタイム
-  const bunVersion = typeof Bun !== 'undefined' ? Bun.version : null
-  if (bunVersion) {
-    ok(`bun ${bunVersion} で実行中`)
+  // (1) ランタイム / パッケージマネージャ
+  ok(`Node ${process.version} で実行中`)
+  const nvmrc = existsSync(join(root, '.nvmrc'))
+    ? readFileSync(join(root, '.nvmrc'), 'utf-8').trim()
+    : null
+  if (nvmrc && !process.version.startsWith(`v${nvmrc}.`)) {
+    warn(`.nvmrc は v${nvmrc} だが実行中は ${process.version}`)
+  }
+  const rootPkg = readJson(join(root, 'package.json'))
+  const declaredPm = typeof rootPkg?.packageManager === 'string' ? rootPkg.packageManager : null
+  const pnpmResult = spawnSync('pnpm', ['--version'], { encoding: 'utf-8' })
+  const pnpmVersion = pnpmResult.status === 0 ? pnpmResult.stdout.trim() : null
+  if (!pnpmVersion) {
+    fail('pnpm が見つかりません。`npm install -g pnpm` または corepack で導入してください')
+  } else if (declaredPm && declaredPm !== `pnpm@${pnpmVersion}`) {
+    warn(`packageManager 宣言 ${declaredPm} と実行中の pnpm ${pnpmVersion} が不一致`)
   } else {
-    fail(
-      'bun 以外で実行されています。`bash .agent/hooks/restore-sandbox-env.sh` で復元し、`export PATH=$PATH:/usr/local/bin` を確認してください',
-    )
+    ok(`pnpm ${pnpmVersion}(packageManager 宣言と整合)`)
   }
 
   // (2) TypeScript: 標準 tsc 6.x 必須、tsgo(7.x / native-preview)禁止
   const tsVersion = pkgVersion(join(root, 'node_modules', 'typescript'))
   if (!tsVersion) {
-    warn('node_modules/typescript が見つかりません(bun install 未実行?)')
+    warn('node_modules/typescript が見つかりません(pnpm install 未実行?)')
   } else if (tsVersion.startsWith('6.')) {
     ok(`TypeScript ${tsVersion}(標準 tsc)`)
   } else if (tsVersion.startsWith('7.')) {
@@ -98,7 +109,7 @@ export function runCheckEnv(root = process.cwd()): boolean {
   } else if (rootTypes) {
     ok(`@types/react: ${rootTypes}(単一)`)
   } else {
-    warn('@types/react が見つかりません(bun install 未実行?)')
+    warn('@types/react が見つかりません(pnpm install 未実行?)')
   }
 
   // (4) Biome スキーマと CLI の乖離
@@ -111,19 +122,30 @@ export function runCheckEnv(root = process.cwd()): boolean {
   } else if (biomeCli) {
     ok(`Biome ${biomeCli}(スキーマ整合)`)
   } else {
-    warn('@biomejs/biome が見つかりません(bun install 未実行?)')
+    warn('@biomejs/biome が見つかりません(pnpm install 未実行?)')
   }
 
-  // (5) ロックファイル・フック
-  if (existsSync(join(root, 'bun.lock')) || existsSync(join(root, 'bun.lockb'))) {
-    ok('bun.lock あり')
+  // (5) ロックファイル・フック・gameserver ランタイム
+  if (existsSync(join(root, 'pnpm-lock.yaml'))) {
+    ok('pnpm-lock.yaml あり')
   } else {
-    fail('bun.lock がありません')
+    fail('pnpm-lock.yaml がありません')
+  }
+  for (const foreign of ['bun.lock', 'bun.lockb', 'package-lock.json', 'yarn.lock']) {
+    if (existsSync(join(root, foreign))) {
+      fail(`pnpm 以外のロックファイルが残存: ${foreign}`)
+    }
   }
   if (existsSync(join(root, '.husky', 'pre-commit'))) {
     ok('.husky/pre-commit あり(4 検証 + 決定論ガード)')
   } else {
-    warn('.husky/pre-commit がありません(`bun install` で prepare が走ります)')
+    warn('.husky/pre-commit がありません(`pnpm install` で prepare が走ります)')
+  }
+  // gameserver は Bun.serve を使うため bun バイナリ(devDep)が必要
+  if (existsSync(join(root, 'node_modules', '.bin', 'bun'))) {
+    ok('bun バイナリあり(gameserver ランタイム用 devDep)')
+  } else {
+    warn('node_modules/.bin/bun がありません(gameserver 起動に必要。pnpm install を確認)')
   }
 
   console.log('')

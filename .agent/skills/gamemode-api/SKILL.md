@@ -225,7 +225,7 @@ grep -R "Math.random\|Date.now\|setTimeout" packages/gamemode-api packages/engin
 grep -R "setTimeout" packages/engine-core/src/gamemode gamemodes apps/gameserver --include="*.ts" # 0件 (runtimeはsetIntervalのみprofile simHz基準)
 # gamemode exception safety
 grep -R "safeCall\|try.*catch" packages/engine-core/src/gamemode apps/gameserver/src --include="*.ts" | wc -l # 例外安全確認
-bun run test:unit # 37 files 255 tests (PH3-Dで+1 file +13 tests, 計+5 files +51 tests from PH3-A)
+pnpm run test:unit # 37 files 255 tests (PH3-Dで+1 file +13 tests, 計+5 files +51 tests from PH3-A)
 ```
 
 ## 関連

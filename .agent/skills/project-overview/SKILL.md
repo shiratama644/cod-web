@@ -29,7 +29,7 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 
 | 層 | 理想 | 現行コード（移行元） |
 | :--- | :--- | :--- |
-| ビルド | Vite + React + TypeScript（strict）、bun | 同じ（単一パッケージ） |
+| ビルド | Next.js + TypeScript（strict）、pnpm（2026-10-03 bun→pnpm 移行） | 同じ（単一パッケージ） |
 | 3D | Babylon.js。voxel は noa | PH1-D で apps/web の R3F scene は破棄済み。server/profile-fps の three-mesh-bvh は衝突用に残す |
 | シム | `SimProfile.step`。L1 にタイプ分岐を書かない | shared の FPS 物理（three-mesh-bvh CC） |
 | ネットワーク | bun `Bun.serve` WS。手書きバイナリ。Input 16B | bun WS + 手書きバイナリ。レイアウトは理想へ更新 |
@@ -56,7 +56,7 @@ description: プロダクトの全体像（目標・現行コードと理想形�
 
 ## 規模
 
-bun workspaces。`packages/protocol` / `packages/engine-core` / `packages/profile-fps` と `apps/gameserver` / `apps/web` に分割済み。テストは `_tests_/` にワークスペース構造をミラーする。coverageはinclude-all方針で85/85/85/85 threshold、handlers.ts / babylonDeps.ts分離で達成。
+pnpm ワークスペース（2026-10-03 bun→pnpm 移行）。`packages/protocol` / `packages/engine-core` / `packages/profile-fps` と `apps/gameserver` / `apps/web` に分割済み。テストは `_tests_/` にワークスペース構造をミラーする。coverageはinclude-all方針で85/85/85/85 threshold、handlers.ts / babylonDeps.ts分離で達成。
 
 ## EMフェーズ知見（2026-09-20〜22）
 

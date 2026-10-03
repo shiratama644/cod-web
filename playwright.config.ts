@@ -33,7 +33,7 @@ export default defineConfig({
         {
           // Next.js production server (requires `next build` first — the
           // command chains build + start so e2e is self-contained).
-          command: 'cd apps/web && bun run build && bun run preview',
+          command: 'cd apps/web && pnpm run build && pnpm run preview',
           url: localBaseURL,
           reuseExistingServer: !process.env.CI,
           timeout: 300_000,

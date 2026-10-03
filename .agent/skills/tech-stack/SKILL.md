@@ -35,31 +35,31 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 
 | 用途 | 技術 |
 | :--- | :--- |
-| ビルド/Dev | Vite（`bun run dev` / `build` / `preview`） |
+| ビルド/Dev | Vite（`pnpm run dev` / `build` / `preview`） |
 | Lint | Biome（ESLint/Prettier 不使用） |
 | Unit | Vitest。`bun test` は使わない。配置は `_tests_/` ミラー。Phase 1.5 では coverage を `vitest run --coverage` で導入する |
 | Coverage | Vitest coverage。まず `@vitest/coverage-v8` + `provider: 'v8'` を候補にするが、Bun runtime 制約に当たる場合は停止して fallback を判断する |
 | E2E | Playwright は Phase 1.5 で導入済み。Sandbox では browser 実行を捏造せず CI / 実環境検証待ちにする |
-| パッケージ | bun。Sandbox では npm 経由で導入（下記） |
+| パッケージ | pnpm（2026-10-03 bun→pnpm 移行）。Sandbox では npm 経由で導入（下記）。gameserver ランタイムのみ bun（devDep） |
 
 ## 移行元コードで確認済み（フェーズ 0 で直す穴・残す資産）
 
 > 描画（R3F / WebGPU / drei Sky）は破棄対象。ネット・バイナリ・ bun WS・テスト配置は移植する。
 
-### bun / Vite / TS / Biome
+### pnpm / Node / TS / Biome
 
-- bun はプリインストールされない。`bun.sh` は SSL で到達不可。**npm registry 経由**（`restore-sandbox-env.sh`）。バージョンは devDependency で exact 固定。
+- pnpm はプリインストールされない。**npm registry 経由で導入**（`restore-sandbox-env.sh`）。バージョンは package.json の `packageManager` で固定。TS スクリプトは tsx 実行。
 - **TypeScript: 標準の JS tsc のみ**（devDependency `typescript@^6.0.3`）。`paths` は相対（`"@/*": ["./src/*"]`）、`baseUrl` は不使用。
   - **TypeScript 7（tsgo）は禁止**: レジストリの `typescript@latest` = 7.x は `@typescript/typescript-*`（linux-arm64 等）の **プラットフォーム別プレビルド Go バイナリ** を optionalDependencies に持ち、**proot-distro ではパスバグで失敗する**。lockfile に `@typescript/typescript-*` エントリが増えたら誤って 7.x（Go）が入っている証拠。
-  - `bun run` は `node_modules/.bin` を PATH 先頭に付与するため、`tsc` はローカルの JS 実装に解決する（グローバルの tsgo を shadow）。
-  - 素の `bun add -d typescript` は 7.x（Go 版）を拾うため禁止。常に `bun add -d typescript@^6.0.3` でピン留め。
+  - `pnpm run` は `node_modules/.bin` を PATH 先頭に付与するため、`tsc` はローカルの JS 実装に解決する（グローバルの tsgo を shadow）。
+  - 素の `pnpm add -D typescript` は 7.x（Go 版）を拾うため禁止。常に `pnpm add -D typescript@^6.0.3` でピン留め。
 - **Biome 2**: `rules: { preset: "recommended" }`。`vcs.useIgnoreFile: true` で `files.includes` を書かない。import 制限は `linter.rules.style.noRestrictedImports`。scope package の深い subpath は `@cod/profile-fps/**` のように `**` で捕捉する（`*` は 1 階層だけ）。DOM global の `WebSocket` 直接参照禁止は import rule ではなく `linter.rules.style.noRestrictedGlobals` を使う。
 - ESM の `vite.config.ts` では `__dirname` 未定義。`path.dirname(fileURLToPath(import.meta.url))`。
 - ライブプレビュー（e2b.app）では `server.allowedHosts: true`（preview も）+ `host: true`。未設定は 403。
 - **tsconfig は 2 構成**: `tsconfig.json`（client+shared、DOM）と `tsconfig.server.json`（server+shared、`types: ["bun"]`、DOM なし）。エイリアス `@/` `@shared/` `@server/` は tsconfig・vite・vitest の 3 箇所。
 - テストは `_tests_/` にソース構造をミラー。ソース横に `*.test.ts` を置かない。shared/server はファイル先頭 `// @vitest-environment node`。
 - jest-dom の型: `src/vite-env.d.ts` に `/// <reference types="@testing-library/jest-dom" />`、setup を tsconfig include に入れる。
-- `bun run start`（`scripts/execute.ts`）: `vite build` 成功後に server :8080 と preview :4173 を並列。クライアントは `/ws` を同一オリジンで叩き、Vite proxy が bun へ中継。ブラウザから localhost 直叩きをしない。
+- `pnpm run start`（`scripts/execute.ts`）: `vite build` 成功後に server :8080 と preview :4173 を並列。クライアントは `/ws` を同一オリジンで叩き、プロキシがゲームサーバーへ中継。ブラウザから localhost 直叩きをしない。
 
 
 ### Sim Profile 分離（Phase 2）
@@ -75,11 +75,11 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 - coverage は **baseline → meaningful tests → threshold ratchet** の順。PH1.5-A baseline は Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009)。PH1.5-B after は Statements 79.17% (859/1085), Branches 73.85% (291/394), Functions 79.38% (154/194), Lines 80.77% (815/1009)。threshold は statements 79 / branches 73 / functions 79 / lines 80 へ ratchet 済み。
 - `coverage.include` は production source を明示する。PH1.5-A では package barrel、browser entrypoint、type-only transport、ambient d.ts だけを理由付き exclude。難しいファイルを除外して数字を作らない。
 - meaningful tests は protocol 境界、Input 16B / Channel 1B、prediction/reconcile、interpolation、server backpressure / rate-limit、GameClient transport 経路を優先する。PH1.5-B では `WebSocketTransport` の mock WebSocket、`GameClient` の mock transport、`StartOverlay` の mock screenfull、`TouchControls` の mock nipplejs が有効だった。
-- Playwright は `webServer` で `bun run start` を起動し、`baseURL` は Vite preview `http://127.0.0.1:4173` を基本にする。PH1.5-C では `@playwright/test@1.63.0`、`playwright.config.ts`、`e2e/game-shell.spec.ts`、`test:e2e` を追加済み。CI/preview では `PLAYWRIGHT_BASE_URL=<url> bun run test:e2e` とし、webServer を起動しない。app code は `/ws` 相対 URL を維持し、browser-facing code が backend localhost を直叩きしない。
-- Sandbox では `bun run test:e2e -- --list` による spec discovery まで確認し、browser 実行は捏造しない。2026-09-19 以前は `.github/workflows/` への書き込みが禁止で CI YAML は `docs/ops/` に提案を置いていたが、現在は許可され直接 `.github/workflows/quality-gates.yml` を配置できる。
-- PH1.5-D で `docs/ops/quality-gates.md` と `docs/ops/github-actions-proposal.yml` を追加、2026-09-19 に `.github/workflows/quality-gates.yml` を本番配置。CI は `oven-sh/setup-bun@v2` + `bun ci`、E2E job は `bunx playwright install --with-deps chromium` + `bun run test:e2e`。
+- Playwright は `webServer` で `pnpm run start` を起動し、`baseURL` は Vite preview `http://127.0.0.1:4173` を基本にする。PH1.5-C では `@playwright/test@1.63.0`、`playwright.config.ts`、`e2e/game-shell.spec.ts`、`test:e2e` を追加済み。CI/preview では `PLAYWRIGHT_BASE_URL=<url> pnpm run test:e2e` とし、webServer を起動しない。app code は `/ws` 相対 URL を維持し、browser-facing code が backend localhost を直叩きしない。
+- Sandbox では `pnpm run test:e2e --list` による spec discovery まで確認し、browser 実行は捏造しない。2026-09-19 以前は `.github/workflows/` への書き込みが禁止で CI YAML は `docs/ops/` に提案を置いていたが、現在は許可され直接 `.github/workflows/quality-gates.yml` を配置できる。
+- PH1.5-D で `docs/ops/quality-gates.md` と `docs/ops/github-actions-proposal.yml` を追加、2026-09-19 に `.github/workflows/quality-gates.yml` を本番配置。CI は `pnpm/action-setup@v4` + `actions/setup-node@v4`（cache: pnpm） + `pnpm install --frozen-lockfile`、E2E job は `pnpm exec playwright install --with-deps chromium` + `pnpm run test:e2e`。
 
-### bun WebSocket（移植する）
+### Bun.serve WebSocket（gameserver ランタイム・移植する）
 
 - Bun WebSocket の `ws.data` 型付けは最新 docs では serve call の generic 型引数 ではなく、`websocket: { data: {} as SocketData, ... }` に置く。`server.upgrade(req, { data })` の data は本プロジェクトでは必須。
 - **uWebSockets.js を追加しない**（bun 内部で uWS。別パッケージは動かない）。
@@ -94,7 +94,7 @@ PH1-C 以降の高頻度バイナリは **Channel 1B + payload**。Input payload
 - PH1-E で `InputController` は `requestPointerLock({ unadjustedMovement: true })` を first try し、Promise rejection の `NotSupportedError` 時だけ通常 `requestPointerLock()` へ fallback する。旧ブラウザが void を返す場合に備え、戻り値は Promise-like 判定して扱う。
 - PH1-E 以降、`pointermove` / PointerLock 中の mouse movement はイベント中に yaw/pitch を直接変えず、delta を蓄積して `BabylonGame` render loop 先頭の `input.consumeLookDelta()` で消費する。
 - `EngineOptions` は `@babylonjs/core@9.25.0` の installed `.d.ts` で `Engines/thinEngine.pure` から import できることを確認済み。`desynchronized` / `preserveDrawingBuffer` は PH1-D では渡していない。
-- three-mesh-bvh は bun ヘッドレスで動く（server/profile-fps の衝突用に残す）。apps/web の 3D 描画へ Three / R3F / drei を戻さない。FPS マップ/voxel ワールドの official/UGC 階層とエディタは [`editor.md`](../../../docs/arch/editor.md)。
+- three-mesh-bvh は Node ヘッドレスで動く（server/profile-fps の衝突用に残す）。apps/web の 3D 描画へ Three / R3F / drei を戻さない。FPS マップ/voxel ワールドの official/UGC 階層とエディタは [`editor.md`](../../../docs/arch/editor.md)。
 
 ### Zustand（ハブ UI には残してよい）
 
@@ -137,6 +137,6 @@ Babylon / noa / Bun WS は公式ドキュメントを検索する（AGENTS.md §
 ### Docs / CI / URL検証（2026-09-22）
 
 - **proposal yml削除**: `docs/ops/github-actions-proposal.yml` は2026-09-22削除、`.github/workflows/quality-gates.yml` が唯一正本。docsがproposalを参照している箇所は全て正本へ書き換え。
-- **公式URL**: Biome `https://biomejs.dev/linter/rules/no-restricted-imports/javascript/` / `no-private-imports/`、Playwright `https://playwright.dev/docs/api/class-websocket` / `mock#mock-websockets` / `ci` / `test-webserver`、Vitest `https://vitest.dev/config/coverage`（v2.vitest.devは404）、Bun `https://bun.com/docs/pm/cli/install`、setup-bun `https://github.com/oven-sh/setup-bun`、workflow syntax `https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax`。ミラー `aidoczh/w3cub` は非公式、primary usageから排除。
+- **公式URL**: Biome `https://biomejs.dev/linter/rules/no-restricted-imports/javascript/` / `no-private-imports/`、Playwright `https://playwright.dev/docs/api/class-websocket` / `mock#mock-websockets` / `ci` / `test-webserver`、Vitest `https://vitest.dev/config/coverage`（v2.vitest.devは404）、pnpm `https://pnpm.io/cli/install`、pnpm/action-setup `https://github.com/pnpm/action-setup`、workflow syntax `https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax`。ミラー `aidoczh/w3cub` は非公式、primary usageから排除。
 - **内部リンク**: 1階層深くすると `../` / `../../` がずれる、自動リンクチェッカーで回す。コードスパン内の `[id](url)` は実リンクとして誤検出しないようfenced/inline code除外。
-- **CI**: `quality-gates.yml` は `inputs.job` all/quality/e2e + `workflow_dispatch` 手動実行対応。`oven-sh/setup-bun@v2` + `bun install --frozen-lockfile` + `bunx playwright install --with-deps chromium`。
+- **CI**: `quality-gates.yml` は `inputs.job` all/quality/e2e + `workflow_dispatch` 手動実行対応。`pnpm/action-setup@v4` + `actions/setup-node@v4`（cache: pnpm） + `pnpm install --frozen-lockfile` + `pnpm exec playwright install --with-deps chromium`。

@@ -1,10 +1,13 @@
-> bun run typecheck
-> started: 2026/10/3 14:14:16 (JST)
+> pnpm run typecheck
+> started: 2026/10/3 16:24:21 (JST)
 > log: logs/05-typecheck.log
 ------------------------------------------------------------
 > use setsid: true
-$ tsc --noEmit && tsc --noEmit -p tsconfig.server.json
+
+> cod-web@0.0.0 typecheck /home/user/cod-web
+> tsc --noEmit && tsc --noEmit -p tsconfig.server.json
+
 ------------------------------------------------------------
-> finished: 2026/10/3 14:14:28 (JST)
-> duration: 12040ms
+> finished: 2026/10/3 16:24:36 (JST)
+> duration: 14457ms
 > exit: 0   OK

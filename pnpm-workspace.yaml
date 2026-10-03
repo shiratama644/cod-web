@@ -1,0 +1,4 @@
+# pnpm ワークスペース定義(2026-10-03 bun→pnpm 移行)
+packages:
+  - 'apps/*'
+  - 'packages/*'

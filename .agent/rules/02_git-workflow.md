@@ -19,7 +19,7 @@ git log -5 --oneline
 
 - 未コミット変更があれば勝手に破棄・混入しない。
 - ブランチ名はセッションごとに変わる。必ず `git branch --show-current` で確認し、過去のブランチ名を文書に残さない。
-- bun が PATH に無いことが多い: `bash .agent/hooks/restore-sandbox-env.sh; export PATH=$PATH:/usr/local/bin` を最初に実行。
+- pnpm が無いことが多い: `bash .agent/hooks/restore-sandbox-env.sh; export PATH=$PATH:/usr/local/bin` を最初に実行。
 
 ## 2. 環境異常の診断（cod-web 実測、2パターン）
 
@@ -32,7 +32,7 @@ git log -5 --oneline
 
 ## 3. コミットルール
 
-- 検証（§3.1 の 4+3 または `bun run check:all`）全 PASS 時のみコミット。docs-only は整合性確認で代替可。
+- 検証（§3.1 の 4+3 または `pnpm run check:all`）全 PASS 時のみコミット。docs-only は整合性確認で代替可。
 - Conventional Commits + タスク ID をスコープに（例: `feat(PH1-A): binary reader bounds`）。
 - pre-commit hook はフル検証を回すため 15s timeout の恐れ。docs-only は `--no-verify` 可。**commit と push は別の bash 呼び出しに分離**（push 単体でも timeout し得るため）。
 

@@ -169,7 +169,7 @@ class GameClient {
 ## 監査コマンド
 
 ```bash
-bun run lint  # biome checkで境界違反検出
+pnpm run lint  # biome checkで境界違反検出
 grep -R "from '@cod/profile-fps'" packages/engine-core --include="*.ts"  # 0件であること
 grep -R "from '@cod/engine-core'" apps/web/src --include="*.ts" | grep -v "profile-like\|test\|mock"
 cat biome.json | grep -A5 noRestrictedImports

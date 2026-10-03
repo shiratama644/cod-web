@@ -1,11 +1,14 @@
-> bun run check:determinism
-> started: 2026/10/3 14:14:16 (JST)
+> pnpm run check:determinism
+> started: 2026/10/3 16:24:21 (JST)
 > log: logs/03-check-determinism.log
 ------------------------------------------------------------
 > use setsid: true
-$ bun run scripts/check-determinism.ts
+
+> cod-web@0.0.0 check:determinism /home/user/cod-web
+> tsx scripts/check-determinism.ts
+
 ✅ Determinism check passed (no forbidden patterns in SimProfile / L1)
 ------------------------------------------------------------
-> finished: 2026/10/3 14:14:16 (JST)
-> duration: 52ms
+> finished: 2026/10/3 16:24:23 (JST)
+> duration: 1692ms
 > exit: 0   OK

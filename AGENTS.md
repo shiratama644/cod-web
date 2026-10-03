@@ -3,7 +3,7 @@
 本ドキュメントは、AI Agent が本プロジェクトの開発・変更を行う際に**必ず遵守すべき開発規約**です。
 最優先事項は **「速く大量に作ること」ではなく「常に復旧可能で、壊れた状態を長時間維持しないこと」** です。
 
-本プロジェクトはブラウザ向け **FPS ゲームプラットフォーム**です。2026-09-24 より「CoD Mobile の仕組み・機能を Web で再現する」方向（計画: [`docs/planning/CODM_DEEP_RESEARCH_PLAN.md`](docs/planning/CODM_DEEP_RESEARCH_PLAN.md)、基準: [`docs/research/codm/00_scope.md`](docs/research/codm/00_scope.md) §1.4 ハイブリッド）で進行中。フロントエンドは **Next.js（`apps/web`）**（2026-10-03 に Vite+React クライアントを削除、`nextjs-frontend/SKILL.md`）。サーバー/シムは bun モノレポ（`packages/*` + `apps/gameserver`）。**仕様正本は [`docs/arch/`](docs/arch/README.md)**。旧仕様は [`.archive/docs/`](.archive/docs/) にあり、正本としては使わない。
+本プロジェクトはブラウザ向け **FPS ゲームプラットフォーム**です。2026-09-24 より「CoD Mobile の仕組み・機能を Web で再現する」方向（計画: [`docs/planning/CODM_DEEP_RESEARCH_PLAN.md`](docs/planning/CODM_DEEP_RESEARCH_PLAN.md)、基準: [`docs/research/codm/00_scope.md`](docs/research/codm/00_scope.md) §1.4 ハイブリッド）で進行中。フロントエンドは **Next.js（`apps/web`）**（2026-10-03 に Vite+React クライアントを削除、`nextjs-frontend/SKILL.md`）。サーバー/シムは pnpm ワークスペースのモノレポ（`packages/*` + `apps/gameserver`、2026-10-03 bun→pnpm 移行。gameserver の実行ランタイムのみ bun = Bun.serve）。**仕様正本は [`docs/arch/`](docs/arch/README.md)**。旧仕様は [`.archive/docs/`](.archive/docs/) にあり、正本としては使わない。
 トピック別の詳細ルールは [`.agent/rules/`](.agent/rules/)（01 情報の正 / 02 Git / 03 doc-style / 04 検証）。
 
 ---
@@ -54,30 +54,30 @@
 
 ### 3.1 検証コマンドの実行
 - `package.json` に定義されたスクリプトのみを使用する（存在しないコマンドを捏造・実行しない）。
-- **パッケージ管理・スクリプトランナーは bun**（`bun install` / `bun run` / `bunx`）。ロックファイルは `bun.lock`。
-- 原則として commit 前に以下 4+3 種を全て pass させる。**一括実行は `bun run check:all` を推奨**（install 先行 → 残り並列、~50s、`logs/` に保存）：
+- **パッケージ管理・スクリプトランナーは pnpm**（`pnpm install` / `pnpm run` / `pnpm exec`、2026-10-03 bun→pnpm 移行）。ロックファイルは `pnpm-lock.yaml`。TS スクリプト（`scripts/*.ts`）は **tsx** で実行する。
+- 原則として commit 前に以下 4+3 種を全て pass させる。**一括実行は `pnpm run check:all` を推奨**（install 先行 → 残り並列、~50s、`logs/` に保存）：
   ```bash
-  bun run typecheck             # tsc --noEmit および tsc -p tsconfig.server.json（※ apps/web は含まない）
-  bunx biome lint .             # Biome 直接呼び出し（※ apps/web は対象外、ESLint が正）
-  bun run test:unit             # vitest run（watch モードではない）
-  bun run build                 # packages + gameserver + apps/web（next build）
-  bun run check:determinism     # SimProfile.step禁止API検出（EM01〜）
-  bun run test:coverage         # threshold 85/85/85/85（EM02〜）
-  bun run test:e2e -- --list    # E2E discovery、browser起動なし（PH1.5-C〜、Sandboxでも実行可）
+  pnpm run typecheck             # tsc --noEmit および tsc -p tsconfig.server.json（※ apps/web は含まない）
+  pnpm exec biome lint .             # Biome 直接呼び出し（※ apps/web は対象外、ESLint が正）
+  pnpm run test:unit             # vitest run（watch モードではない）
+  pnpm run build                 # packages + gameserver + apps/web（next build）
+  pnpm run check:determinism     # SimProfile.step禁止API検出（EM01〜）
+  pnpm run test:coverage         # threshold 85/85/85/85（EM02〜）
+  pnpm run test:e2e --list    # E2E discovery、browser起動なし（PH1.5-C〜、Sandboxでも実行可）
   # apps/web（Next.js）を触った場合は必ず追加（2026-10-03〜）
-  cd apps/web && bun run typecheck && bun run lint
+  cd apps/web && pnpm run typecheck && pnpm run lint
   ```
-- **テストランナーは Vitest を使う。`bun test`（bun:test）は使わない**（jsdom + @testing-library/react の DOM テスト資産との互換を優先。bun はあくまでパッケージ管理・ランナーとして使用）。
+- **テストランナーは Vitest を使う**（jsdom + @testing-library/react の DOM テスト資産。`bun test` は過去も今後も使わない。bun は gameserver 実行ランタイム専用）。
 - **`vitest` を watch モードで起動しないこと**。commit 前検証には必ず `test:unit`（`vitest run`）を使う。
 - **E2E（Playwright）は Sandbox でbrowser実行不可**（§6.2 参照）。`test:e2e -- --list` discoveryはSandboxでも実行可、browser実行はCIのみ。`package.json` に `test:e2e` が無い限り捏造しない。
 - apps/web のビルド成果物は `apps/web/.next/`（gitignore 済）。バンドル肥大は `next build` のルート表で確認する（3D エンジン導入後は chunk 分割・依存の重複に注意）。
 - **任意コマンド（2026-10-03〜、TEMPLATE_REPO 由来・cod-web 向けに書き直し）**。check:all の必須 7 ゲートには含まれないが、該当する変更時に実行する：
   ```bash
-  bun run check:env       # 環境ドクター（tsgo混入・@types/react二重化・Biomeスキーマ乖離等の検出）
-  bun run verify:docs     # Markdownリンク切れ・.env追跡・PM整合（ドキュメント変更時に推奨）
-  bun run security:check  # シークレットスキャン + bun audit（fail閾値: high以上、依存追加・更新時に必須）
-  bun run bench           # protocol packer等ホットパスのマイクロベンチ（netcode変更時に推奨）
-  bun run spell           # cspell（コード識別子のタイポ検出、辞書: cspell.json）
+  pnpm run check:env       # 環境ドクター（tsgo混入・@types/react二重化・Biomeスキーマ乖離等の検出）
+  pnpm run verify:docs     # Markdownリンク切れ・.env追跡・PM整合（ドキュメント変更時に推奨）
+  pnpm run security:check  # シークレットスキャン + pnpm audit（fail閾値: high以上、依存追加・更新時に必須）
+  pnpm run bench           # protocol packer等ホットパスのマイクロベンチ（netcode変更時に推奨）
+  pnpm run spell           # cspell（コード識別子のタイポ検出、辞書: cspell.json）
   ```
 - ドキュメントのみの変更（コード無変更）では 4+3 検証はスキップ可。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。内部リンクはfenced/inline code除外、外部URLは公式URLをfetch_pageで200確認、proposal yml参照残存チェック（`docs-maintenance/SKILL.md`）。
 
@@ -119,13 +119,13 @@ git fetch origin <session-branch>
 # 2. FETCH_HEAD にワークツリーごとリセット（この場合の --hard は例外的に必要）
 git reset --hard FETCH_HEAD
 
-# 3. bun を導入して依存を再構築（bun はプリインストールされていないため npm 経由で導入する）
+# 3. pnpm を導入して依存を再構築（pnpm はプリインストールされていないため npm 経由で導入する）
 bash .agent/hooks/restore-sandbox-env.sh
 ```
 
 - `git reset --hard FETCH_HEAD` は §4.3 の厳禁ルールの例外で、**サンドボックス再構築後の初回のみ**許可される（未コミット変更は元々存在しない状態のため）。
-- 再構築を判定するヒント：`git log --oneline` が起点コミット 1 個しか返ってこない / `git status` が大量の削除を示す / node_modules がない / **bun が未インストール**。
-- 復旧後は必ず `git log --oneline -5` と `bun run test:unit` で健全性を確認してから作業を再開する。
+- 再構築を判定するヒント：`git log --oneline` が起点コミット 1 個しか返ってこない / `git status` が大量の削除を示す / node_modules がない / **pnpm が未インストール**。
+- 復旧後は必ず `git log --oneline -5` と `pnpm run test:unit` で健全性を確認してから作業を再開する。
 - **別パターン「HEAD のみ巻き戻り」に注意**（頻発）: ワークツリーは最新のまま HEAD だけ古いコミットに戻る事象。この場合は `git reset --soft origin/<branch>` で復旧し、**`--hard` は厳禁**（最新ツリーを過去で潰す）。診断表は [`.agent/hooks/sandbox-rebuild-recovery.md`](.agent/hooks/sandbox-rebuild-recovery.md)。
 - 詳細手順は [`.agent/hooks/sandbox-rebuild-recovery.md`](.agent/hooks/sandbox-rebuild-recovery.md) ＋ [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh)。
 
@@ -186,15 +186,15 @@ bash .agent/hooks/restore-sandbox-env.sh
 現行コード（R3F 単一ルーム FPS）と arch（Babylon プラットフォーム）が食い違う間は、**新規コードは arch に従う**。移行元の穴埋め（フェーズ 0）だけ現行ツリーを直す。
 
 ### 6.1 環境・ツールチェーン（2026-10-03 現構成）
-- **ランタイム / パッケージ管理: bun**（`bun install` / `bun run` / `bunx`、ロックファイル `bun.lock`）。
-  - bun はサンドボックスにプリインストールされていない。**npm 経由で導入**（`bun.sh` は SSL で到達不可）。復旧は [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh)。バージョンは devDependency で固定。PATH から消えたら `export PATH=$PATH:/usr/local/bin`。
+- **パッケージ管理: pnpm / スクリプト実行: tsx(Node)**（`pnpm install` / `pnpm run` / `pnpm exec`、ロックファイル `pnpm-lock.yaml`。2026-10-03 bun→pnpm 移行）。gameserver の実行ランタイムのみ bun（`Bun.serve`、devDependencies.bun で `node_modules/.bin/bun` に導入）。
+  - pnpm はサンドボックスにプリインストールされていない。**npm 経由で導入**（`npm i -g pnpm@<packageManager記載値>`）。復旧は [`.agent/hooks/restore-sandbox-env.sh`](.agent/hooks/restore-sandbox-env.sh)。バージョンは package.json の `packageManager` で固定。グローバル bin が PATH から消えたら `export PATH=$PATH:/usr/local/bin`。
 - **フロントエンド: Next.js 16（App Router）+ React 19 + Tailwind 4 = `apps/web`**。旧 Vite+React クライアントは削除済み（git 履歴 ≤40b44eb）。運用詳細は `nextjs-frontend/SKILL.md`。
   - apps/web は **app ローカルの ESLint + tsc** が正（root の Biome / typecheck 対象外）。e2b プレビューは `allowedDevOrigins` + `-H 0.0.0.0`。
-- **TypeScript: 標準の JS tsc のみ**（root devDependency `typescript@^6.0.3` にピン）。素の `bun add -d typescript` は Go 製 tsgo 7.x を拾うため禁止（proot でパスバグ）。lockfile に `@typescript/typescript-*` が増えたら誤入の証拠。apps/web ローカルの typescript 5.9.x（Next 要件）は別枠で可。
+- **TypeScript: 標準の JS tsc のみ**（root devDependency `typescript@^6.0.3` にピン）。素の `pnpm add -D typescript` は Go 製 tsgo 7.x を拾うため禁止（proot でパスバグ）。lockfile に `@typescript/typescript-*` が増えたら誤入の証拠。apps/web ローカルの typescript 5.9.x（Next 要件）は別枠で可。
 - **3D（S フェーズで Next app に統合予定）: Babylon.js**（`@babylonjs/core`）。新規 3D を R3F で足さない。`@cod/profile-fps` の three / three-mesh-bvh は衝突判定用に維持（描画用ではない）。
 - **状態**: 毎フレーム値は React State に置かない。ハブ UI は Zustand 可。Context API は新規に使わない。
 - **Lint/Format**: Biome（`files.includes` で apps/web を除外）。apps/web のみ ESLint。
-- **テスト**: **Vitest**。`bun test` は使わない。テストは `_tests_/` にソース構造をミラー。E2E は Playwright（`e2e/main-menu.spec.ts`、webServer = next build + preview :4173。browser 実行は CI のみ）。
+- **テスト**: **Vitest**（Node 上で実行）。テストは `_tests_/` にソース構造をミラー。E2E は Playwright（`e2e/main-menu.spec.ts`、webServer = next build + preview :4173。browser 実行は CI のみ）。
 - **ゲームサーバー: bun**（`Bun.serve` ネイティブ WebSocket）。
 - arch に無い主要ライブラリを導入する場合はユーザーに相談する。
 
@@ -230,7 +230,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 - **L1（engine-core）に `if (type === 'voxel' | 'fps')` を書かない。** 書いたくなったら境界を見直して人間に確認する。
 - **Rules of Hooks 厳守**（早期 return の前に全 hook）。
 - **JSX 内で日本語と `{式}` を汚く混ぜない**。
-- ユーザー提供前は dev サーバー（`apps/web` で `bun run dev` :3000）または `bun run build && bun run preview`（:4173）で確認する。
+- ユーザー提供前は dev サーバー（`apps/web` で `pnpm run dev` :3000）または `pnpm run build && pnpm run preview`（:4173）で確認する。
 
 ### 6.5 Biome 特有ルール
 - **`biome-ignore` は対象コードの直前の行**。
@@ -296,9 +296,9 @@ bash .agent/hooks/restore-sandbox-env.sh
 3. **ファイル変更数**: `新規/変更ファイル (N files, +X / -Y)`
 4. **検証結果チェックリスト**:
    ```text
-   - ✅ bun run check:all: 7/7 PASS（または 4+3 個別の結果）
-   - ✅ cd apps/web && bun run typecheck && bun run lint: 0 error（web 変更時）
-   - ✅ bun run build: packages + gameserver + next build 成功
+   - ✅ pnpm run check:all: 7/7 PASS（または 4+3 個別の結果）
+   - ✅ cd apps/web && pnpm run typecheck && pnpm run lint: 0 error（web 変更時）
+   - ✅ pnpm run build: packages + gameserver + next build 成功
    - ✅ push 済み（`prev..head`）
    ```
 5. **次のアクション**: 「次は何をしますか?」「Go を出していただければ〜」と提示、勝手に次のタスクを開始しない（§5 のタスク完了条件）。
@@ -329,7 +329,7 @@ bash .agent/hooks/restore-sandbox-env.sh
 **わからないこと・記憶に自信がないことは Web 検索で確認する**。特に Babylon.js / noa-engine / Bun WebSocket / Vite など、メジャーバージョン更新が速く API 仕様が変わりやすいライブラリは検索必須。
 
 - `web_search` ツールを使う。`depth` は状況で使い分け: depth=1（事実確認）/ depth=2（標準・複数ソース比較）/ depth=3（深掘り）。
-- 検索結果を引用する時は `[id](url)` 形式で必ずソースを明示。公式ドキュメント（doc.babylonjs.com, bun.sh, vite.dev 等）を優先。
+- 検索結果を引用する時は `[id](url)` 形式で必ずソースを明示。公式ドキュメント（doc.babylonjs.com, pnpm.io, nextjs.org 等）を優先。
 - **記憶で断言せず、疑わしければ検索する**（ハルシネーション回避）。
 - **技術的事実の確認** → `web_search`（客観情報）/ **プロジェクト固有の仕様判断** → `ask_user`（ユーザー主観）。
 

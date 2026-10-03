@@ -130,8 +130,8 @@ vi.mock('./components/RendererHud', () => ({ default: () => <div /> }));
 ## 監査コマンド
 
 ```bash
-bun run test:coverage  # Statements 95.12% / Branches 87.97% / Functions 90.7% / Lines 96.8%
-bun run test:unit       # 30 files / 189 tests
+pnpm run test:coverage  # Statements 95.12% / Branches 87.97% / Functions 90.7% / Lines 96.8%
+pnpm run test:unit       # 30 files / 189 tests
 ```
 
 ## よくある失敗

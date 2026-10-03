@@ -10,12 +10,12 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 
 ## cod-web 固有ルール
 
-- ランナーは **Vitest**（`bun test` は使わない）。実行は `bun run test:unit`（watch 禁止）
+- ランナーは **Vitest**（`bun test` は使わない）。実行は `pnpm run test:unit`（watch 禁止）
 - 配置は `_tests_/` にワークスペース構造をミラー、`<name>.test.ts`
 - shared/server 系は `// @vitest-environment node` を先頭に
 - coverage は include-all 方針（threshold 85/85/85/85）。難しいファイルは exclude せずテスト可能にリファクタ（handlers 分離・deps ファサード、`testing/SKILL.md`）
 - WebGL/Canvas は jsdom で描画しない。`vi.mock` でファサードをモック
-- E2E は `e2e/` + `bun run test:e2e -- --list` で discovery 確認まで（browser 実行は CI のみ）
+- E2E は `e2e/` + `pnpm run test:e2e --list` で discovery 確認まで（browser 実行は CI のみ）
 
 ## ベストプラクティス
 

@@ -1,7 +1,7 @@
 /**
  * 一括品質ゲート + ログ保存スクリプト（install先行 + 並列版・abort対応・hang修正）
  *
- *   bun run check:all
+ *   pnpm run check:all   （tsx 実行・Node。2026-10-03 bun→pnpm 移行で child_process に移植）
  *
  * 1. install を最初に単独実行（依存解決のため）
  * 2. 残り6タスクを並列実行（速い順: lint → determinism → heavy → typecheck → test:unit → coverage）
@@ -10,11 +10,12 @@
  *    - setsid で新しいプロセスグループを作成
  *    - abort 時に kill -TERM/-KILL -pgid でグループ全体を kill
  *    - pkill -P で子も kill
- *    - ReadableStream reader.cancel() で読み取りループを抜ける
- *    - proc.exited に 6秒タイムアウト、全体に 10分 hard timeout
+ *    - 'close' イベント（stdio drain 後に発火）で読み取り完了を保証
+ *    - abort 後の exit 待ちに 6秒タイムアウト、全体に 10分 hard timeout
  *    で確実に Promise.all が resolve し、summary.log が書かれて exit する。
  */
 
+import { spawn, spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -48,44 +49,44 @@ mkdirSync(LOG_DIR, { recursive: true })
 const tasks: Task[] = [
   {
     id: 'install',
-    label: 'bun install --frozen-lockfile',
-    cmd: ['bun', 'install', '--frozen-lockfile'],
+    label: 'pnpm install --frozen-lockfile',
+    cmd: ['pnpm', 'install', '--frozen-lockfile'],
     logFile: '01-install.log',
   },
   {
     id: 'lint',
     label: 'biome lint',
-    cmd: ['bun', 'run', 'lint'],
+    cmd: ['pnpm', 'run', 'lint'],
     logFile: '02-lint.log',
   },
   {
     id: 'check:determinism',
     label: 'determinism guard',
-    cmd: ['bun', 'run', 'check:determinism'],
+    cmd: ['pnpm', 'run', 'check:determinism'],
     logFile: '03-check-determinism.log',
   },
   {
     id: 'check:determinism:heavy',
     label: 'determinism heavy 100x1000',
-    cmd: ['bun', 'run', 'check:determinism:heavy'],
+    cmd: ['pnpm', 'run', 'check:determinism:heavy'],
     logFile: '04-check-determinism-heavy.log',
   },
   {
     id: 'typecheck',
     label: 'typecheck (tsc x2)',
-    cmd: ['bun', 'run', 'typecheck'],
+    cmd: ['pnpm', 'run', 'typecheck'],
     logFile: '05-typecheck.log',
   },
   {
     id: 'test:unit',
     label: 'vitest run',
-    cmd: ['bun', 'run', 'test:unit'],
+    cmd: ['pnpm', 'run', 'test:unit'],
     logFile: '06-test-unit.log',
   },
   {
     id: 'test:coverage',
     label: 'vitest coverage',
-    cmd: ['bun', 'run', 'test:coverage'],
+    cmd: ['pnpm', 'run', 'test:coverage'],
     logFile: '07-test-coverage.log',
   },
 ]
@@ -105,8 +106,7 @@ type Result = {
 
 function hasSetsid(): boolean {
   try {
-    const p = Bun.spawnSync(['which', 'setsid'])
-    return p.exitCode === 0
+    return spawnSync('which', ['setsid']).status === 0
   } catch {
     return false
   }
@@ -128,11 +128,11 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
   // setsid で新しい pgid を作ることで、kill -TERM -pgid で子含めて殺せる
   const spawnCmd = USE_SETSID ? ['setsid', ...task.cmd] : task.cmd
 
-  const proc = Bun.spawn(spawnCmd, {
+  const proc = spawn(spawnCmd[0] as string, spawnCmd.slice(1), {
     cwd: process.cwd(),
-    stdout: 'pipe',
-    stderr: 'pipe',
+    stdio: ['ignore', 'pipe', 'pipe'],
   })
+  const pid = proc.pid ?? -1
 
   let aborted = false
   let killTimer: ReturnType<typeof setTimeout> | null = null
@@ -140,20 +140,22 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
   const killGroup = (sig: string) => {
     // pgid kill: kill -TERM -<pid>
     try {
-      Bun.spawnSync(['sh', '-c', `kill -${sig} -${proc.pid} 2>/dev/null; kill -${sig} ${proc.pid} 2>/dev/null; pkill -${sig} -P ${proc.pid} 2>/dev/null`])
+      spawnSync('sh', [
+        '-c',
+        `kill -${sig} -${pid} 2>/dev/null; kill -${sig} ${pid} 2>/dev/null; pkill -${sig} -P ${pid} 2>/dev/null`,
+      ])
     } catch {}
   }
 
   const onAbort = () => {
     if (aborted) return
     aborted = true
-    captured += `\n[check:all] ABORT signal received, killing ${task.id} (pid ${proc.pid} pgid ${proc.pid})...\n`
+    captured += `\n[check:all] ABORT signal received, killing ${task.id} (pid ${pid} pgid ${pid})...\n`
     try {
       killGroup('TERM')
       // 子プロセスを先に kill（sh -c "sleep|tsc" のケースで orphan 化を防ぐ）
-      Bun.spawn(['sh', '-c', `pkill -9 -P ${proc.pid} 2>/dev/null; echo killed children of ${proc.pid}`], {
-        stdout: 'pipe',
-        stderr: 'pipe',
+      spawn('sh', ['-c', `pkill -9 -P ${pid} 2>/dev/null; echo killed children of ${pid}`], {
+        stdio: 'ignore',
       })
     } catch {}
     try {
@@ -166,9 +168,8 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
           proc.kill('SIGKILL')
         } catch {}
         try {
-          Bun.spawn(['sh', '-c', `pkill -9 -P ${proc.pid} 2>/dev/null; kill -9 -${proc.pid} 2>/dev/null`], {
-            stdout: 'pipe',
-            stderr: 'pipe',
+          spawn('sh', ['-c', `pkill -9 -P ${pid} 2>/dev/null; kill -9 -${pid} 2>/dev/null`], {
+            stdio: 'ignore',
           })
         } catch {}
       }, 1200)
@@ -181,58 +182,41 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
     signal.addEventListener('abort', onAbort, { once: true })
   }
 
-  const decoder = new TextDecoder()
+  // node の 'close' は stdio が drain された後に発火するため、
+  // bun 版の readStream Promise 相当は 'data' リスナー + 'close' で置き換える
+  proc.stdout?.on('data', (chunk: Buffer) => {
+    captured += chunk.toString('utf8')
+  })
+  proc.stderr?.on('data', (chunk: Buffer) => {
+    captured += chunk.toString('utf8')
+  })
 
-  const readStream = async (stream: ReadableStream<Uint8Array> | null | undefined) => {
-    if (!stream) return
-    const reader = stream.getReader()
-    try {
-      for (;;) {
-        if (aborted || signal.aborted) {
-          try {
-            await reader.cancel()
-          } catch {}
-          break
-        }
-        const { done, value } = await reader.read()
-        if (done) break
-        captured += decoder.decode(value, { stream: true })
-      }
-    } catch {
-      // aborted
-    } finally {
-      try {
-        reader.releaseLock()
-      } catch {}
+  const exitPromise = new Promise<number>((resolve) => {
+    proc.on('close', (code, sig) => resolve(code ?? (sig ? 143 : 1)))
+    proc.on('error', () => resolve(1))
+  })
+
+  // abort 後に close が来ないケースに備え、abort から 6 秒で 143 を返す
+  const exitGuarded = new Promise<number>((resolve) => {
+    void exitPromise.then(resolve)
+    const armFallback = () => {
+      setTimeout(() => resolve(143), 6000)
     }
-  }
-
-  const stdoutP = readStream(proc.stdout)
-  const stderrP = readStream(proc.stderr)
-
-  const exitPromise = proc.exited.then((c) => c ?? 1)
-  const exitWithTimeout = async (): Promise<number> => {
-    if (aborted || signal.aborted) {
-      const timeout = new Promise<number>((res) => setTimeout(() => res(143), 6000))
-      return Promise.race([exitPromise, timeout])
+    if (signal.aborted) {
+      armFallback()
+    } else {
+      signal.addEventListener('abort', armFallback, { once: true })
     }
-    return exitPromise
-  }
+  })
 
   const hardTimeoutMs = 10 * 60 * 1000
   const hardTimeout = new Promise<{ exit: number; timedOut: boolean }>((res) =>
     setTimeout(() => res({ exit: 143, timedOut: true }), hardTimeoutMs),
   )
 
-  const tasksDone = Promise.all([stdoutP, stderrP]).then(async () => {
-    const e = await exitWithTimeout()
-    return { exit: e, timedOut: false }
-  })
+  const tasksDone = exitGuarded.then((e) => ({ exit: e, timedOut: false }))
 
-  const { exit, timedOut } = (await Promise.race([tasksDone, hardTimeout])) as {
-    exit: number
-    timedOut: boolean
-  }
+  const { exit, timedOut } = await Promise.race([tasksDone, hardTimeout])
 
   if (timedOut) {
     captured += `\n[check:all] HARD TIMEOUT ${hardTimeoutMs}ms, force killing ${task.id}\n`
@@ -290,13 +274,14 @@ async function main() {
   console.log('')
 
   // Phase 1: install を最初に単独実行
-  const installTask = tasks[0]
+  const installTask = tasks[0] as Task
   const installSignal = new AbortController().signal // install は abort しない
   const installResult = await runTask(installTask, installSignal)
 
   if (!installResult.ok) {
     // install 失敗時は即終了、summary を書く
-    const summaryText = `check:all summary (install-first)\n` +
+    const summaryText =
+      `check:all summary (install-first)\n` +
       `date: ${nowJst()} (JST)\n` +
       `mode: install first sequential, then parallel (fast-first)\n` +
       `FAILED at install phase\n` +
@@ -406,6 +391,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(`Unexpected error: ${err instanceof Error ? err.stack ?? err.message : String(err)}`)
+  console.error(`Unexpected error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`)
   process.exit(1)
 })

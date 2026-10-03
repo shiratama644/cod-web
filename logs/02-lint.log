@@ -1,11 +1,14 @@
-> bun run lint
-> started: 2026/10/3 14:14:16 (JST)
+> pnpm run lint
+> started: 2026/10/3 16:24:21 (JST)
 > log: logs/02-lint.log
 ------------------------------------------------------------
 > use setsid: true
-$ biome lint .
-Checked 95 files in 537ms. No fixes applied.
+
+> cod-web@0.0.0 lint /home/user/cod-web
+> biome lint .
+
+Checked 95 files in 506ms. No fixes applied.
 ------------------------------------------------------------
-> finished: 2026/10/3 14:14:17 (JST)
-> duration: 724ms
+> finished: 2026/10/3 16:24:23 (JST)
+> duration: 2014ms
 > exit: 0   OK

@@ -1,7 +1,7 @@
 ---
 paths:
   - "package.json"
-  - "bun.lock"
+  - "pnpm-lock.yaml"
   - ".github/workflows/**"
   - "scripts/**"
   - "apps/**"
@@ -16,34 +16,34 @@ paths:
 
 ## 1. 検証コマンド（必須）
 
-`package.json` に定義されたスクリプトのみ使用（捏造禁止）。ランナーは **bun**（`bun install` / `bun run` / `bunx`）。
+`package.json` に定義されたスクリプトのみ使用（捏造禁止）。ランナーは **pnpm**（`pnpm install` / `pnpm run` / `pnpm exec`、TS スクリプトは tsx。2026-10-03 bun→pnpm 移行）。
 
 **推奨は一括実行**:
 
 ```bash
-bun run check:all   # install → lint/determinism/heavy/typecheck/test:unit/coverage を並列、~50s、logs/ に保存
+pnpm run check:all   # install → lint/determinism/heavy/typecheck/test:unit/coverage を並列、~50s、logs/ に保存
 ```
 
 個別（4+3）:
 
 ```bash
-bun run typecheck             # root tsc ×2（※ apps/web は含まない）
-bunx biome lint .             # Biome（※ apps/web は対象外）
-bun run test:unit             # vitest run（watch 禁止。bun test も使わない）
-bun run build                 # packages + gameserver + apps/web (next build)
-bun run check:determinism     # SimProfile.step 禁止 API 検出
-bun run test:coverage         # threshold 85/85/85/85
-bun run test:e2e -- --list    # E2E discovery（browser 起動なし、Sandbox 可）
+pnpm run typecheck             # root tsc ×2（※ apps/web は含まない）
+pnpm exec biome lint .             # Biome（※ apps/web は対象外）
+pnpm run test:unit             # vitest run（watch 禁止。bun test も使わない）
+pnpm run build                 # packages + gameserver + apps/web (next build)
+pnpm run check:determinism     # SimProfile.step 禁止 API 検出
+pnpm run test:coverage         # threshold 85/85/85/85
+pnpm run test:e2e --list    # E2E discovery（browser 起動なし、Sandbox 可）
 ```
 
 **apps/web（Next.js）を触った場合は必ず追加**:
 
 ```bash
-cd apps/web && bun run typecheck && bun run lint   # app ローカルの tsc + ESLint が正
+cd apps/web && pnpm run typecheck && pnpm run lint   # app ローカルの tsc + ESLint が正
 ```
 
 - docs-only 変更は検証スキップ可。代わりにリンク切れ・参照整合・旧名称残存を grep で確認（`verify-doc-integrity/SKILL.md`）。
-- 依存を変更した直後の `bun install --frozen-lockfile` は失敗する。先に素の `bun install`。
+- 依存を変更した直後の `pnpm install --frozen-lockfile` は失敗する。先に素の `pnpm install`。
 
 ## 2. エラー対応と品質維持
 
@@ -59,7 +59,7 @@ cd apps/web && bun run typecheck && bun run lint   # app ローカルの tsc + E
 
 ## 4. 完了前チェックリスト
 
-- (A) 検証全 PASS（`bun run check:all` 7/7 or 4+3 + web）
+- (A) 検証全 PASS（`pnpm run check:all` 7/7 or 4+3 + web）
 - (B) `git status --short` / `git diff --stat` で意図しない差分なし
 - (C) `.env` 等の機密混入なし（`post_edit_verify.sh` が自動検査）
 - (D) docs 変更時は目次更新 + タスクリストの証拠（SHA / テスト件数 / 実測値）記録

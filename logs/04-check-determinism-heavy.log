@@ -1,9 +1,12 @@
-> bun run check:determinism:heavy
-> started: 2026/10/3 14:14:16 (JST)
+> pnpm run check:determinism:heavy
+> started: 2026/10/3 16:24:21 (JST)
 > log: logs/04-check-determinism-heavy.log
 ------------------------------------------------------------
 > use setsid: true
-$ bun run scripts/determinism-heavy.ts
+
+> cod-web@0.0.0 check:determinism:heavy /home/user/cod-web
+> tsx scripts/determinism-heavy.ts
+
 🔍 Heavy determinism: 100 scenarios x 1000 ticks
   10/100 scenarios passed
   20/100 scenarios passed
@@ -17,6 +20,6 @@ $ bun run scripts/determinism-heavy.ts
   100/100 scenarios passed
 ✅ Heavy determinism passed: 100 scenarios x 1000 ticks identical within 1e-10
 ------------------------------------------------------------
-> finished: 2026/10/3 14:14:18 (JST)
-> duration: 1834ms
+> finished: 2026/10/3 16:24:25 (JST)
+> duration: 3720ms
 > exit: 0   OK

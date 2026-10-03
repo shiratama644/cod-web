@@ -15,7 +15,7 @@ description: Babylon.js Engine初期化とR3F排除、EngineOptions型解決、b
 
 - `apps/web` から R3F / drei / Three scene を削除しても、`@cod/profile-fps` のserver/client共通衝突判定は `three` / `three-mesh-bvh` を使い続ける
 - 描画ではなくprofile-fpsの衝突用なのでPH1-Dの削除対象外
-- 現行コードの bun WS / `_tests_/` / Vite `allowedHosts` / `ws.send` 戻り値はスキルに残し、R3F/WebGPUは破棄対象・真似しないと明記
+- 現行コードの Bun.serve WS / `_tests_/` / Vite `allowedHosts` / `ws.send` 戻り値はスキルに残し、R3F/WebGPUは破棄対象・真似しないと明記
 
 ## EngineOptions型解決
 

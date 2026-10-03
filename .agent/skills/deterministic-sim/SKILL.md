@@ -36,7 +36,7 @@ function createLCG(seed: number) {
 | smoke | `_tests_/.../determinism.test.ts` unit | 100ticks x10 scenarios、purity、factory isolation | 20-50ms |
 | heavy | `scripts/determinism-heavy.ts` | 1000ticks x100 scenarios、tolerance 1e-10、LCG | 0.8-0.9s |
 
-- smokeは常時 `test:unit` で実行、heavyは `bun run scripts/determinism-heavy.ts` でCI/手動実行
+- smokeは常時 `test:unit` で実行、heavyは `pnpm run scripts/determinism-heavy.ts` でCI/手動実行
 - `createPlaneWorld`（静的平面のみ）を使えば heavyでも軽い。`three-mesh-bvh` を含む server worldだと重くなるため、PH2-Eでは plane worldで十分
 
 ### 3. Same-inputテスト（server vs client）
@@ -56,8 +56,8 @@ const player = room.getPlayer(peer.id);
 ### 4. 監査コマンド
 
 ```bash
-bun run check:determinism          # scripts/check-determinism.ts 禁止パターン検出
-bun run scripts/determinism-heavy.ts  # 1000x100 0.8s pass確認
+pnpm run check:determinism          # scripts/check-determinism.ts 禁止パターン検出
+pnpm run scripts/determinism-heavy.ts  # 1000x100 0.8s pass確認
 grep -R "Math.random\|Date.now\|performance.now" packages/engine-core/src packages/profile-fps/src --include="*.ts"
 ```
 

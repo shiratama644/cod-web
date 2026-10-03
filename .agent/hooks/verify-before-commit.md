@@ -5,19 +5,19 @@
 
 ## 4+3 検証（順に実行、1 つでも失敗したら原因特定→修正→再全検証）
 
-**推奨: `bun run check:all` 一発**（install→lint/determinism/heavy/typecheck/test:unit/coverage を並列実行、~50s、`logs/` にログ保存）。個別に回す場合:
+**推奨: `pnpm run check:all` 一発**（install→lint/determinism/heavy/typecheck/test:unit/coverage を並列実行、~50s、`logs/` にログ保存）。個別に回す場合:
 
 ```bash
-bun run typecheck                # tsc --noEmit および tsc -p tsconfig.server.json（※ apps/web は含まない）
-bunx biome lint .                # Biome 直接呼出（※ apps/web は Biome 対象外、ESLint が正）
-bun run test:unit                # vitest run （※ watch モードではない）
-bun run build                    # packages + gameserver + apps/web（next build）
+pnpm run typecheck                # tsc --noEmit および tsc -p tsconfig.server.json（※ apps/web は含まない）
+pnpm exec biome lint .                # Biome 直接呼出（※ apps/web は Biome 対象外、ESLint が正）
+pnpm run test:unit                # vitest run （※ watch モードではない）
+pnpm run build                    # packages + gameserver + apps/web（next build）
 # 追加（EM01/EM02で確立、quality-gates.ymlと同順）
-bun run check:determinism        # SimProfile.step禁止API検出
-bun run test:coverage            # threshold 85/85/85/85
-bun run test:e2e -- --list       # E2E discovery、browser起動なし（Sandboxでも実行可）
+pnpm run check:determinism        # SimProfile.step禁止API検出
+pnpm run test:coverage            # threshold 85/85/85/85
+pnpm run test:e2e --list       # E2E discovery、browser起動なし（Sandboxでも実行可）
 # apps/web（Next.js）を触った場合は必ず追加（2026-10-03〜、nextjs-frontend/SKILL.md）
-cd apps/web && bun run typecheck && bun run lint
+cd apps/web && pnpm run typecheck && pnpm run lint
 ```
 
 ### 各コマンドの注意
@@ -28,11 +28,11 @@ cd apps/web && bun run typecheck && bun run lint
   - `noRestrictedImports` / `noPrivateImports` はレイヤー境界（`import-boundaries/SKILL.md`）。profile-fpsは `createFpsSimProfile()` 経由のみ。
 - **test:unit**: `vitest`（watch）**ではない**。必ず `test:unit`（vitest run）。Canvas/WebGL は jsdom で描画テストしない。シム・パックは純粋関数（[`../skills/sandbox-constraints/SKILL.md`](../skills/sandbox-constraints/SKILL.md)）。
   - ネットコードの unit は `_tests_/packages/engine-core/client/`（prediction）と same-input gate（`_tests_/packages/profile-fps/sim/`）。**テストを通すために削除せず、純粋コードは packages 側へ移設してテストを維持する**（2026-10-03 Vite削除時の実績）。
-- **build**: `bun run build` = packages + gameserver + apps/web（`next build`）。
+- **build**: `pnpm run build` = packages + gameserver + apps/web（`next build`）。
   - Next の成果物は `apps/web/.next/`（gitignore 済）。バンドル肥大は next build のroute表で確認。
 - **check:determinism**: `scripts/check-determinism.ts` 禁止パターン検出。`Math.random` / `Date.now` / `performance.now` / `setTimeout` がSimProfile.stepに混入していないか（`deterministic-sim/SKILL.md`）。
 - **test:coverage**: threshold 85/85/85/85。include-all方針、難しいfileをexcludeして数字を作らない。handlers.ts分離でBun.serveモック、babylonDeps分離でWebGLモック（`testing/SKILL.md`）。
-- **test:e2e -- --list**: E2E discovery、browser起動なし。Sandboxでも実行可、spec列挙のみ確認（`e2e/SKILL.md`）。本物のbrowser実行はCI `quality-gates.yml` e2e jobで `bunx playwright install --with-deps chromium` 後に `bun run test:e2e`。
+- **test:e2e -- --list**: E2E discovery、browser起動なし。Sandboxでも実行可、spec列挙のみ確認（`e2e/SKILL.md`）。本物のbrowser実行はCI `quality-gates.yml` e2e jobで `pnpm exec playwright install --with-deps chromium` 後に `pnpm run test:e2e`。
 - **ドキュメントのみ変更時**: 4+3 検証はスキップ可（AGENTS.md §3.1）。代わりに「リンク切れ・他ファイルとの参照整合・旧名称の残存がないこと」を grep 等で確認する。内部リンクはfenced/inline code除外、外部URLは公式URLをfetch_pageで200確認、proposal yml参照残存チェック（`docs-maintenance/SKILL.md`）。
 
 ## 追加確認（commit 前）
@@ -60,7 +60,7 @@ grep -R "github-actions-proposal" docs/ --include="*.md"
 
 ## E2E について
 
-- `bun run test:e2e`（Playwright）は **Sandbox ではbrowser実行不可**（Chromium install 不可）。CI（GitHub Actions）でのみbrowser実行。
+- `pnpm run test:e2e`（Playwright）は **Sandbox ではbrowser実行不可**（Chromium install 不可）。CI（GitHub Actions）でのみbrowser実行。
 - commit 前検証には `test:e2e -- --list` discoveryは含める（Sandboxでも実行可）。browser実行は含めない。
 
 ## pre-commit hook timeout対策

@@ -1,14 +1,14 @@
 /**
  * セキュリティ検査スクリプト(cod-web版)。
  * TEMPLATE_REPO の check-security.ts(pnpm audit + SBOM + ライセンス)を
- * bun 前提に縮約・書き直したもの。
+ * pnpm 前提に縮約・書き直したもの(2026-10-03 bun→pnpm 移行)。
  *
  * 検査内容:
  *   (1) シークレットスキャン: git 追跡ファイルを正規表現で走査
  *       - 誤検知は行内に `secret-scan:allow` コメントを書くと除外
- *   (2) 依存脆弱性: `bun audit`(bun 1.2.15+ 内蔵)
+ *   (2) 依存脆弱性: `pnpm audit`(無視リストは package.json の pnpm.auditConfig.ignoreGhsas)
  *
- * 実行: bun run security:check [--no-secrets] [--no-audit]
+ * 実行: pnpm run security:check [--no-secrets] [--no-audit]
  * 終了コード: 0 = OK / 1 = 検出あり
  */
 
@@ -79,8 +79,9 @@ export function scanSecrets(): { findings: string[] } {
 }
 
 /**
- * 修正版が未公開などの理由で一時的に無視する advisory。
- * 追加時は理由と確認日を必ず記載し、定期的に `bun audit` 素で再確認すること。
+ * 無視中の advisory は package.json の `pnpm.auditConfig.ignoreGhsas` で管理する
+ * (2026-10-03 bun→pnpm 移行。bun 版は --ignore フラグだったが pnpm は設定ファイル方式)。
+ * 追加時は package.json 側に理由コメントを残せないため、本配列に理由と確認日を記録する。
  */
 export const IGNORED_ADVISORIES: { id: string; reason: string }[] = [
   {
@@ -95,11 +96,12 @@ export const IGNORED_ADVISORIES: { id: string; reason: string }[] = [
 const AUDIT_LEVEL = 'high'
 
 export function runAudit(): boolean {
-  const args = ['audit', `--audit-level=${AUDIT_LEVEL}`]
-  for (const { id } of IGNORED_ADVISORIES) args.push(`--ignore=${id}`)
-  const result = spawnSync('bun', args, { encoding: 'utf-8', stdio: 'pipe' })
+  const result = spawnSync('pnpm', ['audit', `--audit-level=${AUDIT_LEVEL}`], {
+    encoding: 'utf-8',
+    stdio: 'pipe',
+  })
   if (result.error) {
-    console.error(`${RED}bun audit を実行できませんでした: ${result.error.message}${RESET}`)
+    console.error(`${RED}pnpm audit を実行できませんでした: ${result.error.message}${RESET}`)
     return false
   }
   const out = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim()
@@ -128,15 +130,16 @@ export function main(argv = process.argv.slice(2)): boolean {
   }
 
   if (!noAudit) {
-    log(`(2) bun audit(依存脆弱性、fail 閾値: ${AUDIT_LEVEL} 以上)...`)
+    log(`(2) pnpm audit(依存脆弱性、fail 閾値: ${AUDIT_LEVEL} 以上)...`)
     if (IGNORED_ADVISORIES.length > 0) {
-      for (const { id, reason } of IGNORED_ADVISORIES) log(`  ignore: ${id} — ${reason}`)
+      for (const { id, reason } of IGNORED_ADVISORIES)
+        log(`  ignore(auditConfig.ignoreGhsas): ${id} — ${reason}`)
     }
     if (runAudit()) {
       log(`${GREEN}✓ ${AUDIT_LEVEL} 以上の脆弱性なし${RESET}`)
     } else {
       fail = true
-      console.error(`${RED}✗ bun audit が脆弱性を報告しました${RESET}`)
+      console.error(`${RED}✗ pnpm audit が脆弱性を報告しました${RESET}`)
     }
   }
 
