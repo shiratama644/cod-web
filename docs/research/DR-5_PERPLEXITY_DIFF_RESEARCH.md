@@ -1,7 +1,7 @@
 # DR-5: Perplexity DeepResearch 差分検証
 
 > 実施日: 2026-09-06（Asia/Tokyo）  
-> 対象: [`../Perplexity-AI.md`](../Perplexity-AI.md) と [`DR-1`](./DR-1_COMPETITOR_DEEP_RESEARCH.md)〜[`DR-4`](./DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md) の差分  
+> 対象: [`./Perplexity-AI.md`](./Perplexity-AI.md) と [`DR-1`](./DR-1_COMPETITOR_DEEP_RESEARCH.md)〜[`DR-4`](./DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md) の差分  
 > 目的: Perplexity 側 DeepResearch に含まれる新規・相違・古い指摘を、公式/一次情報優先で検証し、cod-web に採用できる正確な情報へ整理する。  
 > 制約: 競合 live service への接続解析、通信キャプチャ、production bundle / minified client 解析、競合コード・アセット・UI・商標の流用は行わない。
 
@@ -23,7 +23,7 @@ Perplexity 文書は、既存 DR-1〜DR-4 よりも **現行 cod-web の通信�
 
 ### 1.1 Workspace 文書
 
-- `docs/Perplexity-AI.md`（全体読了。ユーザー発話は `Perplexity-Al.md` だったが実ファイル名は `Perplexity-AI.md`）
+- `docs/research/Perplexity-AI.md`（全体読了。ユーザー発話は `Perplexity-Al.md` だったが実ファイル名は `Perplexity-AI.md`）
 - `docs/research/DR-1_COMPETITOR_DEEP_RESEARCH.md`
 - `docs/research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md`
 - `docs/research/DR-3_DEEPER_COMPETITOR_RESEARCH.md`

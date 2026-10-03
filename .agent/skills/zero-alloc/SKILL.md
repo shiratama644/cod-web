@@ -9,7 +9,7 @@ description: ホットパスでのゼロアロケーションを守る実装ス�
 
 
 > 仕様正本: `docs/arch/engineering.md`（ゼロアロケ）、`docs/arch/server.md`（RoomはsetIntervalを持たない）  
-> 計画: `docs/planning/EM01_PLAN.md` B4,B5,B6,B9-B13
+> 計画: `docs/planning/complete/EM01_PLAN.md` B4,B5,B6,B9-B13
 
 ## 原則
 

@@ -5,7 +5,7 @@ description: L1 gamemode-api core + gamemode-sdk facade、defineGameMode検証�
 
 # Gamemode API — L1 core + facade + ffa最小 + Phase4拡張の実装スキル
 
-> 仕様正本: `docs/arch/types.md`（GameModeDefinition / RoomCtx）、`docs/arch/architecture.md`（gamemodes/* → sdkのみ）、`docs/arch/server.md`（レート制限）、`docs/planning/PHASE03_PLAN.md` / `PHASE04_PLAN.md`（改訂版）  
+> 仕様正本: `docs/arch/types.md`（GameModeDefinition / RoomCtx）、`docs/arch/architecture.md`（gamemodes/* → sdkのみ）、`docs/arch/server.md`（レート制限）、`docs/planning/complete/PHASE03_PLAN.md` / `PHASE04_PLAN.md`（改訂版）  
 > 計画: PLAT-3 / PH3-A / PH3-B / PH3-C / PH3-D / PLAT-4 / PH4-A〜F
 
 ## パッケージ構成（ユーザー確認 both）
@@ -232,6 +232,6 @@ bun run test:unit # 37 files 255 tests (PH3-Dで+1 file +13 tests, 計+5 files +
 
 - `docs/arch/types.md` GameModeDefinition / RoomCtx
 - `docs/arch/architecture.md` L0-L3依存、gamemodes/* → sdkのみ
-- `docs/planning/PHASE03_PLAN.md` §10.1-10.5
+- `docs/planning/complete/PHASE03_PLAN.md` §10.1-10.5
 - `docs/arch/server.md` レート制限表
 - `.agent/logs/2026-09-22_plat-3-fact-check.md`

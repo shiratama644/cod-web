@@ -71,7 +71,7 @@
 
 ### Phase 1
 
-計画書: [`planning/PHASE01_PLAN.md`](./planning/PHASE01_PLAN.md)
+計画書: [`planning/PHASE01_PLAN.md`](./planning/complete/PHASE01_PLAN.md)
 橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（PH1-F 完了後。次は **Phase 1.5 品質ゲート**）
 
 合意: fps 系パッケージのみ。Channel 頭 1B。GPU 予算は本フェーズ DoD 外。`dtMs` はミリ秒。fps Snapshot は `vy` を含める。workspace package name は `@cod/*`。Babylon options は型にあるものだけ使う。
@@ -91,14 +91,14 @@
 
 ### Phase 1.5
 
-計画書: [`planning/PHASE01_5_PLAN.md`](./planning/PHASE01_5_PLAN.md)
+計画書: [`planning/PHASE01_5_PLAN.md`](./planning/complete/PHASE01_5_PLAN.md)
 橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（次は **Phase 2 計画作成**）
 
 目的: Phase 2 の Sim Profile 分離前に、Vitest coverage 測定、重要経路の意味ある coverage 増加、Playwright E2E の入口を追加する。Sandbox では Playwright browser 実行結果を捏造せず、CI / 実環境検証待ちとして扱う。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
-| PLAT-1.5 | Phase 1.5 計画追加（coverage / meaningful tests / E2E） | 完了 | 100% | PH1-F | `_TEMPLATE.md` 準拠。Vitest coverage と Playwright 公式 API 根拠、Sandbox 制約、意味ある coverage 増加方針が docs に反映される | 本コミット / [`planning/PHASE01_5_PLAN.md`](./planning/PHASE01_5_PLAN.md) / Vitest・Playwright 公式 docs 確認 / link check broken 0 / typecheck・lint・unit・build pass / git diff --check pass |
+| PLAT-1.5 | Phase 1.5 計画追加（coverage / meaningful tests / E2E） | 完了 | 100% | PH1-F | `_TEMPLATE.md` 準拠。Vitest coverage と Playwright 公式 API 根拠、Sandbox 制約、意味ある coverage 増加方針が docs に反映される | 本コミット / [`planning/PHASE01_5_PLAN.md`](./planning/complete/PHASE01_5_PLAN.md) / Vitest・Playwright 公式 docs 確認 / link check broken 0 / typecheck・lint・unit・build pass / git diff --check pass |
 | PH1.5-A | Vitest coverage 測定導入 | ローカル検証済み | 100% | PLAT-1.5 | `test:coverage` と coverage config があり、baseline coverage が記録される | 本コミット / `@vitest/coverage-v8@4.1.11` / `bun run test:coverage` pass（14 files・84 tests）/ baseline: Statements 66.82% (725/1085), Branches 57.10% (225/394), Functions 64.43% (125/194), Lines 68.97% (696/1009) / coverage include/exclude/0%初期threshold設定 / typecheck・lint・unit・build pass / git diff --check pass |
 | PH1.5-B | 意味のある Vitest coverage 増加 | ローカル検証済み | 100% | PH1.5-A | protocol / input / prediction / interpolation / UI seam 等の重要未テスト branch に assertion を追加し、before/after を記録する | 本コミット / 17 files・107 tests / WebSocketTransport Channel framing・malformed frame 1002・no-copy/fallback send・status、GameClient welcome reject・malformed snapshot・dispose/status、Interpolator extrapolate/hold/departure/yaw wrap/history、StartOverlay fullscreen rejection/fallback、TouchControls joystick clamp/reset/jump / after: Statements 79.17% (859/1085), Branches 73.85% (291/394), Functions 79.38% (154/194), Lines 80.77% (815/1009) / thresholds ratchet: statements 79, branches 73, functions 79, lines 80 |
 | PH1.5-C | Playwright E2E 実装 | 実環境検証待ち | 100% | PH1.5-B | `@playwright/test`、`playwright.config.ts`、E2E specs、Sandbox 未実行理由または CI 実行結果がある | 本コミット / `@playwright/test@1.63.0` / `test:e2e` script / `playwright.config.ts`（Desktop Chrome、`webServer.command: bun run start`、`baseURL: http://127.0.0.1:4173`、`PLAYWRIGHT_BASE_URL` override）/ `e2e/game-shell.spec.ts` 3 specs（shell smoke、fullscreen unavailable start、same-origin `/ws` proxy connection）/ `bun run test:e2e -- --list` pass（3 tests discovered）/ browser実行は Sandbox Chromium 制約により未実行・実環境検証待ち / typecheck・lint・unit・coverage・build・link check・git diff --check pass |
@@ -107,14 +107,14 @@
 
 ### Phase 2
 
-計画書: [`planning/PHASE02_PLAN.md`](./planning/PHASE02_PLAN.md)
+計画書: [`planning/PHASE02_PLAN.md`](./planning/complete/PHASE02_PLAN.md)
 橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（Phase 2 完了。次は **Phase 3 計画作成 PLAT-3**）
 
 目的: `engine-core` を type 非依存の L1 として保ち、`profile-fps` を L2 の `FpsSimProfile` 実装として注入できる形に分離する。2026-09-15 の人間確認により、Phase 2 は **fps 先行＋voxel は契約だけ** とする。`profile-voxel` package、voxel terrain、voxel physics 本実装は含めない。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
-| PLAT-2 | Phase 2 計画作成（Sim Profile 分離） | ローカル検証済み | 100% | PH1.5-D | `_TEMPLATE.md` 準拠。`PLAT-2` と PH2-* が task-list に追加され、fps先行＋voxel契約のみの範囲が明記される | 本コミット / [`planning/PHASE02_PLAN.md`](./planning/PHASE02_PLAN.md) / 人間回答: `fps先行＋voxelは契約だけ` / docs link check・`git diff --check` pass |
+| PLAT-2 | Phase 2 計画作成（Sim Profile 分離） | ローカル検証済み | 100% | PH1.5-D | `_TEMPLATE.md` 準拠。`PLAT-2` と PH2-* が task-list に追加され、fps先行＋voxel契約のみの範囲が明記される | 本コミット / [`planning/PHASE02_PLAN.md`](./planning/complete/PHASE02_PLAN.md) / 人間回答: `fps先行＋voxelは契約だけ` / docs link check・`git diff --check` pass |
 | PH2-A | `SimProfile` contract + `TYPE_SPECS` | ローカル検証済み | 100% | PLAT-2 | `engine-core` に type 非依存 contract、`protocol` に fps/voxel rate spec があり、既存 fps constants と矛盾しない | 本コミット / `packages/engine-core/src/profile/SimProfile.ts` / `packages/protocol/src/protocol/type-specs.ts` / `TYPE_SPECS.fps` 由来の互換 constants / mock profile contract tests / type-spec tests / typecheck・lint・unit・coverage・build・E2E discovery pass |
 | PH2-B | `FpsSimProfile` 実装 | ローカル検証済み | 100% | PH2-A | `profile-fps` が world / player spawn / step / snapshot writer を profile として提供し、現行 fps 挙動を維持する | 本コミット / `packages/profile-fps/src/profile/FpsSimProfile.ts` / `createFpsSimProfile()` / direct fps snapshot writer（現行 `encodeSnapshot` と byte-for-byte 一致）/ smoke tests / typecheck・lint・unit・coverage・build・E2E discovery pass |
 | PH2-C | gameserver への profile 注入 | ローカル検証済み | 100% | PH2-B | `apps/gameserver` が profile factory を注入し、`engine-core` は `@cod/profile-*` を import しない | 本コミット / `apps/gameserver/src/runtime.ts` / `createDefaultServerRuntime()` / `Room`・`Simulation`・`SnapshotBroadcaster` profile seam / gameserver runtime smoke test / typecheck・lint・unit・coverage・build・E2E discovery pass |
@@ -123,14 +123,14 @@
 
 ### Emergency Phase (EM)
 
-計画書: [`planning/EM01_PLAN.md`](./planning/EM01_PLAN.md)
+計画書: [`planning/EM01_PLAN.md`](./planning/complete/EM01_PLAN.md)
 橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（Phase 2 完了後、EM1 計画作成中）
 
 目的: Phase 3 前に現行コードのバグ・リーク・ゼロアロケ違反・ログ汚染を完全解消する。事実確認済みバグ B1〜B15 を対象。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---:|
-| PLAT-EM | EM01 計画作成（完全バグ修正） | ローカル検証済み | 100% | PH2-E | `_TEMPLATE.md` 準拠。事実確認とバグ一覧 B1〜B15 が明記され、task-list に EM が追加される | 本コミット / [`planning/EM01_PLAN.md`](./planning/EM01_PLAN.md) / 事実確認: typecheck・lint・unit 23/127・coverage 80.96% Statements 927/1145, Branches 75.06% 307/409, Functions 81.25% 169/208, Lines 82.6% 883/1069 / build 596 modules / determinism + heavy 100x1000 0.8s pass / E2E list 3 tests / console.log 4件( client 1件削除対象 ) / slice 0 / Math.random in sim 0 / any 0除node_modules / gh issue 0 / git diff --check pass |
+| PLAT-EM | EM01 計画作成（完全バグ修正） | ローカル検証済み | 100% | PH2-E | `_TEMPLATE.md` 準拠。事実確認とバグ一覧 B1〜B15 が明記され、task-list に EM が追加される | 本コミット / [`planning/EM01_PLAN.md`](./planning/complete/EM01_PLAN.md) / 事実確認: typecheck・lint・unit 23/127・coverage 80.96% Statements 927/1145, Branches 75.06% 307/409, Functions 81.25% 169/208, Lines 82.6% 883/1069 / build 596 modules / determinism + heavy 100x1000 0.8s pass / E2E list 3 tests / console.log 4件( client 1件削除対象 ) / slice 0 / Math.random in sim 0 / any 0除node_modules / gh issue 0 / git diff --check pass |
 | EM1-A | メモリリーク修正（LagCompStore/InputQueues/paused） | ローカル検証済み | 100% | PLAT-EM | `Simulation.removePlayer` / `SnapshotBroadcaster.removePlayer` / `LagCompStore.clear` が leave 時に呼ばれる | `003d95c` / Simulation.removePlayer + SnapshotBroadcaster.removePlayer + gameserver close 整理 / 回帰 3+2+2 tests / typecheck/lint/unit 134/build pass |
 | EM1-B | console.log削除 + ログ整理 | ローカル検証済み | 100% | PLAT-EM | `BabylonGame.ts` console.log削除、gameserverログ整理、client側 noConsole lint | `56f6c8b` / BabylonGame console.log削除 / biome noConsole error for babylon/net / 134 tests pass |
 | EM1-C | ゼロアロケ違反修正（Room.getPlayers / Snapshot encode） | ローカル検証済み | 100% | EM1-A | `Room.getPlayersIterable()` 追加、hot path の `getPlayers()` 使用0、encodeループ外1回 | `721461e` / getPlayersIterable + getPeersIterable / Simulation.step iterable / Snapshot encode once + lastAckSeq patch + writeCompatSnapshot map廃止 / 134 tests |
@@ -140,7 +140,7 @@
 
 ### Emergency Phase 2 (EM2) — テストカバレッジ 85% 達成
 
-計画書: [`planning/EM02_PLAN.md`](./planning/EM02_PLAN.md)
+計画書: [`planning/EM02_PLAN.md`](./planning/complete/EM02_PLAN.md)
 目的: 意味あるテストで coverage を Statements/Branches/Functions/Lines 85%以上へ引き上げ、Playwright フルE2E（gameserver + preview の複数 webServer）を実現する。include-all 方針で gameserver/index.ts、BabylonGame.ts、App.tsx もカバー。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
@@ -154,14 +154,14 @@
 
 ### Phase 3 — ゲームモード API 第1版 + fps-ffa 最小
 
-計画書: [`planning/PHASE03_PLAN.md`](./planning/PHASE03_PLAN.md)
+計画書: [`planning/PHASE03_PLAN.md`](./planning/complete/PHASE03_PLAN.md)
 橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（EM02完了。次は **Phase 3 計画作成 PLAT-3** → Phase 3 実装）
 
 目的: `engine-core` を type非依存の L1 として保ち、`gamemode-api` を L1 contractとして追加し、`fps-ffa` 最小モードを L3 として動かす。`profile-voxel` / voxel terrain / AOI / delta snapshot / matchmaker / UGC / WT は含めない。
 
 | ID | タスク | 状態 | 進捗 | 依存 | 完了条件 | 証拠 |
 |---|---|---|---:|---|---|---|
-| PLAT-3 | Phase 3 計画作成（gamemode API第1版 + fps-ffa最小） | ローカル検証済み | 100% | EM2-E | `_TEMPLATE.md` 準拠。`PLAT-3` と PH3-A〜D が task-list に追加され、fps先行＋voxel契約のみ継続が明記される | 本コミット / [`planning/PHASE03_PLAN.md`](./planning/PHASE03_PLAN.md) / `fps先行＋voxelは契約だけ` 継続 / docs link check・`git diff --check` pass |
+| PLAT-3 | Phase 3 計画作成（gamemode API第1版 + fps-ffa最小） | ローカル検証済み | 100% | EM2-E | `_TEMPLATE.md` 準拠。`PLAT-3` と PH3-A〜D が task-list に追加され、fps先行＋voxel契約のみ継続が明記される | 本コミット / [`planning/PHASE03_PLAN.md`](./planning/complete/PHASE03_PLAN.md) / `fps先行＋voxelは契約だけ` 継続 / docs link check・`git diff --check` pass |
 | PH3-A | `gamemode-api` package作成（L1 contract） | ローカル検証済み | 100% | PLAT-3 | `@cod/gamemode-api` が存在し、`defineGameMode` が id/type/source/slug/min/maxPlayers検証、GameModeDefinition / RoomCtx / BaseCtx / FpsCtx / VoxelCtx が仕様通り、L1 type非依存（profile-* import 0） | 本コミット / `packages/gamemode-api/` package.json + src/types.ts + defineGameMode.ts + ctx.ts + index.ts / `packages/gamemode-sdk/` package.json + src/index.ts facade (api re-export) / `biome.json` gamemode-api/sdk overrides追加 + _tests_ non-null off / `_tests_/packages/gamemode-api/src/defineGameMode.test.ts` 10 tests + ctx.test.ts 5 tests / typecheck pass / lint 0 warnings / test:unit 32 files 204 tests / coverage 95.26%/88.48%/90.98%/96.9% thresholds 85 pass / build pass / E2E list 11 / determinism pass |
 | PH3-B | `GameModeRuntime` + Tick timer + RateLimiter | ローカル検証済み | 100% | PH3-A | `GameModeRuntime` が例外安全（mode例外でroomが落ちない）、after/every/cancel tick基準（setTimeout禁止）、gamemode message rate 40/s burst 20超過時false、Room統合 | 本コミット / `packages/engine-core/src/gamemode/GameModeTimer.ts` + `GameModeRuntime.ts` + `index.ts` + `net/rate-limit.ts` MODE_MESSAGE 40/s burst20 + `room/Room.ts` setGameModeBinding/cleanup / `_tests_/packages/engine-core/gamemode/GameModeTimer.test.ts` 8 tests + `ModeMessageRateLimiter.test.ts` 8 tests + `GameModeRuntime.test.ts` 11 tests (exception safety/timer tick/rate limit/broadcast false/Room統合) / `tsconfig.base.json` paths gamemode-api/sdk/gameserver + `tsconfig.server.json` include gamemode-api/sdk + `vitest.config.ts` 既存 / typecheck pass / lint 113 files 0 warnings / test:unit 35 files 231 tests pass (+3 files +27 tests) / coverage 94.12%/87.52%/87.21%/95.69% thresholds 85 pass / build 958ms pass / determinism pass / E2E list 11 |
 | PH3-C | `fps-ffa` 最小モード | ローカル検証済み | 100% | PH3-B | `gamemodes/fps/official/ffa` が `fps-official-ffa` idで defineGameMode export、waiting→countdown→playing→ended、spawn選択、kill→score、death→respawn 3s、static arena再利用 | 本コミット / `gamemodes/fps/official/ffa/index.ts` defineGameMode fps-official-ffa type fps source official slug ffa min2 max16 world map static-arena hooks onRoomCreate/Destroy onPlayerJoin/Leave/Spawn/Death/Damage onTick onWeaponFire/onHit onNetworkMessage chat 200文字制限 COUNTDOWN 60*3 RESPAWN 60*3 ENDED 60*5 WIN_SCORE 10 + `gamemodes/fps/official/pvp/index.ts` re-export ffa alias + `_tests_/gamemodes/fps/official/ffa.test.ts` 11 tests (id/type/source/slug/map, pvp alias同一, waiting→countdown→playing lifecycle, spawn getSpawnPoints+randomInt+giveWeapon+setAmmo, kill→score, death→respawn 3s after, 10キル勝利ended, playing中<2でended, chat 200制限, static-arena再利用) / `vitest.config.ts` coverage include gamemodes追加 / typecheck pass / lint 116 files 0 warnings / test:unit 36 files 242 tests pass (+1 file +11 tests) / coverage 93.42%/85.89%/85.4%/94.93% thresholds 85 pass / build 1.12s pass / determinism pass / E2E list 11 |
@@ -169,7 +169,7 @@
 
 ### Phase 4 — ハブ + Sandbox モーダル + 投票システム + マッチメイカー骨組み
 
-計画書: [`planning/PHASE04_PLAN.md`](./planning/PHASE04_PLAN.md)  
+計画書: [`planning/PHASE04_PLAN.md`](./planning/complete/PHASE04_PLAN.md)  
 橋渡し: [`planning/HANDOFF.md`](./planning/HANDOFF.md)（PH3-D完了。次は **Phase 4 計画作成 PLAT-4** → Phase 4 実装）
 
 目的: Phase 3で分離した gamemode APIの上に、2026-09-22改訂版のゲーム種別・階層構造 (Official FPS 1ゲーム複数モード [FFA,TDM,DOM]投票 + Voxel 1モード [Survival]永続、Sandboxは標準FPS/Voxel以外の公式ゲーム + UGC、親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athletic) のハブUI骨組みを実装し、Sandboxの親ジャンル+サブタグフィルタ/ソート/参加フローとOfficial FPS投票システムの入口を作る。L1 type分岐は fps|voxelの2つのまま、Sandboxは公式拡張+UGC表示集約。過去のタイポ表記は `voxel` に訂正済み。matchmaker本実装は含めずmock、voxel本実装/AOI/delta/QuickJS/GLBエディタ本実装は含めない。
@@ -208,5 +208,5 @@
 | DR-2 | DR-1 要確認の追加 Deep Research | 完了 | 100% | DR-1 | bloxd 公式 Terms、Krunker direct API URL、Noa/Babylon peer mismatch を source URL・clone SHA 付きで整理 | 本コミット / [`research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md`](./research/DR-2_ADDITIONAL_SOURCE_RESEARCH.md) / Noa examples clone SHA 記録 / link check broken 0 |
 | DR-3 | 追加 Deep Research（search depth 3） | 完了 | 100% | DR-2 | Krunker direct API、bloxd code-api 追加 docs、texture-packs、authoritative netcode を deep search / fetch / clone SHA 付きで整理 | 本コミット / [`research/DR-3_DEEPER_COMPETITOR_RESEARCH.md`](./research/DR-3_DEEPER_COMPETITOR_RESEARCH.md) / web_search depth 3 / clone SHA 再確認 / link check broken 0 |
 | DR-4 | 追加 Deep Research（engine / UGC / asset pipeline） | 完了 | 100% | DR-3 | Noa 系 engine、voxel physics、input/mobile、QuickJS sandbox、glTF validation/optimization pipeline を deep search / fetch / clone SHA 付きで整理 | 本コミット / [`research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md`](./research/DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md) / web_search depth 3 / clone SHA 記録 / link check broken 0 |
-| DR-5 | Perplexity DeepResearch 差分検証 | 完了 | 100% | DR-4 | `docs/Perplexity-AI.md` と DR-1〜DR-4 の差分を分類し、一次情報/現行コードで修正済み・未解決・低信頼を整理 | 本コミット / [`research/DR-5_PERPLEXITY_DIFF_RESEARCH.md`](./research/DR-5_PERPLEXITY_DIFF_RESEARCH.md) / web_search depth 3 / 現行コード再監査 / link check broken 0 |
+| DR-5 | Perplexity DeepResearch 差分検証 | 完了 | 100% | DR-4 | `docs/research/Perplexity-AI.md` と DR-1〜DR-4 の差分を分類し、一次情報/現行コードで修正済み・未解決・低信頼を整理 | 本コミット / [`research/DR-5_PERPLEXITY_DIFF_RESEARCH.md`](./research/DR-5_PERPLEXITY_DIFF_RESEARCH.md) / web_search depth 3 / 現行コード再監査 / link check broken 0 |
 | OPEN-A | Input `dtMs` の単位（ms か ×10 か）を決定 | 完了 | 100% | PLAT-0 | 人間の回答が protocol.md に反映 | `dtMs` はミリ秒で確定。0.1ms単位（×10）は不採用 |

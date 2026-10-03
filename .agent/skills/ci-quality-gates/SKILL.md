@@ -6,7 +6,7 @@ description: GitHub Actions quality-gates.ymlを唯一の正本として扱い�
 # CI Quality Gates — quality-gates.ymlを正本として扱うスキル
 
 > 仕様正本: `docs/ops/quality-gates.md`（全面）、`docs/ops/README.md`  
-> 計画: `docs/planning/PHASE01_5_PLAN.md` §10.4, `EM01_PLAN.md` B16, `EM02_PLAN.md` §10.6, `PLAT-3`以降
+> 計画: `docs/planning/complete/PHASE01_5_PLAN.md` §10.4, `EM01_PLAN.md` B16, `EM02_PLAN.md` §10.6, `PLAT-3`以降
 
 ## 原則
 

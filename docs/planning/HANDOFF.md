@@ -4,9 +4,9 @@
 > 進捗の正本: [`docs/task-list.md`](../task-list.md)
 > 作業規約: [`AGENTS.md`](../../AGENTS.md)
 > 仕様正本: [`docs/arch/`](../arch/README.md)（2026-09-22改訂版: Official FPS 1ゲーム複数モード [FFA,TDM,DOM]投票 + Voxel 1モード [Survival]永続、Sandboxは標準FPS/Voxel以外の公式ゲーム + UGC、親ジャンル FPS/Voxel + サブタグ Bedwars/Zombie/Athletic）
-> Phase 3 計画: [`docs/planning/PHASE03_PLAN.md`](./PHASE03_PLAN.md)
-> Phase 4 計画: [`docs/planning/PHASE04_PLAN.md`](./PHASE04_PLAN.md)（改訂版）
-> Sandbox 理想整理: [`docs/planning/SANDBOX_SPEC整理.md`](./SANDBOX_SPEC整理.md) / [`SANDBOX_FILTER_DISCUSSION.md`](./SANDBOX_FILTER_DISCUSSION.md) / [`SANDBOX_FINAL_AGREED.md`](./SANDBOX_FINAL_AGREED.md)（改訂版）
+> Phase 3 計画: [`docs/planning/complete/PHASE03_PLAN.md`](./complete/PHASE03_PLAN.md)
+> Phase 4 計画: [`docs/planning/complete/PHASE04_PLAN.md`](./complete/PHASE04_PLAN.md)（改訂版）
+> Sandbox 理想整理: [`docs/planning/complete/SANDBOX_SPEC整理.md`](./complete/SANDBOX_SPEC整理.md) / [`SANDBOX_FILTER_DISCUSSION.md`](./complete/SANDBOX_FILTER_DISCUSSION.md) / [`SANDBOX_FINAL_AGREED.md`](./complete/SANDBOX_FINAL_AGREED.md)（改訂版）
 > Quality gate: [`docs/ops/quality-gates.md`](../ops/quality-gates.md)
 > 調査の入口: [`docs/research/DEEP_RESEARCH_SYNTHESIS.md`](../research/DEEP_RESEARCH_SYNTHESIS.md)
 
@@ -19,7 +19,7 @@
 3. `git log` が起点 1 件だけ / status が大量削除+未追跡 / `bun` なし / `node_modules` なし → Sandbox 再構築。`.claude/hooks/sandbox-rebuild-recovery.md` どおり `git fetch origin <現在ブランチ>` → `git reset --hard origin/<現在ブランチ>` → `bash .claude/hooks/restore-sandbox-env.sh`。
 4. 未コミット変更を勝手に捨てない（再構築復旧の `reset --hard` だけ例外）。
 5. **進行中は 1 件。** 現在は Phase 4 完了、次は Phase 5 計画作成 PLAT-5。
-6. PLAT-5 着手前に [`../task-list.md`](../task-list.md)、[`./PHASE04_PLAN.md`](./PHASE04_PLAN.md)、[`../arch/architecture.md`](../arch/architecture.md)、[`../arch/types.md`](../arch/types.md)、[`../arch/product.md`](../arch/product.md)、[`../arch/editor.md`](../arch/editor.md)、[`../arch/matchmaker.md`](../arch/matchmaker.md)、[`../arch/client.md`](../arch/client.md)、[`../ops/quality-gates.md`](../ops/quality-gates.md) を再読する。
+6. PLAT-5 着手前に [`../task-list.md`](../task-list.md)、[`./PHASE04_PLAN.md`](./complete/PHASE04_PLAN.md)、[`../arch/architecture.md`](../arch/architecture.md)、[`../arch/types.md`](../arch/types.md)、[`../arch/product.md`](../arch/product.md)、[`../arch/editor.md`](../arch/editor.md)、[`../arch/matchmaker.md`](../arch/matchmaker.md)、[`../arch/client.md`](../arch/client.md)、[`../ops/quality-gates.md`](../ops/quality-gates.md) を再読する。
 
 ## 1. いま決まっていること（覆さない）
 
@@ -93,7 +93,7 @@
 
 ## 3. Phase 4 完了サマリ
 
-Phase 4 計画書は [`PHASE04_PLAN.md`](./PHASE04_PLAN.md)。PLAT-4〜PH4-F 完了。
+Phase 4 計画書は [`PHASE04_PLAN.md`](./complete/PHASE04_PLAN.md)。PLAT-4〜PH4-F 完了。
 
 | Subtask | 目的 | 主な成果物 | 状態 |
 |---|---|---|---:|

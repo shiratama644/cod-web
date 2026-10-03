@@ -2,7 +2,7 @@
 
 > 対応 task-list ID: `PLAT-1.5`（本計画） / 実装 `PH1.5-A` … `PH1.5-D`（docs/task-list.md）
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
-> 仕様正本: [`docs/arch/engineering.md`](../arch/engineering.md)、[`client.md`](../arch/client.md)、[`protocol.md`](../arch/protocol.md)、[`api-sources.md`](../arch/api-sources.md)
+> 仕様正本: [`docs/arch/engineering.md`](../../arch/engineering.md)、[`client.md`](../../arch/client.md)、[`protocol.md`](../../arch/protocol.md)、[`api-sources.md`](../../arch/api-sources.md)
 > 着手意図（2026-09-09）: Phase 2 へ進む前に、Vitest coverage 測定、意味のある coverage 増加、Playwright E2E 実装を挟む。
 
 ## 1. 開始前確認

@@ -6,7 +6,7 @@ description: LagCompStore、inputQueues、paused Set、Room leave時のメモリ
 # Memory Leak — Room leave時のリークを防ぐスキル
 
 > 仕様正本: `docs/arch/server.md`（Roomライフサイクル）、`docs/arch/engineering.md`  
-> 計画: `docs/planning/EM01_PLAN.md` B1-B3, B14
+> 計画: `docs/planning/complete/EM01_PLAN.md` B1-B3, B14
 
 ## 潜在リーク箇所（EM01発見）
 
@@ -84,5 +84,5 @@ grep -R "paused" packages/engine-core/src --include="*.ts"
 ## 関連
 
 - `docs/arch/server.md` §Room
-- `docs/planning/EM01_PLAN.md` B1-B3, B14
+- `docs/planning/complete/EM01_PLAN.md` B1-B3, B14
 - `.agent/logs/2026-09-20_plat-em-em01-bugfix-plan.md`

@@ -6,7 +6,7 @@ description: Bun WebSocket権威サーバー、Channel framing、Input 16B、bac
 # Networking — Bun WS権威サーバーの実装スキル
 
 > 仕様正本: `docs/arch/protocol.md`（バイナリプロトコル・Channel・トランスポート）、`docs/arch/server.md`（Room/TickScheduler/レート制限）、`docs/arch/adr.md` ADR-005,015,016  
-> 計画: `docs/planning/PHASE01_PLAN.md` §10.3, `PHASE02_PLAN.md`, `EM01_PLAN.md`
+> 計画: `docs/planning/complete/PHASE01_PLAN.md` §10.3, `PHASE02_PLAN.md`, `EM01_PLAN.md`
 
 ## トランスポートはWebSocketのみ（ADR-005）
 

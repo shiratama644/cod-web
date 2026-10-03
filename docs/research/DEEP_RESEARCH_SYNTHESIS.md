@@ -1,7 +1,7 @@
 # Deep Research 統合サマリー
 
 > 最終更新: 2026-09-06（Asia/Tokyo）  
-> 対象: [`DR-1`](./DR-1_COMPETITOR_DEEP_RESEARCH.md)〜[`DR-5`](./DR-5_PERPLEXITY_DIFF_RESEARCH.md)、raw input [`../Perplexity-AI.md`](../Perplexity-AI.md)  
+> 対象: [`DR-1`](./DR-1_COMPETITOR_DEEP_RESEARCH.md)〜[`DR-5`](./DR-5_PERPLEXITY_DIFF_RESEARCH.md)、raw input [`./Perplexity-AI.md`](./Perplexity-AI.md)  
 > 目的: 実装担当が長い調査文書を毎回読み直さず、採用済み判断・低信頼情報・次に使う根拠を迷わないようにする。
 
 ## 1. この文書の位置づけ
@@ -13,7 +13,7 @@
 | `docs/task-list.md` | 進捗の唯一の正本 | 状態・次タスク・証拠はここで確認 |
 | 本ファイル | 調査結果の読み口 | 採用/不採用/要確認の入口。仕様変更は `arch` / 計画へ反映してから実装 |
 | `DR-*` | 詳細証跡 | URL、clone SHA、読んだファイル、判断根拠を確認する時に読む |
-| `docs/Perplexity-AI.md` | ユーザー追加の raw DeepResearch 入力 | 証跡そのものではなく、DR-5 で検証済みの入力として扱う |
+| `docs/research/Perplexity-AI.md` | ユーザー追加の raw DeepResearch 入力 | 証跡そのものではなく、DR-5 で検証済みの入力として扱う |
 
 ## 2. Deep Research の成果物マップ
 
@@ -74,7 +74,7 @@
 
 | 優先 | タスク | 実装前に読むもの |
 |---:|---|---|
-| 1 | PH1-A: bun workspaces + fps 系へ移動 | [`../planning/HANDOFF.md`](../planning/HANDOFF.md), [`../planning/PHASE01_PLAN.md`](../planning/PHASE01_PLAN.md), [`../arch/architecture.md`](../arch/architecture.md) |
+| 1 | PH1-A: bun workspaces + fps 系へ移動 | [`../planning/HANDOFF.md`](../planning/HANDOFF.md), [`../planning/PHASE01_PLAN.md`](../planning/complete/PHASE01_PLAN.md), [`../arch/architecture.md`](../arch/architecture.md) |
 | 2 | PH1-B: dependency rules | [`../arch/api-sources.md`](../arch/api-sources.md) の Biome 行 |
 | 3 | PH1-C: Channel 頭 1B | [`../arch/protocol.md`](../arch/protocol.md), [`DR-5`](./DR-5_PERPLEXITY_DIFF_RESEARCH.md) の現行再監査 |
 | 4 | PH1-D/E: Babylon + input | [`../arch/client.md`](../arch/client.md), [`../arch/api-sources.md`](../arch/api-sources.md) の Babylon/Canvas/Pointer Lock 行 |

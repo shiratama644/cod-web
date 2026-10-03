@@ -9,7 +9,7 @@ description: Vitest unit/coverageで意味あるテストを書くスキル。EM
 
 
 > 仕様正本: `docs/arch/engineering.md`（テスト最低ライン）、`docs/ops/quality-gates.md` §3  
-> 計画: `docs/planning/PHASE01_5_PLAN.md` §10.1-10.2, `EM02_PLAN.md` §10.1-10.5
+> 計画: `docs/planning/complete/PHASE01_5_PLAN.md` §10.1-10.2, `EM02_PLAN.md` §10.1-10.5
 
 ## 原則
 
@@ -143,7 +143,7 @@ bun run test:unit       # 30 files / 189 tests
 ## 関連
 
 - `docs/ops/quality-gates.md` §3 Coverage gate
-- `docs/planning/EM02_PLAN.md` §10.1-10.5
+- `docs/planning/complete/EM02_PLAN.md` §10.1-10.5
 - `.agent/logs/2026-09-09_ph1-5-a-vitest-coverage-baseline.md`
 - `.agent/logs/2026-09-09_ph1-5-b-meaningful-coverage.md`
 - `.agent/logs/2026-09-21_em2-coverage-85.md`

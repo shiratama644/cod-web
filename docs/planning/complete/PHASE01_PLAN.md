@@ -2,9 +2,9 @@
 
 > 対応 task-list ID: `PLAT-1`（本計画） / 実装 `PH1-A` … `PH1-F`（docs/task-list.md）
 > 計画書テンプレート: docs/planning/_TEMPLATE.md 準拠
-> 仕様正本: [`docs/arch/milestones.md`](../arch/milestones.md) フェーズ 1、[`architecture.md`](../arch/architecture.md)、[`client.md`](../arch/client.md)、[`protocol.md`](../arch/protocol.md)、[`adr.md`](../arch/adr.md)
+> 仕様正本: [`docs/arch/milestones.md`](../../arch/milestones.md) フェーズ 1、[`architecture.md`](../../arch/architecture.md)、[`client.md`](../../arch/client.md)、[`protocol.md`](../../arch/protocol.md)、[`adr.md`](../../arch/adr.md)
 > 着手合意（2026-09-05 / 2026-09-08）: モノレポは fps 系のみ / Channel 頭 1B のみ / GPU 予算は本フェーズ DoD から外す / `dtMs` は ms / fps Snapshot は `vy` を含める / package 名は `@cod/*` / Babylon options は型にあるものだけ
-> 次セッション: [`HANDOFF.md`](./HANDOFF.md)。§10.5 は **PLAT-1R で公式一次情報を確認済み**。PH1-F までローカル検証済み。次は Phase 2 計画から着手。
+> 次セッション: [`HANDOFF.md`](../HANDOFF.md)。§10.5 は **PLAT-1R で公式一次情報を確認済み**。PH1-F までローカル検証済み。次は Phase 2 計画から着手。
 
 ## 1. 開始前確認
 
@@ -47,7 +47,7 @@ milestones フェーズ 1 の文言は「workspaces、`noRestrictedImports`、R3
 - 入力 — `requestPointerLock({ unadjustedMovement: true })`。mousemove は累積しフレーム先頭で消費
 - `_tests_/` — ミラーを新パスへ。量子化・ingest fuzz・スナップショットは残す
 - `biome.json` — 依存規則（実装時に公式 schema でルール名を確認。発明しない）
-- マップパス — 静的埋め込み可。CDN 前提のパスだけ決める（実 CDN は置かない）。将来の階層は `/fps/{official|ugc}/{slug}`（[editor.md](../arch/editor.md)）
+- マップパス — 静的埋め込み可。CDN 前提のパスだけ決める（実 CDN は置かない）。将来の階層は `/fps/{official|ugc}/{slug}`（[editor.md](../../arch/editor.md)）
 
 変更しない（境界外）:
 

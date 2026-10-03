@@ -8,7 +8,8 @@
 |---|---|---|
 | [`DEEP_RESEARCH_SYNTHESIS.md`](./DEEP_RESEARCH_SYNTHESIS.md) | DR-1〜DR-5 の統合サマリー。通常は最初に読む | 仕様正本ではない。採用判断は `docs/arch/` に反映してから実装 |
 | `DR-*` | 個別調査の詳細証跡 | URL / clone SHA / source 種別 / 読んだファイル一覧を確認する |
-| [`../Perplexity-AI.md`](../Perplexity-AI.md) | ユーザー追加の raw DeepResearch 入力 | 検証済み結論は DR-5 と synthesis を優先 |
+| [`Perplexity-AI.md`](./Perplexity-AI.md) | ユーザー追加の raw DeepResearch 入力 | 検証済み結論は DR-5 と synthesis を優先 |
+| [`codm/`](./codm/00_scope.md) | **現用**: CoD Mobile リサーチ(R フェーズ成果物) | 計画は [`../planning/CODM_DEEP_RESEARCH_PLAN.md`](../planning/CODM_DEEP_RESEARCH_PLAN.md)。IP 境界(仕組み・数値・フローのみ、アセット複製禁止)を厳守 |
 
 ## 読む順
 
@@ -16,7 +17,8 @@
 2. 根拠が必要な項目だけ該当 DR を読む。
 3. 実装タスクに渡す時は [`../planning/README.md`](../planning/README.md) と対象計画書を確認する。
 4. 外部 API の実装時は [`../arch/api-sources.md`](../arch/api-sources.md) と公式ドキュメントを再確認する。
-5. raw 入力の `../Perplexity-AI.md` は、再検証が必要な時だけ全体読了する。
+5. raw 入力の [`Perplexity-AI.md`](./Perplexity-AI.md) は、再検証が必要な時だけ全体読了する。
+6. CoDM 全面入れ替えの調査(R フェーズ)は [`codm/00_scope.md`](./codm/00_scope.md) から読む。
 
 ## 文書一覧
 
@@ -28,6 +30,8 @@
 | [`DR-3_DEEPER_COMPETITOR_RESEARCH.md`](./DR-3_DEEPER_COMPETITOR_RESEARCH.md) | ユーザー指示に基づく追加 deep research。Krunker direct API、bloxd code-api 追加 docs、texture-packs、authoritative netcode を深掘り |
 | [`DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md`](./DR-4_ENGINE_AND_UGC_SOURCE_RESEARCH.md) | ユーザー指示に基づく追加 deep research。Noa 系 engine、voxel physics、input/mobile、QuickJS sandbox、glTF validation/optimization pipeline を深掘り |
 | [`DR-5_PERPLEXITY_DIFF_RESEARCH.md`](./DR-5_PERPLEXITY_DIFF_RESEARCH.md) | ユーザー追加 Perplexity DeepResearch と DR-1〜DR-4 の差分検証。現行 cod-web への古い指摘/未解決課題/一次情報採用候補を整理 |
+| [`Perplexity-AI.md`](./Perplexity-AI.md) | ユーザー追加の raw DeepResearch 入力(未検証のまま保存。検証結果は DR-5) |
+| [`codm/00_scope.md`](./codm/00_scope.md) | R0 確定: CoDM 調査範囲・ハイブリッド基準(modes=初出期 2020-03-25 / weapons=2026 Gunsmith / other=2026 / maps=独自・拡張可能・JSON) |
 
 ## ソース信頼度ルール
 

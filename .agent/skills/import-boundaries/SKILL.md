@@ -9,7 +9,7 @@ description: Biome noRestrictedImports/noPrivateImportsでレイヤー境界を�
 
 
 > 仕様正本: `docs/arch/architecture.md`（レイヤー図・依存方向）、`docs/arch/engineering.md`（import境界）、`biome.json`  
-> 計画: `docs/planning/PHASE01_PLAN.md` PH1-B, `PHASE02_PLAN.md` PH2-A/B, `EM01_PLAN.md`
+> 計画: `docs/planning/complete/PHASE01_PLAN.md` PH1-B, `PHASE02_PLAN.md` PH2-A/B, `EM01_PLAN.md`
 
 ## レイヤー定義
 

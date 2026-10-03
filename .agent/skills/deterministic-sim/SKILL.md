@@ -6,7 +6,7 @@ description: SimProfile.stepの決定論を守り、same-inputテストとheavy 
 # Deterministic Sim — 決定論を守る実装スキル
 
 > 仕様正本: `docs/arch/engineering.md`（決定論・禁止API）、`docs/arch/sim-profiles.md`、`docs/arch/protocol.md`  
-> 計画: `docs/planning/PHASE02_PLAN.md` §10.5、EM01/EM02ログ
+> 計画: `docs/planning/complete/PHASE02_PLAN.md` §10.5、EM01/EM02ログ
 
 ## 禁止事項（SimProfile.step内）
 
@@ -70,5 +70,5 @@ grep -R "Math.random\|Date.now\|performance.now" packages/engine-core/src packag
 ## 関連
 
 - `docs/arch/engineering.md` §決定論
-- `docs/planning/EM01_PLAN.md` B1-B15
+- `docs/planning/complete/EM01_PLAN.md` B1-B15
 - `.agent/logs/2026-09-20_ph2-e-same-input-determinism.md`

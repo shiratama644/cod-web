@@ -9,7 +9,7 @@ description: Playwright E2EをSandboxでも安全に扱うスキル。webServer�
 
 
 > 仕様正本: `docs/ops/quality-gates.md` §5, `docs/arch/engineering.md`  
-> 計画: `docs/planning/PHASE01_5_PLAN.md` §10.3, `EM01_PLAN.md` B16, `EM02_PLAN.md` §10.4
+> 計画: `docs/planning/complete/PHASE01_5_PLAN.md` §10.3, `EM01_PLAN.md` B16, `EM02_PLAN.md` §10.4
 
 ## Sandbox制約
 
