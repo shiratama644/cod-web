@@ -200,6 +200,7 @@ export interface GameModeDefinition<T extends GameType> {
 - gameStore拡張: activeTab, sandboxOpen, sandboxParentGenre, sandboxSubTag, sandboxSort, sandboxSearch, selectedSandboxCardId, roomSelectionOpen, voteSession {roomId,gameId,options[{subMode,label,votes}],endsAtMs}
 - App統合: Header+LeftSidebar+SandboxModal+Detail+Room+Vote
 - voxelの旧タイポ表記は訂正済み、エイリアス機能としては扱わない
+- **拡張性の常時維持（2026-10-03 ユーザー指示・HANDOFF D25）**: voxel等「全く異なるゲーム」の将来追加を前提に、SimProfile注入 / TYPE_SPECS契約 / L1 type分岐禁止を全実装で守る。voxel実装自体は現時点では絶対に追加しない（契約のみ）
 
 ## テスト
 

@@ -226,6 +226,7 @@ bash .agent/hooks/restore-sandbox-env.sh
   - `prediction.ts pending filter` → in-place削除（EM01 B13）。
   - 監査: `grep -R "getPlayers()" packages/engine-core --include="*.ts"` 0件、`shift()` 0件。
 - **メモリリーク防止**: `Room.leave` 時に必ず `simulation.removePlayer` / `lagCompStore.clear` / `snapshotBroadcaster.removePlayer` / `rateLimiter.remove` / `paused` Set削除を呼ぶ（EM01 B1-B3,B14、`memory-leak/SKILL.md`）。
+- **異種ゲームタイプ追加前提の拡張性を常時維持する（2026-10-03 ユーザー指示・D25）。** voxel 等「全く異なるゲーム」を将来追加できる構造（SimProfile 注入 / `TYPE_SPECS` 契約 / gamemode-api / JSON マップ定義）を、あらゆる新規実装で崩さない。新機能が fps 専用になりそうな時は「これは profile 層か、engine-core 層か」を必ず自問する。**ただし voxel 実装自体は現時点では絶対に追加しない**（`TYPE_SPECS.voxel` 等の契約のみ維持）。
 - **L1（engine-core）に `if (type === 'voxel' | 'fps')` を書かない。** 書いたくなったら境界を見直して人間に確認する。
 - **Rules of Hooks 厳守**（早期 return の前に全 hook）。
 - **JSX 内で日本語と `{式}` を汚く混ぜない**。

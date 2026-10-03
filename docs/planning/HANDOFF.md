@@ -49,6 +49,7 @@
 | D22 | voxel の旧タイポ表記 | 2026-09-22 ユーザー確認。旧タイポ表記は `voxel` に訂正。エイリアス機能としては扱わない |
 | D23 | parentGenre/subTag/subModes/display/stats/category拡張 | 2026-09-22改訂版。GameModeDefinitionにparentGenre/genres(サブタグ)/tags/display/stats/subModes/currentSubMode/category optional追加、後方互換維持、Sandbox親ジャンル+サブタグフィルタ/ソート/カード表示用 |
 | D24 | matchmakerはPhase 4 mock、本実装は後続 | Phase 4では mock API (matchmaker-mock.ts)、本実装 Redis/HMACはPhase 5以降。Sandboxは公式拡張+UGC |
+| D25 | 異種ゲームタイプ追加を見据えた拡張性の常時維持 | 2026-10-03 ユーザー指示。voxel 等「全く異なるゲーム」を将来追加する前提で全実装を行う（SimProfile 注入・TYPE_SPECS 契約・L1 type分岐禁止・JSON マップ定義を崩さない）。ただし voxel 実装自体は現時点では絶対に追加しない（契約のみ維持） |
 
 ## 2. 事実確認（2026-09-22 Phase 4完了後）
 

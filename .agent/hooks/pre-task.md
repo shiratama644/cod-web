@@ -60,6 +60,7 @@ git log -5 --oneline
 ### 5. ゲームプロジェクト固有の心構え
 
 - **React とシムの分離**・**ゼロアロケーション**・**`SimProfile.step` の決定論**（[`docs/arch/engineering.md`](../../docs/arch/engineering.md)）を実装前から意識。
+- **異種ゲームタイプ追加前提の拡張性（2026-10-03 ユーザー指示・HANDOFF D25）**: voxel 等「全く異なるゲーム」を将来追加できる構造（SimProfile 注入 / `TYPE_SPECS` 契約 / gamemode-api / JSON マップ定義）を崩さない。新機能は「profile 層か engine-core 層か」を必ず自問。**ただし voxel 実装自体は今は絶対に追加しない**（契約のみ維持）。
 - **メモリリーク**: `Room.leave` で `simulation.removePlayer` / `lagCompStore.clear` / `snapshotBroadcaster.removePlayer` / `rateLimiter.remove` を必ず呼ぶ（`memory-leak/SKILL.md`）。
 - **ゼロアロケ**: `getPlayersIterable()` / encode once / head indexリング / Map再利用（`zero-alloc/SKILL.md`）。
 - **決定論**: smoke 100x10はunit常時、heavy 1000x100は `scripts/determinism-heavy.ts` 0.8s（`deterministic-sim/SKILL.md`）。
