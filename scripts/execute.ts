@@ -156,10 +156,20 @@ async function tryStartUserLocalPostgres(pgPort: number): Promise<boolean> {
   if (!ver) return false
   const pgCtl = `/usr/lib/postgresql/${ver}/bin/pg_ctl`
   logLine('db', `Starting user-local PostgreSQL... (${pgCtl} -D ~/.cod-web/pgdata start)`)
-  const proc = spawn('db', [pgCtl, '-D', dataDir, '-l', `${dataDir}/log`, '-o', '-k /tmp', 'start'])
+  const startArgs = [pgCtl, '-D', dataDir, '-l', `${dataDir}/log`]
+  let proc = spawn('db', [...startArgs, 'start'])
   if ((await proc.exited) !== 0) {
-    logLine('db', `! user-local PostgreSQL failed to start. Log: tail ${dataDir}/log`)
-    return false
+    // stale postmaster.pid 等で start が拒否された場合は restart を一度だけ試す
+    proc = spawn('db', [...startArgs, '-m', 'fast', 'restart'])
+    if ((await proc.exited) !== 0) {
+      logLine('db', '! user-local PostgreSQL failed to start.')
+      const log = Bun.file(`${dataDir}/log`)
+      if (await log.exists()) {
+        const logProc = spawn('db', ['tail', '-n', '10', `${dataDir}/log`])
+        await logProc.exited
+      }
+      return false
+    }
   }
   for (let i = 0; i < 10; i++) {
     if (await tcpOpen('127.0.0.1', pgPort)) return true

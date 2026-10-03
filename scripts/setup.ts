@@ -459,15 +459,21 @@ async function setupProotPostgres(): Promise<void> {
     return
   }
   const bin = `/usr/lib/postgresql/${ver}/bin`
+  const dataDir = USER_PG_DATA_DIR
 
   logLine('db', 'proot では postgres OS ユーザーの所有権チェックが通らないため、')
-  logLine('db', `現在のユーザーで動くローカルクラスタを使います: ${USER_PG_DATA_DIR}`)
+  logLine('db', `現在のユーザーで動くローカルクラスタを使います: ${dataDir}`)
 
-  if (!(await Bun.file(`${USER_PG_DATA_DIR}/PG_VERSION`).exists())) {
+  if (!(await Bun.file(`${dataDir}/PG_VERSION`).exists())) {
+    // PG_VERSION が無いのにディレクトリが残っている場合は壊れた初期化の残骸なので作り直す
+    if (runQuiet(['test', '-d', dataDir]).ok) {
+      logLine('db', '不完全な pgdata を検出したため作り直します。')
+      await run('db', ['rm', '-rf', dataDir])
+    }
     const code = await run('db', [
       `${bin}/initdb`,
       '-D',
-      USER_PG_DATA_DIR,
+      dataDir,
       '-U',
       'postgres',
       '--auth=trust',
@@ -483,33 +489,61 @@ async function setupProotPostgres(): Promise<void> {
     }
   }
 
-  // 起動（既に起動中なら何もしない）。socket は権限不要な /tmp を使う
-  if (!runQuiet([`${bin}/pg_ctl`, '-D', USER_PG_DATA_DIR, 'status']).ok) {
-    const code = await run('db', [
+  // proot/Android 向け設定を冪等に追記:
+  //   - socket は権限不要な /tmp
+  //   - Android カーネルは SysV IPC 非対応・/dev/shm も不安定なため共有メモリは mmap
+  const confPath = `${dataDir}/postgresql.conf`
+  const confText = await Bun.file(confPath)
+    .text()
+    .catch(() => '')
+  const marker = '# cod-web proot settings'
+  if (confText && !confText.includes(marker)) {
+    const extra = [
+      '',
+      marker,
+      "unix_socket_directories = '/tmp'",
+      'shared_memory_type = mmap',
+      'dynamic_shared_memory_type = mmap',
+      '',
+    ].join('\n')
+    await Bun.write(confPath, confText + extra)
+    logLine('db', 'postgresql.conf に proot 向け設定(socket=/tmp, shm=mmap)を追記しました。')
+  }
+
+  // 起動状態を確認。status が「起動中」でも接続できない場合は stale postmaster.pid の
+  // 可能性があるため再起動する
+  const status = runQuiet([`${bin}/pg_ctl`, '-D', dataDir, 'status'])
+  logLine('db', `pg_ctl status: ${(status.out || status.err).split('\n')[0] || '(出力なし)'}`)
+  const isReady = () => runQuiet([`${bin}/pg_isready`, '-h', '127.0.0.1']).ok
+  if (status.ok && !isReady()) {
+    logLine('db', 'status は起動中ですが接続できないため再起動します... (pg_ctl restart)')
+    await run('db', [
       `${bin}/pg_ctl`,
       '-D',
-      USER_PG_DATA_DIR,
+      dataDir,
       '-l',
-      `${USER_PG_DATA_DIR}/log`,
-      '-o',
-      '-k /tmp',
-      'start',
+      `${dataDir}/log`,
+      '-m',
+      'fast',
+      'restart',
     ])
+  } else if (!status.ok) {
+    const code = await run('db', [`${bin}/pg_ctl`, '-D', dataDir, '-l', `${dataDir}/log`, 'start'])
     if (code !== 0) {
-      logLine('db', `! pg_ctl start に失敗しました。ログ: tail ${USER_PG_DATA_DIR}/log`)
+      await printPgFailureDiagnostics(bin, dataDir)
       record(label, 'WARN', 'pg_ctl start 失敗')
       return
     }
   }
 
-  // 接続確認（最大 15 秒）
+  // 接続確認（低速ストレージ向けに最大 30 秒）
   let ready = false
-  for (let i = 0; i < 15 && !ready; i++) {
-    ready = runQuiet([`${bin}/pg_isready`, '-h', '127.0.0.1']).ok
+  for (let i = 0; i < 30 && !ready; i++) {
+    ready = isReady()
     if (!ready) Bun.sleepSync(1000)
   }
   if (!ready) {
-    logLine('db', `! 起動確認ができませんでした。ログ: tail ${USER_PG_DATA_DIR}/log`)
+    await printPgFailureDiagnostics(bin, dataDir)
     record(label, 'WARN', '起動確認失敗')
     return
   }
@@ -541,6 +575,36 @@ async function setupProotPostgres(): Promise<void> {
     label,
     `~/.cod-web/pgdata (PostgreSQL ${ver}) + app_db + スキーマ反映`,
   )
+}
+
+/** ユーザーローカル PostgreSQL が起動しない時に、原因をその場で表示する。 */
+async function printPgFailureDiagnostics(bin: string, dataDir: string): Promise<void> {
+  logLine('db', '! PostgreSQL が起動しませんでした。診断情報:')
+  const status = runQuiet([`${bin}/pg_ctl`, '-D', dataDir, 'status'])
+  logLine('db', `  pg_ctl status: ${(status.out || status.err).split('\n')[0] || '(出力なし)'}`)
+  if (await Bun.file(`${dataDir}/log`).exists()) {
+    logLine('db', `  ── サーバログ末尾 (${dataDir}/log) ──`)
+    await run('db', ['tail', '-n', '15', `${dataDir}/log`])
+  } else {
+    logLine('db', '  サーバログ未作成のため、前景起動でエラーを採取します(最大 5 秒)...')
+    const probe = Bun.spawnSync(['timeout', '5', `${bin}/postgres`, '-D', dataDir], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+    const out = `${new TextDecoder().decode(probe.stderr)}\n${new TextDecoder().decode(probe.stdout)}`
+    const lines = out
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0)
+      .slice(0, 12)
+    if (lines.length === 0) {
+      logLine(
+        'db',
+        '  (前景起動でも出力がありません。timeout/postgres の実行可否を確認してください)',
+      )
+    }
+    for (const line of lines) logLine('db', `  ${line}`)
+  }
 }
 
 async function main(): Promise<number> {
