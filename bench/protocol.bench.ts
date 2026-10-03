@@ -7,15 +7,15 @@
  */
 
 import {
-  encodeInput,
   decodeInput,
-  encodeSnapshot,
   decodeSnapshot,
-  MAX_PLAYERS,
-  SNAPSHOT_MAX_BYTES,
-  quantizeYaw,
   dequantizeYaw,
+  encodeInput,
+  encodeSnapshot,
+  MAX_PLAYERS,
   type PlayerInput,
+  quantizeYaw,
+  SNAPSHOT_MAX_BYTES,
   type Snapshot,
 } from '@cod/protocol'
 import { bench, describe } from 'vitest'

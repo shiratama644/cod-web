@@ -61,7 +61,11 @@ export class Interpolator {
    * @param selfId 自プレイヤー ID（補間対象から除外）。
    * @param out 再利用する Map（渡せば clear して再利用、GC 削減）。
    */
-  sample(nowMs: number, selfId: number, out?: Map<number, InterpolatedPlayer>): Map<number, InterpolatedPlayer> {
+  sample(
+    nowMs: number,
+    selfId: number,
+    out?: Map<number, InterpolatedPlayer>,
+  ): Map<number, InterpolatedPlayer> {
     const renderMs = nowMs - INTERP_DELAY_MS
     const result = out ?? new Map<number, InterpolatedPlayer>()
     if (out) out.clear()

@@ -1,6 +1,7 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
 import { BinaryReader, ProtocolError } from '@cod/protocol/protocol/binary'
+import { describe, expect, it } from 'vitest'
 
 describe('BinaryReader', () => {
   it('u32 をリトルエンディアンで読む', () => {

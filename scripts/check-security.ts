@@ -49,7 +49,10 @@ export const SECRET_PATTERNS: { name: string; pattern: RegExp }[] = [
     name: 'Hardcoded Password',
     pattern: /(?:password|passwd|pwd)\s*[:=]\s*['"][^'"]{8,}['"]/i,
   },
-  { name: 'Database URL (資格情報付き)', pattern: /(?:postgres|mysql|mongodb):\/\/[^:]+:[^@]+@\S+/i },
+  {
+    name: 'Database URL (資格情報付き)',
+    pattern: /(?:postgres|mysql|mongodb):\/\/[^:]+:[^@]+@\S+/i,
+  },
   { name: 'JWT', pattern: /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/ },
 ]
 

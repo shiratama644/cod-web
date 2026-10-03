@@ -158,10 +158,13 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
     try {
       killGroup('TERM')
       // 子プロセスを先に kill（sh -c "sleep|tsc" のケースで orphan 化を防ぐ）
-      Bun.spawn(['sh', '-c', `pkill -9 -P ${proc.pid} 2>/dev/null; echo killed children of ${proc.pid}`], {
-        stdout: 'pipe',
-        stderr: 'pipe',
-      })
+      Bun.spawn(
+        ['sh', '-c', `pkill -9 -P ${proc.pid} 2>/dev/null; echo killed children of ${proc.pid}`],
+        {
+          stdout: 'pipe',
+          stderr: 'pipe',
+        },
+      )
     } catch {}
     try {
       proc.kill('SIGTERM')
@@ -173,10 +176,13 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
           proc.kill('SIGKILL')
         } catch {}
         try {
-          Bun.spawn(['sh', '-c', `pkill -9 -P ${proc.pid} 2>/dev/null; kill -9 -${proc.pid} 2>/dev/null`], {
-            stdout: 'pipe',
-            stderr: 'pipe',
-          })
+          Bun.spawn(
+            ['sh', '-c', `pkill -9 -P ${proc.pid} 2>/dev/null; kill -9 -${proc.pid} 2>/dev/null`],
+            {
+              stdout: 'pipe',
+              stderr: 'pipe',
+            },
+          )
         } catch {}
       }, 1200)
     } catch {}
@@ -292,7 +298,9 @@ async function runTask(task: Task, signal: AbortSignal): Promise<Result> {
 async function main() {
   log(`Starting all checks. Logs -> ${LOG_DIR}`)
   log(`Phase 1: install (sequential, must succeed first)`)
-  log(`Phase 2: remaining 6 tasks in PARALLEL (fast-first order, abort on failure, setsid=${USE_SETSID})`)
+  log(
+    `Phase 2: remaining 6 tasks in PARALLEL (fast-first order, abort on failure, setsid=${USE_SETSID})`,
+  )
   log(`Order: ${tasks.map((t) => t.id).join(' -> ')}`)
   console.log('')
 
@@ -303,7 +311,8 @@ async function main() {
 
   if (!installResult.ok) {
     // install 失敗時は即終了、summary を書く
-    const summaryText = `check:all summary (install-first)\n` +
+    const summaryText =
+      `check:all summary (install-first)\n` +
       `date: ${nowJst()} (JST)\n` +
       `mode: install first sequential, then parallel (fast-first)\n` +
       `FAILED at install phase\n` +
@@ -404,7 +413,9 @@ async function main() {
   console.log('')
   console.log(summaryText)
   if (failedResults.length > 0) {
-    log(`${RED}✘ ${failedResults.length} task(s) failed. See logs/ for details. Will exit now (no Ctrl+C needed).${RESET}`)
+    log(
+      `${RED}✘ ${failedResults.length} task(s) failed. See logs/ for details. Will exit now (no Ctrl+C needed).${RESET}`,
+    )
     setTimeout(() => process.exit(1), 200)
   } else {
     log(`${GREEN}✔ All ${allResults.length} tasks passed. Logs in ${LOG_DIR}${RESET}`)
@@ -413,6 +424,8 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(`Unexpected error: ${err instanceof Error ? err.stack ?? err.message : String(err)}`)
+  console.error(
+    `Unexpected error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
+  )
   process.exit(1)
 })

@@ -10,7 +10,7 @@
  * （shared の DEFAULT_OBSTACLES）を使うことで結果が一致する。
  */
 
-import { createDefaultWorld, type CollisionWorld } from '@cod/profile-fps/sim/collisionWorld'
+import { type CollisionWorld, createDefaultWorld } from '@cod/profile-fps/sim/collisionWorld'
 
 /** サーバーの衝突世界を構築する。 */
 export function buildServerWorld(): CollisionWorld {

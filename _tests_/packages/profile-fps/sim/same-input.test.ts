@@ -1,12 +1,13 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
-import { SIM_DT } from '@cod/protocol/protocol/constants'
-import type { PlayerInput } from '@cod/protocol/protocol/messages'
-import { createPlaneWorld } from '@cod/profile-fps/sim/collisionWorld'
-import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
+
+import { ClientPrediction } from '@cod/engine-core/client/prediction'
 import { Room } from '@cod/engine-core/room/Room'
 import { Simulation } from '@cod/engine-core/sim/Simulation'
-import { ClientPrediction } from '@cod/engine-core/client/prediction'
+import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
+import { createPlaneWorld } from '@cod/profile-fps/sim/collisionWorld'
+import { SIM_DT } from '@cod/protocol/protocol/constants'
+import type { PlayerInput } from '@cod/protocol/protocol/messages'
+import { describe, expect, it } from 'vitest'
 
 function makeRng(seed: number) {
   let s = seed >>> 0

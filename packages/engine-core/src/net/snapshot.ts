@@ -7,7 +7,7 @@
 
 import { CHANNEL_BYTES, Channel, SNAPSHOT_SEND_EVERY_TICKS } from '@cod/protocol/protocol/constants'
 import type { Snapshot } from '@cod/protocol/protocol/messages'
-import { SNAPSHOT_MAX_BYTES, encodeSnapshot } from '@cod/protocol/protocol/packer'
+import { encodeSnapshot, SNAPSHOT_MAX_BYTES } from '@cod/protocol/protocol/packer'
 import type { PlayerState } from '@cod/protocol/types'
 import { profileSnapshotEveryTicks, type SimProfile } from '../profile/SimProfile'
 import type { Room } from '../room/Room'
@@ -112,7 +112,12 @@ export class SnapshotBroadcaster {
   }
 }
 
-function writeCompatSnapshot({ view, serverTick, lastAckSeq, players }: Parameters<SnapshotProfile['writeSnapshot']>[0]): number {
+function writeCompatSnapshot({
+  view,
+  serverTick,
+  lastAckSeq,
+  players,
+}: Parameters<SnapshotProfile['writeSnapshot']>[0]): number {
   // ゼロアロケ: players.map による中間配列確保を廃止。
   // PlayerState は SnapshotPlayer のスーパーセット（id,x,y,z,vx,vy,vz,yaw を含む）なので
   // map せずにキャストでそのまま渡せる。余分なフィールドは encodeSnapshot 内で無視される。

@@ -9,8 +9,8 @@
  * Exit 0 = OK, Exit 1 = violations found
  */
 
-import { Glob } from 'bun'
 import { readFileSync } from 'node:fs'
+import { Glob } from 'bun'
 
 type Violation = { file: string; line: number; pattern: string; snippet: string }
 

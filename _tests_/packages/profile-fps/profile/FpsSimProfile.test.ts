@@ -1,15 +1,16 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
-import { SNAPSHOT_PLAYER_BYTES, snapshotPayloadBytes } from '@cod/protocol/protocol/constants'
-import { INPUT_FLAG_JUMP, type Snapshot } from '@cod/protocol/protocol/messages'
-import { decodeSnapshot, encodeSnapshot } from '@cod/protocol/protocol/packer'
-import { TYPE_SPECS } from '@cod/protocol/protocol/type-specs'
+
 import {
   createFpsSimProfile,
   fpsSnapshotPayloadBytes,
   writeFpsSnapshot,
 } from '@cod/profile-fps/profile/FpsSimProfile'
+import { SNAPSHOT_PLAYER_BYTES, snapshotPayloadBytes } from '@cod/protocol/protocol/constants'
+import { INPUT_FLAG_JUMP, type Snapshot } from '@cod/protocol/protocol/messages'
+import { decodeSnapshot, encodeSnapshot } from '@cod/protocol/protocol/packer'
+import { TYPE_SPECS } from '@cod/protocol/protocol/type-specs'
 import type { PlayerState } from '@cod/protocol/types'
+import { describe, expect, it } from 'vitest'
 
 function view(byteLength = 256): DataView {
   return new DataView(new ArrayBuffer(byteLength))
@@ -47,7 +48,10 @@ describe('FpsSimProfile', () => {
     const spawned = profile.createPlayerState(7)
     expect(spawned).toMatchObject({ id: 7, x: 0, y: 5, z: 0, lastInputSeq: 0 })
 
-    const idle = profile.createIdleInput({ ...spawned, yaw: 1.2, pitch: -0.3, lastInputSeq: 42 }, 17)
+    const idle = profile.createIdleInput(
+      { ...spawned, yaw: 1.2, pitch: -0.3, lastInputSeq: 42 },
+      17,
+    )
     expect(idle).toEqual({
       seq: 42,
       moveX: 0,
@@ -100,7 +104,16 @@ describe('FpsSimProfile', () => {
     const snapshot = {
       serverTick: 77,
       lastAckSeq: 11,
-      players: players.map(({ id, x, y, z, vx, vy, vz, yaw }) => ({ id, x, y, z, vx, vy, vz, yaw })),
+      players: players.map(({ id, x, y, z, vx, vy, vz, yaw }) => ({
+        id,
+        x,
+        y,
+        z,
+        vx,
+        vy,
+        vz,
+        yaw,
+      })),
     }
     const expected = view()
     const actual = view()

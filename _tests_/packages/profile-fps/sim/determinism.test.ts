@@ -1,11 +1,12 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
-import { SIM_DT } from '@cod/protocol/protocol/constants'
-import type { PlayerInput } from '@cod/protocol/protocol/messages'
+
+import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
 import { createPlaneWorld } from '@cod/profile-fps/sim/collisionWorld'
 import { stepPlayer } from '@cod/profile-fps/sim/movement'
-import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
+import { SIM_DT } from '@cod/protocol/protocol/constants'
+import type { PlayerInput } from '@cod/protocol/protocol/messages'
 import { createPlayerState } from '@cod/protocol/types'
+import { describe, expect, it } from 'vitest'
 
 /**
  * Deterministic RNG (xoshiro128** simplified as LCG for test).

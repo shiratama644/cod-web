@@ -1,5 +1,7 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
+import { SNAPSHOT_MAX_FRAME_BYTES, SnapshotBroadcaster } from '@cod/engine-core/net/snapshot'
+import { type Peer, Room } from '@cod/engine-core/room/Room'
 import {
   CHANNEL_BYTES,
   Channel,
@@ -7,14 +9,9 @@ import {
   snapshotPayloadBytes,
 } from '@cod/protocol/protocol/constants'
 import { decodeFrame } from '@cod/protocol/protocol/framing'
-import { decodeSnapshot, readMessageType } from '@cod/protocol/protocol/packer'
+import { decodeSnapshot, readMessageType, SNAPSHOT_MAX_BYTES } from '@cod/protocol/protocol/packer'
 import { TYPE_SPECS } from '@cod/protocol/protocol/type-specs'
-import { Room, type Peer } from '@cod/engine-core/room/Room'
-import { SNAPSHOT_MAX_BYTES } from '@cod/protocol/protocol/packer'
-import {
-  SNAPSHOT_MAX_FRAME_BYTES,
-  SnapshotBroadcaster,
-} from '@cod/engine-core/net/snapshot'
+import { describe, expect, it } from 'vitest'
 
 interface TestPeer extends Peer {
   binary: Uint8Array[]
@@ -39,8 +36,7 @@ function makePeer(sendResult = 16): TestPeer {
       if (this.sendResult < 0) return this.sendResult
       if (this.sendResult === 0) return 0
       this.lastView = d
-      const src =
-        d instanceof Uint8Array ? d : new Uint8Array(d.buffer, d.byteOffset, d.byteLength)
+      const src = d instanceof Uint8Array ? d : new Uint8Array(d.buffer, d.byteOffset, d.byteLength)
       this.binary.push(Uint8Array.from(src))
       return this.sendResult
     },
@@ -270,8 +266,14 @@ describe('SnapshotBroadcaster', () => {
 
     const peer0 = peer(room, 0)
     const peer1 = peer(room, 1)
-    const snap0 = decodeSnapshot(payloadOfFrame(firstPacket(peer0)), payloadOfFrame(firstPacket(peer0)).byteLength)
-    const snap1 = decodeSnapshot(payloadOfFrame(firstPacket(peer1)), payloadOfFrame(firstPacket(peer1)).byteLength)
+    const snap0 = decodeSnapshot(
+      payloadOfFrame(firstPacket(peer0)),
+      payloadOfFrame(firstPacket(peer0)).byteLength,
+    )
+    const snap1 = decodeSnapshot(
+      payloadOfFrame(firstPacket(peer1)),
+      payloadOfFrame(firstPacket(peer1)).byteLength,
+    )
     // per-peer lastAckSeq が正しくパッチされている
     expect(snap0.lastAckSeq).toBe(10)
     expect(snap1.lastAckSeq).toBe(20)
@@ -286,5 +288,4 @@ describe('SnapshotBroadcaster', () => {
     expect(peer(room, 0).binary).toHaveLength(1)
     expect(peer(room, 1).binary).toHaveLength(1)
   })
-
 })

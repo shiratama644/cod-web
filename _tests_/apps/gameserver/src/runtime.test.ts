@@ -1,9 +1,10 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
+import type { Peer } from '@cod/engine-core/room/Room'
 import { Channel } from '@cod/protocol/protocol/constants'
 import { decodeFrame } from '@cod/protocol/protocol/framing'
 import { decodeSnapshot } from '@cod/protocol/protocol/packer'
-import type { Peer } from '@cod/engine-core/room/Room'
+import { describe, expect, it } from 'vitest'
 import { createDefaultServerRuntime } from '../../../../apps/gameserver/src/runtime'
 
 interface TestPeer extends Peer {
@@ -21,7 +22,9 @@ function makePeer(): TestPeer {
     },
     sendBinary(data) {
       const src =
-        data instanceof Uint8Array ? data : new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+        data instanceof Uint8Array
+          ? data
+          : new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
       this.binary.push(Uint8Array.from(src))
       return data.byteLength
     },

@@ -1,12 +1,13 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
-import { TYPE_SPECS } from '@cod/protocol/protocol/type-specs'
+
 import {
-  type SimProfile,
-  type SnapshotWriteArgs,
   profileSnapshotEveryTicks,
   profileStepSeconds,
+  type SimProfile,
+  type SnapshotWriteArgs,
 } from '@cod/engine-core/profile/SimProfile'
+import { TYPE_SPECS } from '@cod/protocol/protocol/type-specs'
+import { describe, expect, it } from 'vitest'
 
 interface MockWorld {
   gravity: number
@@ -55,7 +56,12 @@ describe('SimProfile contract', () => {
     const dtSec = profileStepSeconds(profile)
 
     profile.stepPlayer(player, { seq: 1, jump: true, dtMs: Math.round(dtSec * 1000) }, dtSec, world)
-    profile.stepPlayer(player, profile.createIdleInput(player, Math.round(dtSec * 1000)), dtSec, world)
+    profile.stepPlayer(
+      player,
+      profile.createIdleInput(player, Math.round(dtSec * 1000)),
+      dtSec,
+      world,
+    )
 
     expect(player.id).toBe(7)
     expect(player.lastInputSeq).toBe(1)

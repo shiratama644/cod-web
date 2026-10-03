@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
+import { ProtocolError } from '@cod/protocol/protocol/binary'
 import {
   CHANNEL_BYTES,
   Channel,
@@ -7,7 +8,7 @@ import {
   INPUT_PACKET_BYTES,
 } from '@cod/protocol/protocol/constants'
 import { decodeFrame, writeFrameChannel } from '@cod/protocol/protocol/framing'
-import { ProtocolError } from '@cod/protocol/protocol/binary'
+import { describe, expect, it } from 'vitest'
 
 function view(bytes: Uint8Array): DataView {
   return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)

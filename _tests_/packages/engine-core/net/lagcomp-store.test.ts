@@ -1,6 +1,7 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
 import { LagCompStore } from '@cod/engine-core/net/lagcomp-store'
+import { describe, expect, it } from 'vitest'
 
 describe('LagCompStore — 履歴とリーク防止', () => {
   it('record で履歴が増え、clear で消える', () => {

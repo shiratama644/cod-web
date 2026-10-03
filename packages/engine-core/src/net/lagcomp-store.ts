@@ -31,7 +31,15 @@ export class LagCompStore {
   private readonly windowMs = LAGCOMP_HISTORY_MS
 
   /** 各シミュレーション tick でプレイヤーの位置を記録する。 */
-  record(tick: number, timeMs: number, id: number, x: number, y: number, z: number, yaw: number): void {
+  record(
+    tick: number,
+    timeMs: number,
+    id: number,
+    x: number,
+    y: number,
+    z: number,
+    yaw: number,
+  ): void {
     let h = this.history.get(id)
     if (!h) {
       h = { buf: [], head: 0 }

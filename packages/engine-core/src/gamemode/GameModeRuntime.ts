@@ -7,14 +7,9 @@
  * - setTimeout禁止、決定論
  */
 
-import type {
-  GameModeDefinition,
-  PlayerRef,
-  RoomCtx,
-  RoomState,
-} from '@cod/gamemode-api'
-import { GameModeTimer } from './GameModeTimer'
+import type { GameModeDefinition, PlayerRef, RoomCtx, RoomState } from '@cod/gamemode-api'
 import { ModeMessageRateLimiter } from '../net/rate-limit'
+import { GameModeTimer } from './GameModeTimer'
 
 export interface GameModeRuntimeOptions {
   readonly roomId: string
@@ -46,10 +41,7 @@ export class GameModeRuntime {
   }
 
   /** 例外安全な hook 呼び出し (sync/async両対応) */
-  async safeCall<K extends keyof GameModeDefinition>(
-    hook: K,
-    ...args: unknown[]
-  ): Promise<void> {
+  async safeCall<K extends keyof GameModeDefinition>(hook: K, ...args: unknown[]): Promise<void> {
     const fn = this.def[hook] as unknown as (...a: unknown[]) => unknown
     if (!fn) return
     try {

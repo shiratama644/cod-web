@@ -18,14 +18,7 @@
  *   完全なカプセル shapecast は段差・坂の必要が出るマップ導入フェーズで拡張する。
  */
 
-import {
-  BoxGeometry,
-  BufferAttribute,
-  BufferGeometry,
-  DoubleSide,
-  Ray,
-  Vector3,
-} from 'three'
+import { BoxGeometry, BufferAttribute, BufferGeometry, DoubleSide, Ray, Vector3 } from 'three'
 import { MeshBVH } from 'three-mesh-bvh'
 
 /** 衝突世界に対する問い合わせを提供する境界。 */

@@ -35,3 +35,12 @@
 
 ## 次アクション(Go 待ち)
 `bunx biome check --write .` → check:all 検証 → commit。
+
+## 実行結果(2026-10-03 Go 後、実リポジトリへ適用)
+- `bunx biome check --write .` → **60 ファイル整形**(+682 / -584)。
+  事前の /tmp 検証(クローン2回)と完全一致。
+- 「20ファイル」という事前報告は biome の診断表示上限(--max-diagnostics=20)の
+  見かけだった — ドライランの件数は `grep -c` でなく上限引き上げで数えること。
+- 無意味な折返しは check-all.ts killGroup の1箇所のみ → killCmd 抽出で意味単位化済み(4c96163)。
+- 冪等確認: 再実行で No fixes applied。apps/web 差分 0。
+- 検証: check:all 7/7 PASS / build(packages+gameserver+next)成功 / cspell 0。

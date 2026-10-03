@@ -28,7 +28,9 @@ export interface SimProfile<TWorld, TPlayerState, TInput> {
   writeSnapshot(args: SnapshotWriteArgs<TPlayerState>): number
 }
 
-export function profileStepSeconds(profile: Pick<SimProfile<unknown, unknown, unknown>, 'typeSpec'>): number {
+export function profileStepSeconds(
+  profile: Pick<SimProfile<unknown, unknown, unknown>, 'typeSpec'>,
+): number {
   return 1 / profile.typeSpec.simHz
 }
 

@@ -12,11 +12,7 @@ import {
   SNAPSHOT_PLAYER_BYTES,
 } from '@cod/protocol/protocol/constants'
 import type { PlayerInput } from '@cod/protocol/protocol/messages'
-import {
-  quantizePosition,
-  quantizeVelocity,
-  quantizeYaw,
-} from '@cod/protocol/protocol/quantize'
+import { quantizePosition, quantizeVelocity, quantizeYaw } from '@cod/protocol/protocol/quantize'
 import { TYPE_SPECS } from '@cod/protocol/protocol/type-specs'
 import { createPlayerState, type PlayerState } from '@cod/protocol/types'
 import { buildServerWorld } from '../physics/world'

@@ -1,6 +1,6 @@
 // @vitest-environment node
 // biome-ignore-all lint/suspicious/noExplicitAny: test file uses any for Bun mocking and private access
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('gameserver index (Bun.serve wiring)', () => {
   let originalBun: any
@@ -60,7 +60,9 @@ describe('gameserver index (Bun.serve wiring)', () => {
       return { port: opts.port }
     })
     ;(globalThis as any).Bun = { serve: serveMock }
-    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval').mockImplementation(() => 123 as unknown as NodeJS.Timeout)
+    const setIntervalSpy = vi
+      .spyOn(globalThis, 'setInterval')
+      .mockImplementation(() => 123 as unknown as NodeJS.Timeout)
 
     vi.resetModules()
     await import('@cod/gameserver/index')
@@ -81,7 +83,9 @@ describe('gameserver index (Bun.serve wiring)', () => {
       return { port: opts.port }
     })
     ;(globalThis as any).Bun = { serve: serveMock }
-    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval').mockImplementation(() => 123 as unknown as NodeJS.Timeout)
+    const setIntervalSpy = vi
+      .spyOn(globalThis, 'setInterval')
+      .mockImplementation(() => 123 as unknown as NodeJS.Timeout)
 
     vi.resetModules()
     await import('@cod/gameserver/index')
@@ -101,7 +105,9 @@ describe('gameserver index (Bun.serve wiring)', () => {
       return { port: opts.port }
     })
     ;(globalThis as any).Bun = { serve: serveMock }
-    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval').mockImplementation(() => 123 as unknown as NodeJS.Timeout)
+    const setIntervalSpy = vi
+      .spyOn(globalThis, 'setInterval')
+      .mockImplementation(() => 123 as unknown as NodeJS.Timeout)
 
     vi.resetModules()
     await import('@cod/gameserver/index')

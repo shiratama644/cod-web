@@ -1,15 +1,16 @@
 // @vitest-environment node
 // biome-ignore-all lint/suspicious/noExplicitAny: test file uses any for private access and mocking
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+
+import { InputRateLimiter } from '@cod/engine-core/net/rate-limit'
+import { SnapshotBroadcaster } from '@cod/engine-core/net/snapshot'
 import { Room } from '@cod/engine-core/room/Room'
 import { Simulation } from '@cod/engine-core/sim/Simulation'
-import { SnapshotBroadcaster } from '@cod/engine-core/net/snapshot'
-import { InputRateLimiter } from '@cod/engine-core/net/rate-limit'
-import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
 import { createHandlers, type WsLike } from '@cod/gameserver/handlers'
-import { Channel, INPUT_PACKET_BYTES, INPUT_FRAME_BYTES } from '@cod/protocol/protocol/constants'
-import { encodeInput } from '@cod/protocol/protocol/packer'
+import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
+import { Channel, INPUT_FRAME_BYTES, INPUT_PACKET_BYTES } from '@cod/protocol/protocol/constants'
 import type { PlayerInput } from '@cod/protocol/protocol/messages'
+import { encodeInput } from '@cod/protocol/protocol/packer'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 function makeDeps() {
   const profile = createFpsSimProfile()
@@ -21,7 +22,10 @@ function makeDeps() {
   return { profile, room, world, sim, snapshots, inputRate }
 }
 
-function makeWs(): WsLike & { sent: (string | Uint8Array)[]; closed: { code?: number; reason?: string }[] } {
+function makeWs(): WsLike & {
+  sent: (string | Uint8Array)[]
+  closed: { code?: number; reason?: string }[]
+} {
   const sent: (string | Uint8Array)[] = []
   const closed: { code?: number; reason?: string }[] = []
   return {
@@ -35,7 +39,10 @@ function makeWs(): WsLike & { sent: (string | Uint8Array)[]; closed: { code?: nu
     close(code?: number, reason?: string) {
       closed.push({ code, reason })
     },
-  } as unknown as WsLike & { sent: (string | Uint8Array)[]; closed: { code?: number; reason?: string }[] }
+  } as unknown as WsLike & {
+    sent: (string | Uint8Array)[]
+    closed: { code?: number; reason?: string }[]
+  }
 }
 
 function makeValidInputFrame(seq = 1): Uint8Array {

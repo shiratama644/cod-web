@@ -1,11 +1,12 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
+import { Interpolator } from '@cod/engine-core/client/interpolation'
+import { ClientPrediction, type ClientPredictionProfile } from '@cod/engine-core/client/prediction'
 import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
 import type { PlayerInput, Snapshot, SnapshotPlayer } from '@cod/protocol/protocol/messages'
 import { TYPE_SPECS } from '@cod/protocol/protocol/type-specs'
 import { createPlayerState, type PlayerState } from '@cod/protocol/types'
-import { ClientPrediction, type ClientPredictionProfile } from '@cod/engine-core/client/prediction'
-import { Interpolator } from '@cod/engine-core/client/interpolation'
+import { describe, expect, it } from 'vitest'
 
 function moveInput(partial: Partial<PlayerInput> = {}) {
   return {
@@ -19,7 +20,9 @@ function moveInput(partial: Partial<PlayerInput> = {}) {
   }
 }
 
-function createFpsPrediction(playerId = 1): ClientPrediction<ReturnType<ReturnType<typeof createFpsSimProfile>['createWorld']>> {
+function createFpsPrediction(
+  playerId = 1,
+): ClientPrediction<ReturnType<ReturnType<typeof createFpsSimProfile>['createWorld']>> {
   const profile = createFpsSimProfile()
   return new ClientPrediction(profile, profile.createWorld(), playerId)
 }
@@ -96,7 +99,10 @@ describe('ClientPrediction', () => {
     for (let i = 0; i < TYPE_SPECS.fps.simHz; i++) pred.applyInput(moveInput({ moveZ: 1 }))
     const before = { x: pred.state.x, y: pred.state.y, z: pred.state.z }
     // サーバーから 5cm だけズレた値が届く（閾値 0.25m 未満）。
-    const { state, seq } = srv({ x: before.x + 0.05, y: before.y, z: before.z - 0.05 }, pred.pendingCount)
+    const { state, seq } = srv(
+      { x: before.x + 0.05, y: before.y, z: before.z - 0.05 },
+      pred.pendingCount,
+    )
     pred.reconcile(state, seq)
     // ローカル予測を維持（スナップされない）。
     expect(pred.state.x).toBeCloseTo(before.x, 5)
@@ -131,7 +137,10 @@ describe('Interpolator', () => {
     }
   }
 
-  function snapshot(serverTick: number, players: Array<Partial<SnapshotPlayer> & { id: number }>): Snapshot {
+  function snapshot(
+    serverTick: number,
+    players: Array<Partial<SnapshotPlayer> & { id: number }>,
+  ): Snapshot {
     return {
       serverTick,
       lastAckSeq: 0,

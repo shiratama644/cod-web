@@ -1,11 +1,12 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
 import {
   MODE_MESSAGE_RATE_BURST,
   MODE_MESSAGE_RATE_PER_SEC,
   ModeMessageRateLimiter,
   TokenBucket,
 } from '@cod/engine-core/net/rate-limit'
+import { describe, expect, it } from 'vitest'
 
 describe('ModeMessageRateLimiter', () => {
   it('定数が40/s burst20', () => {

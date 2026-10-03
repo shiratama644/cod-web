@@ -1,6 +1,7 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
 import { createPlayerState, createSimWorld } from '@cod/protocol/types'
+import { describe, expect, it } from 'vitest'
 
 describe('protocol/types', () => {
   it('createPlayerState creates with defaults and custom spawn', () => {

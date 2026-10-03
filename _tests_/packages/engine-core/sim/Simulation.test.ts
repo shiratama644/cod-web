@@ -1,12 +1,13 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
+import { type Peer, Room } from '@cod/engine-core/room/Room'
+import { Simulation } from '@cod/engine-core/sim/Simulation'
+import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
+import { createPlaneWorld } from '@cod/profile-fps/sim/collisionWorld'
+import { stepPlayer } from '@cod/profile-fps/sim/movement'
 import { LAGCOMP_HISTORY_MS, SIM_DT } from '@cod/protocol/protocol/constants'
 import type { PlayerInput } from '@cod/protocol/protocol/messages'
-import { createPlaneWorld } from '@cod/profile-fps/sim/collisionWorld'
-import { createFpsSimProfile } from '@cod/profile-fps/profile/FpsSimProfile'
-import { stepPlayer } from '@cod/profile-fps/sim/movement'
-import { Room, type Peer } from '@cod/engine-core/room/Room'
-import { Simulation } from '@cod/engine-core/sim/Simulation'
+import { describe, expect, it } from 'vitest'
 
 function noopPeer(): Peer {
   return { playerId: -1, sendText: () => {}, sendBinary: () => 16 }
@@ -188,5 +189,4 @@ describe('Simulation — 権威シミュレーション', () => {
     const sim = new Simulation(room, createPlaneWorld(), stepPlayer)
     expect(() => sim.removePlayer(999)).not.toThrow()
   })
-
 })

@@ -6,24 +6,24 @@
  */
 
 export function createLCG(seed: number): () => number {
-  let s = seed >>> 0;
+  let s = seed >>> 0
   return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 0xffffffff;
-  };
+    s = (s * 1664525 + 1013904223) >>> 0
+    return s / 0xffffffff
+  }
 }
 
 export function createRandomHelpers(seed: number): {
-  random: () => number;
-  randomInt: (min: number, max: number) => number;
+  random: () => number
+  randomInt: (min: number, max: number) => number
 } {
-  const next = createLCG(seed);
+  const next = createLCG(seed)
   return {
     random: () => next(),
     randomInt: (min: number, max: number) => {
-      if (min > max) throw new Error('min > max');
-      const r = next();
-      return Math.floor(r * (max - min + 1)) + min;
+      if (min > max) throw new Error('min > max')
+      const r = next()
+      return Math.floor(r * (max - min + 1)) + min
     },
-  };
+  }
 }

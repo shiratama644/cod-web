@@ -1,13 +1,9 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "lib": [
-      "ES2022"
-    ],
+    "lib": ["ES2022"],
     "jsx": "preserve",
-    "types": [
-      "bun"
-    ],
+    "types": ["bun"],
     "noUncheckedSideEffectImports": false
   },
   "include": [

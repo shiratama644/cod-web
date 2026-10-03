@@ -27,10 +27,10 @@ import {
 import type { PlayerInput, Snapshot } from './messages'
 import {
   dequantizeMoveAxis,
+  dequantizePitch,
   dequantizePosition,
   dequantizeVelocity,
   dequantizeYaw,
-  dequantizePitch,
   quantizeMoveAxis,
   quantizePitch,
   quantizePosition,

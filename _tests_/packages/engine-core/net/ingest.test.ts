@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
+import { ingestInput } from '@cod/engine-core/net/ingest'
 import { ProtocolError } from '@cod/protocol/protocol/binary'
 import {
   CHANNEL_BYTES,
@@ -8,7 +9,7 @@ import {
   INPUT_PACKET_BYTES,
   MSG_C2S_INPUT,
 } from '@cod/protocol/protocol/constants'
-import { ingestInput } from '@cod/engine-core/net/ingest'
+import { describe, expect, it } from 'vitest'
 
 const FUZZ_COUNT = 1_000_000
 const FUZZ_SEED = 0xc0d00001

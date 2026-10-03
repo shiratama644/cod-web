@@ -1,10 +1,11 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
+import { type CollisionWorld, createPlaneWorld } from '@cod/profile-fps/sim/collisionWorld'
+import { PLAYER_RADIUS, stepPlayer } from '@cod/profile-fps/sim/movement'
 import { SIM_DT } from '@cod/protocol/protocol/constants'
 import type { PlayerInput } from '@cod/protocol/protocol/messages'
-import { createPlaneWorld, type CollisionWorld } from '@cod/profile-fps/sim/collisionWorld'
-import { PLAYER_RADIUS, stepPlayer } from '@cod/profile-fps/sim/movement'
 import { createPlayerState, type PlayerState } from '@cod/protocol/types'
+import { describe, expect, it } from 'vitest'
 
 function input(partial: Partial<PlayerInput> = {}): PlayerInput {
   return {
@@ -35,9 +36,7 @@ describe('collision world (three-mesh-bvh headless)', () => {
   })
 
   it('壁（ボックス障害物）への水平レイが当たる', () => {
-    const world = createPlaneWorld([
-      { cx: 10, cy: 2, cz: 0, sizeX: 2, sizeY: 4, sizeZ: 4 },
-    ])
+    const world = createPlaneWorld([{ cx: 10, cy: 2, cz: 0, sizeX: 2, sizeY: 4, sizeZ: 4 }])
     // (0,0,0) から +X 方向へ。障害物中心 x=10、サイズ2（端 x=9）。
     // 足元 y=0、体中心は y=0+r。半径を差し引いた距離が返る。
     const hit = world.castWall(0, 0, 0, 1, 0, PLAYER_RADIUS, 20)
@@ -99,9 +98,7 @@ describe('stepPlayer — 水平移動', () => {
   })
 
   it('壁に向かって進むとめり込まない', () => {
-    const world = createPlaneWorld([
-      { cx: 10, cy: 2, cz: 0, sizeX: 2, sizeY: 4, sizeZ: 4 },
-    ])
+    const world = createPlaneWorld([{ cx: 10, cy: 2, cz: 0, sizeX: 2, sizeY: 4, sizeZ: 4 }])
     const p = createPlayerState(1, 0, 0.05, 0)
     const inp = input({ moveX: 1, yaw: 0 }) // yaw0 で moveX=1 は +X
     stepN(p, inp, world, 60 * 3)

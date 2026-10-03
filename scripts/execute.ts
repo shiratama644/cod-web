@@ -46,10 +46,13 @@ function logLine(kind: Kind, line: string): void {
 }
 
 /** 子プロセスの stdout/stderr を行単位で色付けして転送する。 */
-function pipeOutput(kind: Kind, proc: {
-  stdout?: ReadableStream<Uint8Array> | null
-  stderr?: ReadableStream<Uint8Array> | null
-}): void {
+function pipeOutput(
+  kind: Kind,
+  proc: {
+    stdout?: ReadableStream<Uint8Array> | null
+    stderr?: ReadableStream<Uint8Array> | null
+  },
+): void {
   const decoder = new TextDecoder()
   let buffer = ''
   const pump = (stream: ReadableStream<Uint8Array> | null | undefined) => {
@@ -86,7 +89,10 @@ function spawn(kind: Kind, cmd: string[], cwd = process.cwd()) {
   return proc
 }
 
-async function runInstallWithLogs(args: string[], kind: Kind): Promise<{ exit: number; output: string }> {
+async function runInstallWithLogs(
+  args: string[],
+  kind: Kind,
+): Promise<{ exit: number; output: string }> {
   // インストールの出力をキャプチャしつつ、色付きで流す。失敗時に詳細を返す。
   let captured = ''
   const proc = Bun.spawn(['bun', ...args], {
@@ -133,13 +139,22 @@ async function main(): Promise<number> {
   logLine('install', 'Installing dependencies... (bun install --frozen-lockfile)')
   const result = await runInstallWithLogs(['install', '--frozen-lockfile'], 'install')
   if (result.exit !== 0) {
-    logLine('install', `! First install failed (exit ${result.exit}). Retrying with --verbose to diagnose...`)
+    logLine(
+      'install',
+      `! First install failed (exit ${result.exit}). Retrying with --verbose to diagnose...`,
+    )
     const verbose = await runInstallWithLogs(['install', '--verbose'], 'install')
-    logLine('install', `X Install failed (exit ${verbose.exit}). Build and servers will not be started.`)
+    logLine(
+      'install',
+      `X Install failed (exit ${verbose.exit}). Build and servers will not be started.`,
+    )
     logLine('install', `--- Troubleshooting ---`)
     logLine('install', `1) Bun cache clear: bun pm cache rm`)
     logLine('install', `2) Force reinstall: bun install --force`)
-    logLine('install', `3) If @biomejs or optional deps fail: bun install --ignore-scripts then bun run prepare`)
+    logLine(
+      'install',
+      `3) If @biomejs or optional deps fail: bun install --ignore-scripts then bun run prepare`,
+    )
     logLine('install', `4) Check network / proxy, then retry: bun run start`)
     logLine('install', `Last output tail:`)
     const tail = verbose.output.split('\n').slice(-30).join('\n')
@@ -212,6 +227,9 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((err) => {
-    logLine('build', `X Unexpected error: ${err instanceof Error ? err.stack ?? err.message : String(err)}`)
+    logLine(
+      'build',
+      `X Unexpected error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
+    )
     process.exit(1)
   })

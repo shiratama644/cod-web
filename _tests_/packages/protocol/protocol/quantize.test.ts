@@ -1,16 +1,17 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
 import {
-  quantizePosition,
-  dequantizePosition,
-  quantizeVelocity,
-  quantizeMoveAxis,
   dequantizeMoveAxis,
-  quantizeYaw,
-  quantizePitch,
   dequantizePitch,
+  dequantizePosition,
   normalizeAngle,
+  quantizeMoveAxis,
+  quantizePitch,
+  quantizePosition,
+  quantizeVelocity,
+  quantizeYaw,
 } from '@cod/protocol/protocol/quantize'
+import { describe, expect, it } from 'vitest'
 
 describe('quantize branches', () => {
   it('position clamps to int16 range', () => {

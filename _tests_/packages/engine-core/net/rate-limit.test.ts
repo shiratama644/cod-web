@@ -1,11 +1,12 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
 import {
   INPUT_RATE_BURST,
   INPUT_RATE_PER_SEC,
   InputRateLimiter,
   TokenBucket,
 } from '@cod/engine-core/net/rate-limit'
+import { describe, expect, it } from 'vitest'
 
 describe('TokenBucket', () => {
   it('同一時刻に burst まで消費でき、次は拒否する', () => {

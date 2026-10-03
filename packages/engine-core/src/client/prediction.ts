@@ -131,7 +131,16 @@ export class ClientPrediction<TWorld> {
    * @param lastAckSeq  サーバーが処理済みの最新入力 seq
    */
   reconcile(
-    serverState: { x: number; y: number; z: number; vx: number; vy: number; vz: number; yaw: number; pitch: number },
+    serverState: {
+      x: number
+      y: number
+      z: number
+      vx: number
+      vy: number
+      vz: number
+      yaw: number
+      pitch: number
+    },
     lastAckSeq: number,
   ): void {
     // 調停前のローカル予測状態（滑らかさ優先で維持する候補）を保存。

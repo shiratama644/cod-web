@@ -1,6 +1,7 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vitest'
+
 import { GameModeTimer } from '@cod/engine-core/gamemode/GameModeTimer'
+import { describe, expect, it, vi } from 'vitest'
 
 describe('GameModeTimer', () => {
   it('after: 指定tick後に一度だけ実行', () => {

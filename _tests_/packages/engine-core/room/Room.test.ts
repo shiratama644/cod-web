@@ -1,7 +1,8 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
+import { type Peer, Room } from '@cod/engine-core/room/Room'
 import { MAX_PLAYERS } from '@cod/protocol/protocol/constants'
-import { Room, type Peer } from '@cod/engine-core/room/Room'
+import { describe, expect, it } from 'vitest'
 
 function makePeer(): Peer & { sent: string[] } {
   const sent: string[] = []
@@ -125,5 +126,4 @@ describe('Room — 参加/離退', () => {
     const peers = [...room.getPeersIterable()]
     expect(peers).toHaveLength(2)
   })
-
 })

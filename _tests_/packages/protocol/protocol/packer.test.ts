@@ -1,21 +1,21 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
+import { ProtocolError } from '@cod/protocol/protocol/binary'
 import {
+  INPUT_PACKET_BYTES,
   IPV4_HEADER_BYTES,
   IPV6_HEADER_BYTES,
-  INPUT_PACKET_BYTES,
   MAX_PLAYERS,
   MSG_C2S_INPUT,
   MSG_S2C_SNAPSHOT,
   PACKET_PAYLOAD_MAX,
   SNAPSHOT_PLAYER_BYTES,
-  WIRE_DATAGRAM_TARGET,
   snapshotPayloadBytes,
+  WIRE_DATAGRAM_TARGET,
   wireBytes,
 } from '@cod/protocol/protocol/constants'
-import { ProtocolError } from '@cod/protocol/protocol/binary'
+import type { PlayerInput, Snapshot } from '@cod/protocol/protocol/messages'
 import {
-  SNAPSHOT_MAX_BYTES,
   decodeInput,
   decodeSnapshot,
   encodeInput,
@@ -23,8 +23,8 @@ import {
   readMessageType,
   reservedButtonAnomalies,
   resetReservedButtonAnomalies,
+  SNAPSHOT_MAX_BYTES,
 } from '@cod/protocol/protocol/packer'
-import type { PlayerInput, Snapshot } from '@cod/protocol/protocol/messages'
 import {
   dequantizePitch,
   dequantizePosition,
@@ -33,6 +33,7 @@ import {
   quantizePosition,
   quantizeYaw,
 } from '@cod/protocol/protocol/quantize'
+import { describe, expect, it } from 'vitest'
 
 describe('quantize round-trip', () => {
   it('位置は 0.01m 精度で往復する（誤差 ≤ 0.01m）', () => {
@@ -54,9 +55,7 @@ describe('quantize round-trip', () => {
 
   it('pitch は ±π/2 にクランプされ往復する', () => {
     expect(dequantizePitch(quantizePitch(0))).toBeCloseTo(0, 5)
-    expect(Math.abs(dequantizePitch(quantizePitch(Math.PI / 2)) - Math.PI / 2)).toBeLessThan(
-      0.02,
-    )
+    expect(Math.abs(dequantizePitch(quantizePitch(Math.PI / 2)) - Math.PI / 2)).toBeLessThan(0.02)
     // 範囲外は ±π/2 にクランプ（スケール 127 基準なので -127〜127）
     expect(quantizePitch(999)).toBe(16384)
     expect(quantizePitch(-999)).toBe(-16384)
@@ -102,7 +101,15 @@ describe('input packet', () => {
     const view = new DataView(buf)
     for (const ax of [0, 0.3, 0.8, -0.55, 1, -1]) {
       for (const az of [0, 0.6, -0.9, 1]) {
-        const input: PlayerInput = { seq: 1, moveX: ax, moveZ: az, yaw: 0, pitch: 0, flags: 0, dtMs: 16 }
+        const input: PlayerInput = {
+          seq: 1,
+          moveX: ax,
+          moveZ: az,
+          yaw: 0,
+          pitch: 0,
+          flags: 0,
+          dtMs: 16,
+        }
         encodeInput(view, input)
         const out = decodeInput(view)
         expect(out.moveX).toBeGreaterThanOrEqual(-1)

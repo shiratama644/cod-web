@@ -13,7 +13,9 @@ test.describe('main menu smoke', () => {
     await expect(page.getByText('LOADOUT', { exact: false }).first()).toBeVisible()
   })
 
-  test('loadouts API round-trips (in-memory fallback without DATABASE_URL)', async ({ request }) => {
+  test('loadouts API round-trips (in-memory fallback without DATABASE_URL)', async ({
+    request,
+  }) => {
     const put = await request.put('/api/loadouts', {
       data: { data: { classes: [], equipped: 0 } },
     })

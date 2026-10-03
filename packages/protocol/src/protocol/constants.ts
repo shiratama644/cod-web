@@ -6,7 +6,7 @@
  * 設計正本: docs/arch/protocol.md。
  */
 
-import { TYPE_SPECS, snapshotEveryTicks, typeStepSeconds } from './type-specs'
+import { snapshotEveryTicks, TYPE_SPECS, typeStepSeconds } from './type-specs'
 
 // ─────────────────────────────────────────────────────────────────────────
 // レート構成（シム tick と送信レートを分離する）

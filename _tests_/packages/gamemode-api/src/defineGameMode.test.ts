@@ -1,6 +1,7 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest';
-import { defineGameMode } from '@cod/gamemode-api';
+
+import { defineGameMode } from '@cod/gamemode-api'
+import { describe, expect, it } from 'vitest'
 
 describe('defineGameMode', () => {
   const base = {
@@ -10,17 +11,17 @@ describe('defineGameMode', () => {
     minPlayers: 2,
     maxPlayers: 16,
     world: { map: 'static-arena' },
-  };
+  }
 
   it('accepts valid fps-official-ffa', () => {
     const def = defineGameMode({
       id: 'fps-official-ffa',
       ...base,
-    });
-    expect(def.id).toBe('fps-official-ffa');
-    expect(def.type).toBe('fps');
-    expect(def.slug).toBe('ffa');
-  });
+    })
+    expect(def.id).toBe('fps-official-ffa')
+    expect(def.type).toBe('fps')
+    expect(def.slug).toBe('ffa')
+  })
 
   it('accepts voxel type', () => {
     const def = defineGameMode({
@@ -31,19 +32,19 @@ describe('defineGameMode', () => {
       minPlayers: 1,
       maxPlayers: 8,
       world: { seed: 123 },
-    });
-    expect(def.type).toBe('voxel');
-  });
+    })
+    expect(def.type).toBe('voxel')
+  })
 
   it('rejects invalid id format', () => {
     expect(() => {
       const v = {
         id: 'FPS-OFFICIAL-FFA',
         ...base,
-      };
+      }
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
-      return (defineGameMode as any)(v);
-    }).toThrow(/id must match/);
+      return (defineGameMode as any)(v)
+    }).toThrow(/id must match/)
 
     expect(() =>
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
@@ -51,7 +52,7 @@ describe('defineGameMode', () => {
         id: 'ab',
         ...base,
       }),
-    ).toThrow();
+    ).toThrow()
 
     expect(() =>
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
@@ -59,8 +60,8 @@ describe('defineGameMode', () => {
         id: 'a'.repeat(33),
         ...base,
       }),
-    ).toThrow();
-  });
+    ).toThrow()
+  })
 
   it('rejects invalid type', () => {
     expect(() => {
@@ -72,11 +73,11 @@ describe('defineGameMode', () => {
         minPlayers: 2,
         maxPlayers: 16,
         world: { map: 'static-arena' },
-      };
+      }
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
-      return (defineGameMode as any)(v);
-    }).toThrow(/type must be one of/);
-  });
+      return (defineGameMode as any)(v)
+    }).toThrow(/type must be one of/)
+  })
 
   it('rejects invalid source', () => {
     expect(() => {
@@ -88,11 +89,11 @@ describe('defineGameMode', () => {
         minPlayers: 2,
         maxPlayers: 16,
         world: { map: 'static-arena' },
-      };
+      }
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
-      return (defineGameMode as any)(v);
-    }).toThrow(/source must be one of/);
-  });
+      return (defineGameMode as any)(v)
+    }).toThrow(/source must be one of/)
+  })
 
   it('rejects invalid slug', () => {
     expect(() =>
@@ -106,8 +107,8 @@ describe('defineGameMode', () => {
         maxPlayers: 16,
         world: { map: 'static-arena' },
       }),
-    ).toThrow(/slug must match/);
-  });
+    ).toThrow(/slug must match/)
+  })
 
   it('rejects invalid min/max players', () => {
     expect(() =>
@@ -121,7 +122,7 @@ describe('defineGameMode', () => {
         maxPlayers: 16,
         world: { map: 'static-arena' },
       }),
-    ).toThrow(/minPlayers must be 1..64/);
+    ).toThrow(/minPlayers must be 1..64/)
 
     expect(() =>
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
@@ -134,8 +135,8 @@ describe('defineGameMode', () => {
         maxPlayers: 2,
         world: { map: 'static-arena' },
       }),
-    ).toThrow(/minPlayers.*must be <= maxPlayers/);
-  });
+    ).toThrow(/minPlayers.*must be <= maxPlayers/)
+  })
 
   it('rejects missing world', () => {
     expect(() => {
@@ -147,11 +148,11 @@ describe('defineGameMode', () => {
         minPlayers: 2,
         maxPlayers: 16,
         world: undefined,
-      };
+      }
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
-      return (defineGameMode as any)(v);
-    }).toThrow(/world must be defined/);
-  });
+      return (defineGameMode as any)(v)
+    }).toThrow(/world must be defined/)
+  })
 
   it('rejects fps world without map', () => {
     expect(() => {
@@ -163,11 +164,11 @@ describe('defineGameMode', () => {
         minPlayers: 2,
         maxPlayers: 16,
         world: {},
-      };
+      }
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
-      return (defineGameMode as any)(v);
-    }).toThrow(/fps world.map must be non-empty string/);
-  });
+      return (defineGameMode as any)(v)
+    }).toThrow(/fps world.map must be non-empty string/)
+  })
 
   it('allows hooks optional and preserves them', () => {
     const def = defineGameMode({
@@ -180,10 +181,10 @@ describe('defineGameMode', () => {
       world: { map: 'static-arena' },
       onRoomCreate: () => {},
       onTick: () => {},
-    });
-    expect(def.onRoomCreate).toBeDefined();
-    expect(def.onTick).toBeDefined();
-  });
+    })
+    expect(def.onRoomCreate).toBeDefined()
+    expect(def.onTick).toBeDefined()
+  })
 
   // --- 改訂版: parentGenre / genres / tags / subModes / category / display / stats ---
 
@@ -213,16 +214,16 @@ describe('defineGameMode', () => {
         activePlayers: 12,
         detailViews: 567,
       },
-    });
-    expect(def.parentGenre).toBe('fps');
-    expect(def.genres).toEqual(['ffa']);
-    expect(def.tags).toEqual(['official', 'pvp', 'fps']);
-    expect(def.subModes).toEqual(['ffa', 'tdm', 'dom']);
-    expect(def.currentSubMode).toBe('ffa');
-    expect(def.category).toBe('Official');
-    expect(def.display?.title).toBe('FFA');
-    expect(def.stats?.totalPlays).toBe(1234);
-  });
+    })
+    expect(def.parentGenre).toBe('fps')
+    expect(def.genres).toEqual(['ffa'])
+    expect(def.tags).toEqual(['official', 'pvp', 'fps'])
+    expect(def.subModes).toEqual(['ffa', 'tdm', 'dom'])
+    expect(def.currentSubMode).toBe('ffa')
+    expect(def.category).toBe('Official')
+    expect(def.display?.title).toBe('FFA')
+    expect(def.stats?.totalPlays).toBe(1234)
+  })
 
   it('accepts empty genres/tags/subModes arrays', () => {
     const def = defineGameMode({
@@ -236,11 +237,11 @@ describe('defineGameMode', () => {
       genres: [],
       tags: [],
       subModes: [],
-    });
-    expect(def.genres).toEqual([]);
-    expect(def.tags).toEqual([]);
-    expect(def.subModes).toEqual([]);
-  });
+    })
+    expect(def.genres).toEqual([])
+    expect(def.tags).toEqual([])
+    expect(def.subModes).toEqual([])
+  })
 
   it('accepts Sandbox category with official source (official extension)', () => {
     const def = defineGameMode({
@@ -257,11 +258,11 @@ describe('defineGameMode', () => {
       category: 'Sandbox',
       display: { title: 'Zombie (Official拡張)', creator: 'Official' },
       stats: { totalPlays: 5432, activePlayers: 8, detailViews: 1234 },
-    });
-    expect(def.category).toBe('Sandbox');
-    expect(def.source).toBe('official');
-    expect(def.parentGenre).toBe('fps');
-  });
+    })
+    expect(def.category).toBe('Sandbox')
+    expect(def.source).toBe('official')
+    expect(def.parentGenre).toBe('fps')
+  })
 
   it('accepts voxel official survival endless', () => {
     const def = defineGameMode({
@@ -277,10 +278,10 @@ describe('defineGameMode', () => {
       tags: ['official', 'voxel', 'survival'],
       category: 'Official',
       display: { title: 'Survival', creator: 'Official' },
-    });
-    expect(def.parentGenre).toBe('voxel');
-    expect(def.genres).toEqual(['survival']);
-  });
+    })
+    expect(def.parentGenre).toBe('voxel')
+    expect(def.genres).toEqual(['survival'])
+  })
 
   it('rejects invalid parentGenre', () => {
     expect(() =>
@@ -295,8 +296,8 @@ describe('defineGameMode', () => {
         world: { map: 'static-arena' },
         parentGenre: 'racing',
       }),
-    ).toThrow(/parentGenre must be one of/);
-  });
+    ).toThrow(/parentGenre must be one of/)
+  })
 
   it('rejects invalid genres (non-array, invalid slug)', () => {
     expect(() =>
@@ -311,7 +312,7 @@ describe('defineGameMode', () => {
         world: { map: 'static-arena' },
         genres: 'ffa',
       }),
-    ).toThrow(/genres must be array/);
+    ).toThrow(/genres must be array/)
 
     expect(() =>
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
@@ -325,8 +326,8 @@ describe('defineGameMode', () => {
         world: { map: 'static-arena' },
         genres: ['FFA'],
       }),
-    ).toThrow(/genres\[0\] must match/);
-  });
+    ).toThrow(/genres\[0\] must match/)
+  })
 
   it('rejects invalid category', () => {
     expect(() =>
@@ -341,8 +342,8 @@ describe('defineGameMode', () => {
         world: { map: 'static-arena' },
         category: 'Custom',
       }),
-    ).toThrow(/category must be one of/);
-  });
+    ).toThrow(/category must be one of/)
+  })
 
   it('rejects invalid display and stats', () => {
     expect(() =>
@@ -357,7 +358,7 @@ describe('defineGameMode', () => {
         world: { map: 'static-arena' },
         display: 'title',
       }),
-    ).toThrow(/display must be object/);
+    ).toThrow(/display must be object/)
 
     expect(() =>
       // biome-ignore lint/suspicious/noExplicitAny: invalid input test
@@ -371,8 +372,8 @@ describe('defineGameMode', () => {
         world: { map: 'static-arena' },
         stats: { totalPlays: -1 },
       }),
-    ).toThrow(/stats\.totalPlays must be non-negative/);
-  });
+    ).toThrow(/stats\.totalPlays must be non-negative/)
+  })
 
   it('preserves backward compat: old def without new fields still works', () => {
     const def = defineGameMode({
@@ -383,9 +384,9 @@ describe('defineGameMode', () => {
       minPlayers: 2,
       maxPlayers: 16,
       world: { map: 'static-arena' },
-    });
-    expect(def.parentGenre).toBeUndefined();
-    expect(def.genres).toBeUndefined();
-    expect(def.category).toBeUndefined();
-  });
-});
+    })
+    expect(def.parentGenre).toBeUndefined()
+    expect(def.genres).toBeUndefined()
+    expect(def.category).toBeUndefined()
+  })
+})

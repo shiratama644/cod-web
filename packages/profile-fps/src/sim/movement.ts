@@ -11,8 +11,8 @@
 
 import { GRAVITY, JUMP_FORCE, MOVE_SPEED } from '@cod/protocol/protocol/constants'
 import { INPUT_FLAG_JUMP, type PlayerInput } from '@cod/protocol/protocol/messages'
-import type { CollisionWorld } from './collisionWorld'
 import type { PlayerState } from '@cod/protocol/types'
+import type { CollisionWorld } from './collisionWorld'
 
 /** カプセル/プレイヤーの半径（m）。水平の壁判定・体中心の高さに使う。 */
 export const PLAYER_RADIUS = 0.4
@@ -50,8 +50,8 @@ export function stepPlayer(
   const cos = Math.cos(input.yaw)
   // yaw=0 を -Z 方向（three のカメラ既定）にとる。前進(moveZ=1)は -Z。
   // 前後: moveZ、左右: moveX
-  let wishX = (-sin * input.moveZ + cos * input.moveX)
-  let wishZ = (-cos * input.moveZ - sin * input.moveX)
+  let wishX = -sin * input.moveZ + cos * input.moveX
+  let wishZ = -cos * input.moveZ - sin * input.moveX
   const wishLen = Math.hypot(wishX, wishZ)
   if (wishLen > 1) {
     wishX /= wishLen

@@ -1,9 +1,10 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vitest'
+
 import { GameModeRuntime } from '@cod/engine-core/gamemode/GameModeRuntime'
 import { GameModeTimer } from '@cod/engine-core/gamemode/GameModeTimer'
 import { ModeMessageRateLimiter } from '@cod/engine-core/net/rate-limit'
 import type { GameModeDefinition, PlayerRef, RoomCtx, RoomState } from '@cod/gamemode-api'
+import { describe, expect, it, vi } from 'vitest'
 
 function createMockPlayer(id: string): PlayerRef {
   return { id, playerId: Number(id.replace(/\D/g, '')) || 1, name: `Player${id}` }
@@ -99,7 +100,9 @@ describe('GameModeRuntime exception safety', () => {
     const opts = createMockOptions()
     const runtime = new GameModeRuntime(def, opts)
     // 例外があっても他の処理は継続できる
-    await expect(runtime.onPlayerJoin(createMockPlayer('p1'), {} as RoomCtx)).resolves.toBeUndefined()
+    await expect(
+      runtime.onPlayerJoin(createMockPlayer('p1'), {} as RoomCtx),
+    ).resolves.toBeUndefined()
     // room自体は生きている
     expect(opts.getPlayers().length).toBe(2)
   })
@@ -117,9 +120,13 @@ describe('GameModeRuntime exception safety', () => {
     const opts = createMockOptions()
     const timer = new GameModeTimer()
     const runtime = new GameModeRuntime(def, opts, timer)
-    timer.after(1, () => {
-      throw new Error('timer error')
-    }, 0)
+    timer.after(
+      1,
+      () => {
+        throw new Error('timer error')
+      },
+      0,
+    )
     expect(() => runtime.tick(16, 1)).not.toThrow()
     expect(timer.size).toBe(0) // 一度きりなので削除される
   })

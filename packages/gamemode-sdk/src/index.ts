@@ -7,7 +7,7 @@
  * 将来 UGC 向け sanitized API をここに追加する。
  */
 
-export * from '@cod/gamemode-api';
+export * from '@cod/gamemode-api'
 
 // 追加ヘルパー (将来 UGC 向け)
-export const SDK_VERSION = '0.1.0';
+export const SDK_VERSION = '0.1.0'

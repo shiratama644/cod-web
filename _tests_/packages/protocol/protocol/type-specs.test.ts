@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+
 import {
   DEFAULT_GAME_TYPE,
   INPUT_SEND_HZ,
@@ -9,7 +9,13 @@ import {
   SNAPSHOT_SEND_EVERY_TICKS,
   SNAPSHOT_SEND_HZ,
 } from '@cod/protocol/protocol/constants'
-import { GAME_TYPES, TYPE_SPECS, snapshotEveryTicks, typeStepSeconds } from '@cod/protocol/protocol/type-specs'
+import {
+  GAME_TYPES,
+  snapshotEveryTicks,
+  TYPE_SPECS,
+  typeStepSeconds,
+} from '@cod/protocol/protocol/type-specs'
+import { describe, expect, it } from 'vitest'
 
 describe('TYPE_SPECS', () => {
   it('defines only Game Types, not content sources', () => {

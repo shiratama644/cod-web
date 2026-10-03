@@ -6,10 +6,10 @@
  * Exit 0 = pass, Exit 1 = fail
  */
 
+import { createFpsSimProfile } from '../packages/profile-fps/src/profile/FpsSimProfile.ts'
+import { createPlaneWorld } from '../packages/profile-fps/src/sim/collisionWorld.ts'
 import { SIM_DT } from '../packages/protocol/src/protocol/constants.ts'
 import type { PlayerInput } from '../packages/protocol/src/protocol/messages.ts'
-import { createPlaneWorld } from '../packages/profile-fps/src/sim/collisionWorld.ts'
-import { createFpsSimProfile } from '../packages/profile-fps/src/profile/FpsSimProfile.ts'
 
 function makeRng(seed: number) {
   let s = seed >>> 0
@@ -103,7 +103,9 @@ for (let sc = 0; sc < SCENARIOS; sc++) {
 }
 
 if (failed === 0) {
-  console.log(`✅ Heavy determinism passed: ${SCENARIOS} scenarios x ${TICKS} ticks identical within ${TOLERANCE}`)
+  console.log(
+    `✅ Heavy determinism passed: ${SCENARIOS} scenarios x ${TICKS} ticks identical within ${TOLERANCE}`,
+  )
   process.exit(0)
 } else {
   console.error(`❌ Heavy determinism failed: ${failed} scenarios mismatched`)

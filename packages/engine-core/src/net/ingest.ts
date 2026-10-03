@@ -6,8 +6,8 @@
 import { ProtocolError } from '@cod/protocol/protocol/binary'
 import { Channel } from '@cod/protocol/protocol/constants'
 import { decodeFrame } from '@cod/protocol/protocol/framing'
-import { decodeInput } from '@cod/protocol/protocol/packer'
 import type { PlayerInput } from '@cod/protocol/protocol/messages'
+import { decodeInput } from '@cod/protocol/protocol/packer'
 
 /** Bun の Buffer（Uint8Array）をコピーせず DataView にする。 */
 export function toDataView(buf: ArrayBuffer | Uint8Array): DataView {
