@@ -29,6 +29,9 @@ description: Sandbox / ブラウザ・ネットワーク / GitHub App の恒常�
 
 - Sandbox 再構築時（`git log` が起点 1 件のみ / 大量削除+未追跡 / node_modules 無）は [`.agent/hooks/sandbox-rebuild-recovery.md`](../../hooks/sandbox-rebuild-recovery.md) ＋ [`restore-sandbox-env.sh`](../../hooks/restore-sandbox-env.sh)。復旧後は `git log` で b3dd3ed (PH2-E) まで戻っていることを確認してから作業再開（EM01知見）。
 - `git fetch origin <session-branch>` → `reset --hard FETCH_HEAD` → `restore-sandbox-env.sh` が必須手順（頻発するため）。
+- **HEADのみ巻き戻り**（ワークツリーは最新・HEADだけ古い）は別物: `reset --soft origin/<branch>`、**--hard 禁止**。診断表は [`sandbox-rebuild-recovery.md`](../../hooks/sandbox-rebuild-recovery.md)（2026-10 追加、頻発）。
+- **bun がターン毎に PATH から消える**: 各ターン冒頭で `bash .agent/hooks/restore-sandbox-env.sh; export PATH=$PATH:/usr/local/bin`。
+- **依存変更直後の `bun install --frozen-lockfile` は失敗**: 先に素の `bun install` で lockfile 更新。
 - `bun run build` 後のバンドルは `ls -lh dist/assets` で確認（3D エンジンは大きい。重複依存・chunk 分割に注意）。
 
 ## 追加制約・知見（2026-09-20〜22）

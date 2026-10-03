@@ -15,11 +15,13 @@ git log -5 --oneline
 - ※ ブランチ名は**セッションごとに変わる**。AGENTS.md §4.4 の記載値を鵜呑みにせず、必ず `git branch --show-current` で確認する。過去セッションのブランチ名は文書に残さない方針（AGENTS.md §4.4）。
 - 未コミット変更があれば勝手に破棄・混入しない。
 - ログが起点 1 件のみ / `git status` が大量の削除+未追跡 / `node_modules` 無 → **Sandbox 再構築**。→ [`sandbox-rebuild-recovery.md`](./sandbox-rebuild-recovery.md)。
+- **HEAD だけが古いコミットに戻り、ワークツリーは最新**（push 済み作業が diff に見える）→ **HEAD のみ巻き戻り**。`--hard` 禁止、`git reset --soft origin/<branch>` で復旧 → 同 hook の診断表参照（本セッションで複数回発生）。
+- bun が PATH に無いことが多い → `bash .agent/hooks/restore-sandbox-env.sh; export PATH=$PATH:/usr/local/bin` を最初に実行。
 
 ### 2. 知識のピンポイント読込（本 hook の核心）
 
 [`../skills/index.md`](../skills/index.md) の「読み方ガイド」で**該当スキルだけ**を読む。
-- 全スキルを常に読まない（コンテキスト浪費）。11スキルあるがタスクに必要な1-2個だけ読む。
+- 全スキルを常に読まない（コンテキスト浪費）。19スキルあるがタスクに必要な1-2個だけ読む。
 - 初回/全体把握が必要な時だけ `project-overview/SKILL.md` + `tech-stack/SKILL.md`。
 - 設計仕様 → **仕様書 [`docs/arch/`](../../docs/arch/README.md)**（product / protocol / engineering / adr / milestones）。環境制約 → `sandbox-constraints/SKILL.md`。
 - 計画書は [`docs/planning/`](../../docs/planning/)。進捗は [`docs/task-list.md`](../../docs/task-list.md)。欠ファイル `tech-stack.md` / `networking.md` / `game-engineering-principles.md` は正本ではない。
@@ -35,6 +37,10 @@ git log -5 --oneline
   - Babylon/R3F排除 → `babylon-engine/SKILL.md`
   - PointerLock/InputController → `input-accumulation/SKILL.md`
   - BVH/kinematic → `physics-collision/SKILL.md`
+  - ゲームモードAPI/ハブUI → `gamemode-api/SKILL.md`
+  - apps/web（Next.js）/プレビュー/ESLint/E2E webServer → `nextjs-frontend/SKILL.md`
+  - CoDM リサーチ（R1〜R7）/仕様書作成 → `codm-research/SKILL.md`
+- **2026-10-03 フロントエンド入れ替え注意**: apps/web は Next.js（Vite+React クライアントは削除済み、git 履歴 ≤40b44eb）。`babylon-engine` / `input-accumulation` / `testing` / `e2e` / `zero-alloc` 内の `apps/web/src/game/**` 参照は**旧クライアントの歴史的記録**。パターンは S フェーズ再統合時に再利用する。
 
 ### 3. docs/ と実コードの優先順位（AGENTS.md §6.8）
 

@@ -28,29 +28,37 @@
 | Pointer Lock / raw mouse / InputController蓄積 | [`input-accumulation/SKILL.md`](./input-accumulation/SKILL.md) |
 | BVH衝突 / kinematic controller / SimProfile分離 | [`physics-collision/SKILL.md`](./physics-collision/SKILL.md) |
 | gamemode API / sdk facade / ffa最小 / hybrid async / ctx spawn | [`gamemode-api/SKILL.md`](./gamemode-api/SKILL.md) |
+| apps/web（Next.js 16）/ e2b プレビュー / ESLint・tsc 分担 / @types/react dedupe | [`nextjs-frontend/SKILL.md`](./nextjs-frontend/SKILL.md) |
+| CoDM ディープリサーチ（R1〜R7）/ ハイブリッド基準 / 検証ラベル / IP境界 | [`codm-research/SKILL.md`](./codm-research/SKILL.md) |
 | 設計の正本（プロダクト・プロトコル・ADR・マイルストーン） | [`../../docs/arch/`](../../docs/arch/README.md)（product / protocol / engineering / adr / milestones） |
+
+> **2026-10-03 注記**: apps/web は Next.js に入れ替わり、旧 Vite+React クライアントは削除済み（git 履歴 ≤40b44eb）。
+> `babylon-engine` / `input-accumulation` / `testing` / `e2e` / `zero-alloc` / `tech-stack` 内の `apps/web/src/game/**` や Vite 参照は
+> **旧クライアントの歴史的記録**であり、パターン自体は S フェーズ（ゲーム再統合）で再利用する。現状は `nextjs-frontend/SKILL.md` が正。
 
 ## スキル一覧
 
 | スキル | できるようになること（Agent の能力） | 最終更新 |
 | :--- | :--- | :--- |
-| [project-overview/SKILL.md](./project-overview/SKILL.md) | プロダクト目標・現行コード（移行元）と理想フェーズを素早く把握する | 2026-09-20（PH2-E same input + determinism） |
-| [tech-stack/SKILL.md](./tech-stack/SKILL.md) | 理想スタックと移行元コードのハマりどころを区別して実装できる | 2026-09-22（URL検証 + coverage 85%） |
-| [sandbox-constraints/SKILL.md](./sandbox-constraints/SKILL.md) | Sandbox / ネットワーク / GitHub App の制約を迂回して検証できる | 2026-09-22（bun npm経路 + E2E discovery） |
+| [project-overview/SKILL.md](./project-overview/SKILL.md) | プロダクト目標・現行コード（移行元）と理想フェーズを素早く把握する | 2026-10-03（現状注記: CoDM入れ替え方針 + Next化） |
+| [tech-stack/SKILL.md](./tech-stack/SKILL.md) | 理想スタックと移行元コードのハマりどころを区別して実装できる | 2026-10-03（現状注記: apps/webはNext化） |
+| [sandbox-constraints/SKILL.md](./sandbox-constraints/SKILL.md) | Sandbox / ネットワーク / GitHub App の制約を迂回して検証できる | 2026-10-03（HEAD巻き戻りreset --soft + bun PATH + frozen-lockfile） |
 | [bun-runtime/SKILL.md](./bun-runtime/SKILL.md) | BunをSandboxで確実に導入・復旧し、workspaces/serveを正しく使う | 2026-09-22（adopt-bun + restore-sandbox-env） |
 | [networking/SKILL.md](./networking/SKILL.md) | Bun WS権威サーバー、Channel framing、Input 16B、backpressure、rate limitを正しく実装 | 2026-09-22（PH0-A/B/C + PH1-C + EM01 + EM02 handlers） |
 | [deterministic-sim/SKILL.md](./deterministic-sim/SKILL.md) | SimProfile.step決定論を守り、same-input + heavy determinismテストを実装 | 2026-09-22（PH2-E 1000x100 0.8s） |
-| [zero-alloc/SKILL.md](./zero-alloc/SKILL.md) | ホットパスでゼロアロケを守り、GCを出さない実装パターンを適用 | 2026-09-22（EM01 B4-B13全対応） |
+| [zero-alloc/SKILL.md](./zero-alloc/SKILL.md) | ホットパスでゼロアロケを守り、GCを出さない実装パターンを適用 | 2026-10-03（現状注記: client netcodeはengine-core/src/client） |
 | [memory-leak/SKILL.md](./memory-leak/SKILL.md) | Room leave時のLagCompStore/inputQueues/paused/RateLimiterリークを防ぐ | 2026-09-22（EM01 B1-B3,B14） |
-| [import-boundaries/SKILL.md](./import-boundaries/SKILL.md) | Biome import制限でL1/L2/Apps境界を守り、workspace:*を正しく使う | 2026-09-22（PH1-B + PH2-A/B/C/D） |
-| [testing/SKILL.md](./testing/SKILL.md) | 意味あるテストでcoverage 85%を達成し、handlers/babylonDeps分離を実装 | 2026-09-22（EM02 95.12%/87.97%/90.7%/96.8%） |
-| [e2e/SKILL.md](./e2e/SKILL.md) | PlaywrightをSandboxでも安全に扱い、webServer配列とdiscovery検証を実装 | 2026-09-22（PH1.5-C/D公式URL検証） |
+| [import-boundaries/SKILL.md](./import-boundaries/SKILL.md) | Biome import制限でL1/L2/Apps境界を守り、workspace:*を正しく使う | 2026-10-03（現状注記） |
+| [testing/SKILL.md](./testing/SKILL.md) | 意味あるテストでcoverage 85%を達成し、handlers/babylonDeps分離を実装 | 2026-10-03（現状注記） |
+| [e2e/SKILL.md](./e2e/SKILL.md) | PlaywrightをSandboxでも安全に扱い、webServer配列とdiscovery検証を実装 | 2026-10-03（現状注記: spec=main-menu） |
 | [ci-quality-gates/SKILL.md](./ci-quality-gates/SKILL.md) | quality-gates.ymlを正本としてCIを運用し、manual dispatchを扱う | 2026-09-22（proposal削除 + inputs.job） |
 | [docs-maintenance/SKILL.md](./docs-maintenance/SKILL.md) | ドキュメント整理とURL検証、proposal削除、内部リンク整合性を保つ | 2026-09-22（DOC-4/5/6 + URL全検証） |
-| [babylon-engine/SKILL.md](./babylon-engine/SKILL.md) | Babylon Engine初期化とR3F排除、thinEngine.pure型解決、Depsファサード | 2026-09-22（PH1-D + EM02） |
-| [input-accumulation/SKILL.md](./input-accumulation/SKILL.md) | Pointer Lock/raw mouse、InputController蓄積/消費、joystick deadzone | 2026-09-22（PH1-E + EM02 95%） |
+| [babylon-engine/SKILL.md](./babylon-engine/SKILL.md) | Babylon Engine初期化とR3F排除、thinEngine.pure型解決、Depsファサード | 2026-10-03（現状注記） |
+| [input-accumulation/SKILL.md](./input-accumulation/SKILL.md) | Pointer Lock/raw mouse、InputController蓄積/消費、joystick deadzone | 2026-10-03（現状注記） |
 | [physics-collision/SKILL.md](./physics-collision/SKILL.md) | BVH衝突とkinematic controllerをSimProfileへ分離 | 2026-09-22（PH2-B seam + voxel契約） |
 | [gamemode-api/SKILL.md](./gamemode-api/SKILL.md) | gamemode-api core + sdk facade、define検証、RoomCtx、hybrid async、ctx spawn、Runtime/Timer/RateLimiter例外安全、ffa最小+pvpエイリアス、gameserver統合例外安全、parentGenre/genres/tags/subModes/display/stats拡張、Official FPS 1ゲーム複数モード投票、Sandbox公式拡張+UGC、Header/Sidebar/Modal/Detail/Room/VoteハブUI骨組み | 2026-09-22（PH4-F 投票 Official FPS FFA/TDM/DOM + Sandbox公式拡張+UGC + ハブUI 44 files 311 tests + coverage 93.51%） |
+| [nextjs-frontend/SKILL.md](./nextjs-frontend/SKILL.md) | apps/web（Next.js 16）を Sandbox/Arena プレビューで運用し、Biome/tsc/Vitest 体制と共存させる（allowedDevOrigins、@types/react dedupe、DB fallback、E2E webServer） | 2026-10-03（Next主化 + Vite削除 2a93a99） |
+| [codm-research/SKILL.md](./codm-research/SKILL.md) | CoDM ディープリサーチ R0〜R7 をハイブリッド基準・検証ラベル・IP境界で進め、INTEGRATION_SPEC まで導く | 2026-10-03（R0 完了 + ハイブリッド基準確定） |
 
 ## 設計仕様の正本（スキルではなく docs/arch/）
 

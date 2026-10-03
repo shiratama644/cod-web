@@ -5,6 +5,9 @@ description: Playwright E2EをSandboxでも安全に扱うスキル。webServer�
 
 # E2E — PlaywrightをSandboxで安全に扱うスキル
 
+> **⚠ 2026-10-03 現状注記**: apps/web は Next.js に入れ替わり、旧 Vite+React クライアント（`apps/web/src/game/**` 等）は削除済み（git 履歴 ≤40b44eb に現存）。本スキル中の旧クライアントパス・Vite 参照は歴史的記録。パターンは S フェーズのゲーム再統合で再利用する。現状の apps/web は [`../nextjs-frontend/SKILL.md`](../nextjs-frontend/SKILL.md) が正。ClientPrediction/Interpolator は `packages/engine-core/src/client/` に移設済み。
+
+
 > 仕様正本: `docs/ops/quality-gates.md` §5, `docs/arch/engineering.md`  
 > 計画: `docs/planning/PHASE01_5_PLAN.md` §10.3, `EM01_PLAN.md` B16, `EM02_PLAN.md` §10.4
 

@@ -5,29 +5,31 @@
 
 ## 4+3 検証（順に実行、1 つでも失敗したら原因特定→修正→再全検証）
 
+**推奨: `bun run check:all` 一発**（install→lint/determinism/heavy/typecheck/test:unit/coverage を並列実行、~50s、`logs/` にログ保存）。個別に回す場合:
+
 ```bash
-bun run typecheck                # tsc --noEmit および tsc -p tsconfig.server.json
-bunx biome lint .                # Biome 直接呼出（bun run lint より起動が速い）
+bun run typecheck                # tsc --noEmit および tsc -p tsconfig.server.json（※ apps/web は含まない）
+bunx biome lint .                # Biome 直接呼出（※ apps/web は Biome 対象外、ESLint が正）
 bun run test:unit                # vitest run （※ watch モードではない）
-bun run build                    # vite build（production）
+bun run build                    # packages + gameserver + apps/web（next build）
 # 追加（EM01/EM02で確立、quality-gates.ymlと同順）
 bun run check:determinism        # SimProfile.step禁止API検出
-bun run test:coverage            # threshold 85/85/85/85、実績95.12%/87.97%/90.7%/96.8%
+bun run test:coverage            # threshold 85/85/85/85
 bun run test:e2e -- --list       # E2E discovery、browser起動なし（Sandboxでも実行可）
+# apps/web（Next.js）を触った場合は必ず追加（2026-10-03〜、nextjs-frontend/SKILL.md）
+cd apps/web && bun run typecheck && bun run lint
 ```
 
 ### 各コマンドの注意
 
 - **typecheck**: `tsc --noEmit`。strict 構成。配列アクセス・nullable に注意。
 - **biome lint**: `0 error / 0 warning` まで。`biome-ignore` は対象コードの**直前の行**に置く（1 行以上離れると unused 判定で逆に警告になる, AGENTS.md §6.5）。テストファイルは `overrides` で `noNonNullAssertion` off。
-  - `noConsole` は `apps/web/src/game/babylon/**/*` と `apps/web/src/game/net/**/*` でerrorレベル（EM01-B）。`console.log` 3件はgameserver運用ログとして許容、BabylonGameのクライアント側はHUD代替。
-  - `noRestrictedImports` / `noPrivateImports` はレイヤー境界（`import-boundaries/SKILL.md`）。`@cod/engine-core` 直接importはwebで禁止、profile-fpsは `createFpsSimProfile()` 経由のみ。
+  - 2026-10-03〜: Biome の対象は packages/apps(gameserver)/scripts 等。**apps/web（Next.js）は `files.includes` で除外**され、app ローカル ESLint が正（`nextjs-frontend/SKILL.md`）。
+  - `noRestrictedImports` / `noPrivateImports` はレイヤー境界（`import-boundaries/SKILL.md`）。profile-fpsは `createFpsSimProfile()` 経由のみ。
 - **test:unit**: `vitest`（watch）**ではない**。必ず `test:unit`（vitest run）。Canvas/WebGL は jsdom で描画テストしない。シム・パックは純粋関数（[`../skills/sandbox-constraints/SKILL.md`](../skills/sandbox-constraints/SKILL.md)）。
-  - `App.tsx` は `GameCanvas/HUD/TouchControls/StartOverlay` モックで100%（EM02）。
-  - `BabylonGame` は `babylonDeps.ts` ファサード分離 + `vi.mock` でWebGL非依存（EM02 96.9%）。
-  - `InputController` はWASD/矢印/Space/joystick deadzone/normalize/pitch clamp/pointer up/PointerLock（EM02 95%）。
-- **build**: `vite build`。成果物は `dist/`。
-  - バンドルサイズは `ls -lh dist/assets` 等で直接確認（3D エンジンは大きい。依存の重複・chunk 分割に注意）。
+  - ネットコードの unit は `_tests_/packages/engine-core/client/`（prediction）と same-input gate（`_tests_/packages/profile-fps/sim/`）。**テストを通すために削除せず、純粋コードは packages 側へ移設してテストを維持する**（2026-10-03 Vite削除時の実績）。
+- **build**: `bun run build` = packages + gameserver + apps/web（`next build`）。
+  - Next の成果物は `apps/web/.next/`（gitignore 済）。バンドル肥大は next build のroute表で確認。
 - **check:determinism**: `scripts/check-determinism.ts` 禁止パターン検出。`Math.random` / `Date.now` / `performance.now` / `setTimeout` がSimProfile.stepに混入していないか（`deterministic-sim/SKILL.md`）。
 - **test:coverage**: threshold 85/85/85/85。include-all方針、難しいfileをexcludeして数字を作らない。handlers.ts分離でBun.serveモック、babylonDeps分離でWebGLモック（`testing/SKILL.md`）。
 - **test:e2e -- --list**: E2E discovery、browser起動なし。Sandboxでも実行可、spec列挙のみ確認（`e2e/SKILL.md`）。本物のbrowser実行はCI `quality-gates.yml` e2e jobで `bunx playwright install --with-deps chromium` 後に `bun run test:e2e`。
@@ -38,7 +40,7 @@ bun run test:e2e -- --list       # E2E discovery、browser起動なし（Sandbox
 ```bash
 git status
 git diff                       # 意図しないファイル/差分が無いか
-# ゼロアロケ監査（EM01）
+# ゼロアロケ監査（EM01。client netcodeは packages/engine-core/src/client に移設済み 2026-10-03）
 grep -R "getPlayers()" packages/engine-core --include="*.ts" | grep -v "getPlayersIterable\|getPeersIterable"
 grep -R "\.shift()" packages/engine-core/src --include="*.ts"
 # メモリリーク監査（EM01）

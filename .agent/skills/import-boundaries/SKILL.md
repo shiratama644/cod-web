@@ -5,6 +5,9 @@ description: Biome noRestrictedImports/noPrivateImportsでレイヤー境界を�
 
 # Import Boundaries — レイヤー境界を守るスキル
 
+> **⚠ 2026-10-03 現状注記**: apps/web は Next.js に入れ替わり、旧 Vite+React クライアント（`apps/web/src/game/**` 等）は削除済み（git 履歴 ≤40b44eb に現存）。本スキル中の旧クライアントパス・Vite 参照は歴史的記録。パターンは S フェーズのゲーム再統合で再利用する。現状の apps/web は [`../nextjs-frontend/SKILL.md`](../nextjs-frontend/SKILL.md) が正。ClientPrediction/Interpolator は `packages/engine-core/src/client/` に移設済み。
+
+
 > 仕様正本: `docs/arch/architecture.md`（レイヤー図・依存方向）、`docs/arch/engineering.md`（import境界）、`biome.json`  
 > 計画: `docs/planning/PHASE01_PLAN.md` PH1-B, `PHASE02_PLAN.md` PH2-A/B, `EM01_PLAN.md`
 

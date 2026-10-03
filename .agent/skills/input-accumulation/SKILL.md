@@ -5,6 +5,9 @@ description: Pointer Lock、raw mouse、WASD、joystick、InputControllerの蓄�
 
 # Input Accumulation — 入力蓄積とPointer Lockスキル
 
+> **⚠ 2026-10-03 現状注記**: apps/web は Next.js に入れ替わり、旧 Vite+React クライアント（`apps/web/src/game/**` 等）は削除済み（git 履歴 ≤40b44eb に現存）。本スキル中の旧クライアントパス・Vite 参照は歴史的記録。パターンは S フェーズのゲーム再統合で再利用する。現状の apps/web は [`../nextjs-frontend/SKILL.md`](../nextjs-frontend/SKILL.md) が正。ClientPrediction/Interpolator は `packages/engine-core/src/client/` に移設済み。
+
+
 > 仕様正本: `docs/arch/protocol.md`（Input 16B）、`docs/arch/engineering.md`  
 > ログ: `.agent/logs/2026-09-08_ph1-e-input-accumulation.md`、PH1-F
 

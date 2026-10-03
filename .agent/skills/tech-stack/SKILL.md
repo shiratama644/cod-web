@@ -5,6 +5,9 @@ description: 理想スタックと移行元コードの使いどころ・ハマ�
 
 # Tech Stack Skill — 技術構成を使いこなす
 
+> **⚠ 2026-10-03 現状注記**: apps/web は Next.js に入れ替わり、旧 Vite+React クライアント（`apps/web/src/game/**` 等）は削除済み（git 履歴 ≤40b44eb に現存）。本スキル中の旧クライアントパス・Vite 参照は歴史的記録。パターンは S フェーズのゲーム再統合で再利用する。現状の apps/web は [`../nextjs-frontend/SKILL.md`](../nextjs-frontend/SKILL.md) が正。ClientPrediction/Interpolator は `packages/engine-core/src/client/` に移設済み。
+
+
 > **スキル**: 「どのライブラリをどこでどう使うか」と、このリポジトリで既に踏んだ地雷。
 > 設計の正本は [`../../../docs/arch/`](../../../docs/arch/README.md)（特に protocol / client / sim-profiles / engineering / adr）。
 > 欠ファイル `docs/arch/tech-stack.md`・`networking.md` は参照しない。
