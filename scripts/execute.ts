@@ -110,11 +110,63 @@ const DEFAULT_DATABASE_URL = [
   process.env.POSTGRES_DB ?? 'app_db',
 ].join('')
 
+/** TCP ポートに接続できるか（ローカル PostgreSQL の稼働確認用。1 秒でタイムアウト）。 */
+async function tcpOpen(hostname: string, port: number): Promise<boolean> {
+  return await new Promise<boolean>((resolve) => {
+    const timer = setTimeout(() => resolve(false), 1000)
+    const done = (ok: boolean) => {
+      clearTimeout(timer)
+      resolve(ok)
+    }
+    Bun.connect({
+      hostname,
+      port,
+      socket: {
+        open(socket) {
+          socket.end()
+          done(true)
+        },
+        data() {},
+        close() {},
+        error() {
+          done(false)
+        },
+        connectError() {
+          done(false)
+        },
+      },
+    }).catch(() => done(false))
+  })
+}
+
+/** スキーマを反映する（DB 起動後に呼ぶ。失敗しても DB ありとして続行）。 */
+async function applySchema(): Promise<void> {
+  logLine('db', 'Applying schema... (bun run db:push)')
+  const push = spawn('db', ['bun', 'run', 'db:push'])
+  const pushExit = await push.exited
+  if (pushExit !== 0) {
+    logLine('db', `! Schema push failed (exit ${pushExit}). The server will still start;`)
+    logLine('db', '  /api/loadouts may fall back until `bun run db:push` succeeds.')
+    return
+  }
+  logLine('db', 'OK Schema is up to date.')
+}
+
 /**
- * PostgreSQL を docker compose で起動し、スキーマを反映する。
+ * PostgreSQL を用意してスキーマを反映する。
+ *   1. 既にローカルで PostgreSQL が動いていれば（apt 版 / Termux proot 等）それを使う
+ *   2. なければ docker compose で起動する
  * 失敗しても全体を止めず false を返す（/api/loadouts はインメモリへフォールバック）。
  */
 async function startDatabase(): Promise<boolean> {
+  // 1. ローカル PostgreSQL（apt 版・proot 環境など Docker を使わない構成）を優先
+  const pgPort = Number(process.env.POSTGRES_PORT ?? '5432')
+  if (await tcpOpen('127.0.0.1', pgPort)) {
+    logLine('db', `PostgreSQL is already listening on 127.0.0.1:${pgPort}; skipping Docker.`)
+    await applySchema()
+    return true
+  }
+
   if (!Bun.which('docker')) {
     logLine('db', '! docker not found. Starting WITHOUT a database (in-memory fallback).')
     logLine('db', '  Install Docker, or use `bun run start --no-db` to silence this message.')
@@ -152,16 +204,8 @@ async function startDatabase(): Promise<boolean> {
     return false
   }
 
-  logLine('db', 'OK PostgreSQL is healthy. Applying schema... (bun run db:push)')
-  const push = spawn('db', ['bun', 'run', 'db:push'])
-  const pushExit = await push.exited
-  if (pushExit !== 0) {
-    // DB 自体は起動済みなので true のまま続行する（ルート側は失敗時 null/catch 済み）。
-    logLine('db', `! Schema push failed (exit ${pushExit}). The server will still start;`)
-    logLine('db', '  /api/loadouts may fall back until `bun run db:push` succeeds.')
-    return true
-  }
-  logLine('db', 'OK Schema is up to date.')
+  logLine('db', 'OK PostgreSQL is healthy.')
+  await applySchema()
   return true
 }
 

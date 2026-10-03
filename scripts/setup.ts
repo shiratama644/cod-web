@@ -13,7 +13,10 @@
  *          （/etc/apt/keyrings/docker.asc + sources.list.d/docker.list、公式手順準拠。
  *           非 root なら docker グループへ追加。グループは再ログインまで反映されないため、
  *           導入直後の daemon 確認と compose pull は sudo 経由で行う）。`--no-docker` でスキップ可
- *        - docker CLI はあるが daemon 停止 → systemctl / service で起動を試み、
+ *        - Termux/proot-distro(Android)を検出 → daemon は動作しない（Android カーネルが
+ *          cgroups/namespaces/overlayfs を非 root に公開しないため）。起動を試みず
+ *          apt PostgreSQL へ直行し、代替（udocker / QEMU VM / リモート DOCKER_HOST）を案内
+ *        - docker CLI はあるが daemon 停止 → systemctl / service → dockerd 直接起動を試み、
  *          それでも到達できなければ環境別ヒント（WSL systemd / proot 等）を表示する
  *        - docker が使える（daemon 起動確認済み）→ PostgreSQL は compose が提供する
  *          ため apt では入れない（ホスト postgres と :5432 の衝突を避ける）
@@ -171,6 +174,19 @@ function waitForDockerDaemon(timeoutSec: number): DockerAccess {
 /** systemd が PID 1 として動いているか（WSL 旧設定・proot・コンテナでは無いことが多い）。 */
 function hasSystemd(): boolean {
   return runQuiet(['test', '-d', '/run/systemd/system']).ok
+}
+
+/**
+ * Termux / proot-distro(Android)環境か。
+ * Android カーネルは cgroups v2 / kernel namespaces / overlayfs を非 root アプリに
+ * 公開しないため、この環境では Docker daemon は動作しない（Termux 公式の既知制約）。
+ * 代替: apt PostgreSQL(本スクリプトが設定) / udocker / QEMU VM / リモート DOCKER_HOST。
+ */
+function isAndroidProot(): boolean {
+  if (process.env.TERMUX_VERSION) return true
+  if (runQuiet(['uname', '-r']).out.toLowerCase().includes('android')) return true
+  // proot-distro は Termux の prefix をバインドマウントする
+  return runQuiet(['test', '-d', '/data/data/com.termux']).ok
 }
 
 /**
@@ -454,6 +470,22 @@ async function main(): Promise<number> {
     if (noDocker) {
       logLine('sys', 'Skipping Docker install (--no-docker).')
       record('Docker (公式リポジトリ)', 'SKIP', '--no-docker')
+    } else if (!docker.up && isAndroidProot()) {
+      // Termux/proot-distro: daemon は動作しないため試行せず apt PostgreSQL へ直行する
+      logLine('sys', 'Termux/proot-distro(Android)環境を検出しました。')
+      logLine('sys', '  Android カーネルは cgroups/namespaces/overlayfs を非 root に公開しない')
+      logLine('sys', '  ため、Docker daemon はこの環境では動作しません(Termux 公式の既知制約)。')
+      logLine(
+        'sys',
+        '  PostgreSQL は apt でセットアップし、`bun run start` が自動でそれを使います。',
+      )
+      logLine('sys', '  コンテナが必要な場合の代替: udocker(daemon 不要) / QEMU VM /')
+      logLine('sys', '  リモート docker(DOCKER_HOST=ssh://user@server)。')
+      record(
+        'Docker (公式リポジトリ)',
+        'SKIP',
+        'Termux/proot: daemon 動作不可 → apt PostgreSQL 使用',
+      )
     } else if (hasDockerCli) {
       if (docker.up) {
         record('Docker (公式リポジトリ)', 'SKIP', '導入済み(daemon 稼働中)')

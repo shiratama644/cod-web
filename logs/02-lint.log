@@ -1,11 +1,11 @@
 > bun run lint
-> started: 2026/10/3 22:15:55 (JST)
+> started: 2026/10/3 22:22:07 (JST)
 > log: logs/02-lint.log
 ------------------------------------------------------------
 > use setsid: true
 $ biome lint .
-Checked 123 files in 683ms. No fixes applied.
+Checked 123 files in 755ms. No fixes applied.
 ------------------------------------------------------------
-> finished: 2026/10/3 22:15:55 (JST)
-> duration: 875ms
+> finished: 2026/10/3 22:22:08 (JST)
+> duration: 983ms
 > exit: 0   OK
