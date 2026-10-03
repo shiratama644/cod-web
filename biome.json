@@ -33,7 +33,10 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "suspicious": {
+        "noConsole": "error"
+      }
     }
   },
   "javascript": {
@@ -293,6 +296,19 @@
         "rules": {
           "style": {
             "noNonNullAssertion": "off"
+          },
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/**/*.{ts,tsx}", "apps/gameserver/src/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
           }
         }
       }
