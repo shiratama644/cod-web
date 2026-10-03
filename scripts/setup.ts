@@ -175,7 +175,9 @@ function hasSystemd(): boolean {
 
 /**
  * docker daemon の起動を試み、到達を最大 15 秒待つ。
- * systemd 環境は systemctl enable --now、それ以外は service docker start を使う。
+ *   1. systemd 環境は systemctl enable --now、それ以外は service docker start
+ *   2. それでも駄目なら dockerd の直接起動を試す
+ *      （proot/LXC 等では /etc/init.d/docker が ulimit 設定で落ちることがあるため）
  */
 async function startDockerDaemon(): Promise<DockerAccess> {
   const before = dockerAccess()
@@ -184,7 +186,23 @@ async function startDockerDaemon(): Promise<DockerAccess> {
     ? privileged(['systemctl', 'enable', '--now', 'docker'])
     : privileged(['service', 'docker', 'start'])
   if (cmd) await run('sys', cmd)
-  return waitForDockerDaemon(15)
+  let access = waitForDockerDaemon(15)
+  if (access.up) return access
+
+  const direct = privileged([
+    'sh',
+    '-c',
+    'nohup "$(command -v dockerd || echo /usr/sbin/dockerd)" >> /var/log/dockerd.log 2>&1 & sleep 1',
+  ])
+  if (direct) {
+    logLine('sys', 'service 経由で起動できないため、dockerd の直接起動を試します...')
+    await run('sys', direct)
+    access = waitForDockerDaemon(10)
+    if (!access.up) {
+      logLine('sys', '  dockerd も起動しませんでした。ログ: sudo tail /var/log/dockerd.log')
+    }
+  }
+  return access
 }
 
 /** daemon に到達できないときに、環境別の原因ヒントを表示する。 */
@@ -203,8 +221,10 @@ function printDockerDaemonHints(): void {
   } else if (!hasSystemd()) {
     logLine('sys', '  - systemd が無い環境です。`sudo service docker start` または')
     logLine('sys', '    `sudo dockerd &` を試してください。')
-    logLine('sys', '  - proot 等の権限制限環境では daemon を起動できません。')
-    logLine('sys', '    その場合は apt の PostgreSQL(本スクリプトが自動設定)を使ってください。')
+    logLine('sys', '  - `ulimit: error setting limit (Operation not permitted)` が出る場合は')
+    logLine('sys', '    proot/LXC 等の権限制限環境で、Docker daemon は起動できません。')
+    logLine('sys', '    `bun run setup --no-docker` で Docker を飛ばし、')
+    logLine('sys', '    apt の PostgreSQL(本スクリプトが自動設定)を使ってください。')
   }
 }
 
@@ -318,16 +338,29 @@ async function setupAptPostgres(): Promise<void> {
   const svc = privileged(['service', 'postgresql', 'start'])
   if (svc) await run('db', svc)
 
-  // クラスタ未作成（インストール時の locale 問題等で起きる）なら作成して起動する
+  // クラスタ未作成（インストール時の locale 問題等）なら作成、停止中なら直接起動する
   if (Bun.which('pg_lsclusters')) {
     const clusters = runQuiet(['pg_lsclusters'])
-    const lines = clusters.out.split('\n').filter((l) => l.trim().length > 0)
-    if (lines.length < 2) {
+    const rows = clusters.out
+      .split('\n')
+      .slice(1)
+      .map((l) => l.trim().split(/\s+/))
+      .filter((cols) => cols.length >= 4)
+    if (rows.length === 0) {
       const ver = runQuiet(['sh', '-c', 'ls /usr/lib/postgresql 2>/dev/null | sort -V | tail -1'])
       if (ver.out) {
         logLine('db', `クラスタが無いため作成します... (pg_createcluster ${ver.out} main --start)`)
         const create = privileged(['pg_createcluster', ver.out, 'main', '--start'])
         if (create) await run('db', create)
+      }
+    } else {
+      // service が効かない環境(proot 等)では pg_ctlcluster での直接起動が通ることがある
+      for (const [ver, name, , status] of rows) {
+        if (ver && name && status?.includes('down')) {
+          logLine('db', `クラスタ ${ver}/${name} が停止中のため起動します... (pg_ctlcluster)`)
+          const startCluster = privileged(['pg_ctlcluster', ver, name, 'start'])
+          if (startCluster) await run('db', startCluster)
+        }
       }
     }
   }
