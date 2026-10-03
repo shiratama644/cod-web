@@ -14,8 +14,10 @@
  *           非 root なら docker グループへ追加。グループは再ログインまで反映されないため、
  *           導入直後の daemon 確認と compose pull は sudo 経由で行う）。`--no-docker` でスキップ可
  *        - Termux/proot-distro(Android)を検出 → daemon は動作しない（Android カーネルが
- *          cgroups/namespaces/overlayfs を非 root に公開しないため）。起動を試みず
- *          apt PostgreSQL へ直行し、代替（udocker / QEMU VM / リモート DOCKER_HOST）を案内
+ *          cgroups/namespaces/overlayfs を非 root に公開しないため）。さらに proot は
+ *          所有権を偽装 UID に固定するため postgres OS ユーザー方式も通らない。
+ *          よって現在のユーザー所有の ~/.cod-web/pgdata に initdb したローカルクラスタを
+ *          pg_ctl で起動する（bun run start も同じクラスタを自動起動する）
  *        - docker CLI はあるが daemon 停止 → systemctl / service → dockerd 直接起動を試み、
  *          それでも到達できなければ環境別ヒント（WSL systemd / proot 等）を表示する
  *        - docker が使える（daemon 起動確認済み）→ PostgreSQL は compose が提供する
@@ -412,17 +414,133 @@ async function setupAptPostgres(): Promise<void> {
   }
 
   // .env 生成（無い場合のみ）→ スキーマ反映
+  await finalizeDbEnvAndSchema('PostgreSQL (apt)', 'service 起動済み + app_db + スキーマ反映')
+}
+
+/** apps/web/.env を用意して db:push でスキーマを反映する（apt / proot 共通の仕上げ）。 */
+async function finalizeDbEnvAndSchema(label: string, okNote: string): Promise<void> {
   const envFile = Bun.file('apps/web/.env')
   if (!(await envFile.exists())) {
     await Bun.write(envFile, await Bun.file('apps/web/.env.example').text())
     logLine('db', 'apps/web/.env を .env.example から生成しました。')
   }
   if ((await run('db', ['bun', 'run', 'db:push'])) === 0) {
-    logLine('db', 'OK PostgreSQL(apt)の準備が完了しました(service は起動したままです)。')
-    record('PostgreSQL (apt)', 'OK', 'service 起動済み + app_db + スキーマ反映')
+    logLine('db', `OK ${label} の準備が完了しました。`)
+    record(label, 'OK', okNote)
   } else {
-    record('PostgreSQL (apt)', 'WARN', 'db:push 失敗(後で `bun run db:push` を再実行)')
+    record(label, 'WARN', 'db:push 失敗(後で `bun run db:push` を再実行)')
   }
+}
+
+/** ユーザーローカルクラスタの配置先（execute.ts の自動起動と一致させること）。 */
+const USER_PG_DATA_DIR = `${process.env.HOME}/.cod-web/pgdata`
+
+/**
+ * Termux/proot-distro 向け: postgres OS ユーザーを使わないユーザーローカルクラスタ。
+ * proot はファイル所有権をログイン時の偽装 UID に固定して見せるため、
+ * `sudo -u postgres` に切り替えても initdb/サーバの所有権チェック
+ * （data directory has wrong ownership）が必ず失敗する。
+ * そのため現在のユーザー自身で initdb した専用クラスタを ~/.cod-web/pgdata に作り、
+ * pg_ctl で起動する（bun run start も同じ場所を自動起動する）。
+ */
+async function setupProotPostgres(): Promise<void> {
+  const label = 'PostgreSQL (proot user-local)'
+  // initdb 等のバイナリが無ければ導入（既導入なら no-op）
+  const install = privileged([aptBin, 'install', '-y', 'postgresql', 'postgresql-client'])
+  if (install) await run('db', install)
+
+  const ver = runQuiet(['sh', '-c', 'ls /usr/lib/postgresql 2>/dev/null | sort -V | tail -1']).out
+  if (!ver) {
+    logLine(
+      'db',
+      '! /usr/lib/postgresql にバイナリが見つかりません。apt install を確認してください。',
+    )
+    record(label, 'WARN', 'postgresql バイナリなし')
+    return
+  }
+  const bin = `/usr/lib/postgresql/${ver}/bin`
+
+  logLine('db', 'proot では postgres OS ユーザーの所有権チェックが通らないため、')
+  logLine('db', `現在のユーザーで動くローカルクラスタを使います: ${USER_PG_DATA_DIR}`)
+
+  if (!(await Bun.file(`${USER_PG_DATA_DIR}/PG_VERSION`).exists())) {
+    const code = await run('db', [
+      `${bin}/initdb`,
+      '-D',
+      USER_PG_DATA_DIR,
+      '-U',
+      'postgres',
+      '--auth=trust',
+      '-E',
+      'UTF8',
+      '--locale=C.UTF-8',
+    ])
+    if (code !== 0) {
+      logLine('db', '! initdb に失敗しました。root でログインしている場合は一般ユーザーを')
+      logLine('db', '  作成し、そのユーザーで `bun run setup` を実行してください。')
+      record(label, 'WARN', 'initdb 失敗')
+      return
+    }
+  }
+
+  // 起動（既に起動中なら何もしない）。socket は権限不要な /tmp を使う
+  if (!runQuiet([`${bin}/pg_ctl`, '-D', USER_PG_DATA_DIR, 'status']).ok) {
+    const code = await run('db', [
+      `${bin}/pg_ctl`,
+      '-D',
+      USER_PG_DATA_DIR,
+      '-l',
+      `${USER_PG_DATA_DIR}/log`,
+      '-o',
+      '-k /tmp',
+      'start',
+    ])
+    if (code !== 0) {
+      logLine('db', `! pg_ctl start に失敗しました。ログ: tail ${USER_PG_DATA_DIR}/log`)
+      record(label, 'WARN', 'pg_ctl start 失敗')
+      return
+    }
+  }
+
+  // 接続確認（最大 15 秒）
+  let ready = false
+  for (let i = 0; i < 15 && !ready; i++) {
+    ready = runQuiet([`${bin}/pg_isready`, '-h', '127.0.0.1']).ok
+    if (!ready) Bun.sleepSync(1000)
+  }
+  if (!ready) {
+    logLine('db', `! 起動確認ができませんでした。ログ: tail ${USER_PG_DATA_DIR}/log`)
+    record(label, 'WARN', '起動確認失敗')
+    return
+  }
+
+  // .env の URL と互換にするためパスワードを設定し、app_db を作成する
+  await run('db', [
+    'psql',
+    '-h',
+    '127.0.0.1',
+    '-U',
+    'postgres',
+    '-c',
+    "ALTER USER postgres PASSWORD 'postgres'",
+  ])
+  const exists = runQuiet([
+    'psql',
+    '-h',
+    '127.0.0.1',
+    '-U',
+    'postgres',
+    '-tAc',
+    "SELECT 1 FROM pg_database WHERE datname='app_db'",
+  ])
+  if (!exists.out.includes('1')) {
+    await run('db', ['createdb', '-h', '127.0.0.1', '-U', 'postgres', 'app_db'])
+  }
+
+  await finalizeDbEnvAndSchema(
+    label,
+    `~/.cod-web/pgdata (PostgreSQL ${ver}) + app_db + スキーマ反映`,
+  )
 }
 
 async function main(): Promise<number> {
@@ -466,25 +584,27 @@ async function main(): Promise<number> {
       logLine('sys', `! ${aptBin} update に失敗しました(ネットワーク?)。続行します。`)
     }
 
+    const androidProot = isAndroidProot()
+
     // ── 2a. Docker(公式 apt リポジトリ経由)──────────────────────────
     if (noDocker) {
       logLine('sys', 'Skipping Docker install (--no-docker).')
       record('Docker (公式リポジトリ)', 'SKIP', '--no-docker')
-    } else if (!docker.up && isAndroidProot()) {
-      // Termux/proot-distro: daemon は動作しないため試行せず apt PostgreSQL へ直行する
+    } else if (!docker.up && androidProot) {
+      // Termux/proot-distro: daemon は動作しないため試行せずユーザーローカル PostgreSQL へ直行する
       logLine('sys', 'Termux/proot-distro(Android)環境を検出しました。')
       logLine('sys', '  Android カーネルは cgroups/namespaces/overlayfs を非 root に公開しない')
       logLine('sys', '  ため、Docker daemon はこの環境では動作しません(Termux 公式の既知制約)。')
       logLine(
         'sys',
-        '  PostgreSQL は apt でセットアップし、`bun run start` が自動でそれを使います。',
+        '  PostgreSQL はユーザーローカルクラスタ(~/.cod-web/pgdata)を用意して使います。',
       )
       logLine('sys', '  コンテナが必要な場合の代替: udocker(daemon 不要) / QEMU VM /')
       logLine('sys', '  リモート docker(DOCKER_HOST=ssh://user@server)。')
       record(
         'Docker (公式リポジトリ)',
         'SKIP',
-        'Termux/proot: daemon 動作不可 → apt PostgreSQL 使用',
+        'Termux/proot: daemon 動作不可 → ユーザーローカル PostgreSQL 使用',
       )
     } else if (hasDockerCli) {
       if (docker.up) {
@@ -525,10 +645,12 @@ async function main(): Promise<number> {
       }
     }
 
-    // ── 2b. PostgreSQL(docker 可用なら compose 任せ、不可なら apt)────
+    // ── 2b. PostgreSQL(docker 可用なら compose、proot はユーザーローカル、他は apt)──
     if (docker.up) {
       logLine('sys', 'docker が使えるため PostgreSQL は compose が提供します(apt では入れません)。')
       record('システム依存 (apt)', 'OK', 'docker 可用 → apt postgresql 不要')
+    } else if (androidProot) {
+      await setupProotPostgres()
     } else {
       logLine('sys', 'docker が使えないため PostgreSQL は apt でセットアップします。')
       await setupAptPostgres()

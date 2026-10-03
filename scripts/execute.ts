@@ -139,6 +139,35 @@ async function tcpOpen(hostname: string, port: number): Promise<boolean> {
   })
 }
 
+/**
+ * setup.ts が Termux/proot 向けに作るユーザーローカルクラスタを起動する。
+ * （proot では postgres OS ユーザーの所有権チェックが通らないため、
+ *   ~/.cod-web/pgdata に現在のユーザー所有のクラスタが作られる）
+ * クラスタが存在しない環境では何もせず false を返す。
+ */
+async function tryStartUserLocalPostgres(pgPort: number): Promise<boolean> {
+  const dataDir = `${process.env.HOME}/.cod-web/pgdata`
+  if (!(await Bun.file(`${dataDir}/PG_VERSION`).exists())) return false
+  const verProc = Bun.spawnSync(
+    ['sh', '-c', 'ls /usr/lib/postgresql 2>/dev/null | sort -V | tail -1'],
+    { stdout: 'pipe', stderr: 'pipe' },
+  )
+  const ver = new TextDecoder().decode(verProc.stdout).trim()
+  if (!ver) return false
+  const pgCtl = `/usr/lib/postgresql/${ver}/bin/pg_ctl`
+  logLine('db', `Starting user-local PostgreSQL... (${pgCtl} -D ~/.cod-web/pgdata start)`)
+  const proc = spawn('db', [pgCtl, '-D', dataDir, '-l', `${dataDir}/log`, '-o', '-k /tmp', 'start'])
+  if ((await proc.exited) !== 0) {
+    logLine('db', `! user-local PostgreSQL failed to start. Log: tail ${dataDir}/log`)
+    return false
+  }
+  for (let i = 0; i < 10; i++) {
+    if (await tcpOpen('127.0.0.1', pgPort)) return true
+    await Bun.sleep(1000)
+  }
+  return await tcpOpen('127.0.0.1', pgPort)
+}
+
 /** スキーマを反映する（DB 起動後に呼ぶ。失敗しても DB ありとして続行）。 */
 async function applySchema(): Promise<void> {
   logLine('db', 'Applying schema... (bun run db:push)')
@@ -154,8 +183,9 @@ async function applySchema(): Promise<void> {
 
 /**
  * PostgreSQL を用意してスキーマを反映する。
- *   1. 既にローカルで PostgreSQL が動いていれば（apt 版 / Termux proot 等）それを使う
- *   2. なければ docker compose で起動する
+ *   1. 既にローカルで PostgreSQL が動いていればそれを使う
+ *   2. Termux/proot 向けユーザーローカルクラスタ(~/.cod-web/pgdata)があれば起動して使う
+ *   3. なければ docker compose で起動する
  * 失敗しても全体を止めず false を返す（/api/loadouts はインメモリへフォールバック）。
  */
 async function startDatabase(): Promise<boolean> {
@@ -163,6 +193,13 @@ async function startDatabase(): Promise<boolean> {
   const pgPort = Number(process.env.POSTGRES_PORT ?? '5432')
   if (await tcpOpen('127.0.0.1', pgPort)) {
     logLine('db', `PostgreSQL is already listening on 127.0.0.1:${pgPort}; skipping Docker.`)
+    await applySchema()
+    return true
+  }
+
+  // 2. Termux/proot 向けユーザーローカルクラスタ（setup.ts が作成）があれば起動して使う
+  if (await tryStartUserLocalPostgres(pgPort)) {
+    logLine('db', 'OK user-local PostgreSQL is up; skipping Docker.')
     await applySchema()
     return true
   }
