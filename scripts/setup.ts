@@ -14,7 +14,8 @@
  *          `--no-docker` でスキップ可
  *        - Termux/proot-distro(Android)を検出 → daemon は動作しないため Docker は飛ばす
  *        - docker CLI はあるが daemon 停止 → systemctl / service → dockerd 直接起動を試みる
- *   3. bun install  : --frozen-lockfile（唯一の必須ステップ。失敗時はここで終了）
+ *   3. bun install  : --frozen-lockfile（唯一の必須ステップ。失敗時はここで終了）。
+ *        直後に重要パッケージ(next 等)の実体を検証し、欠けていれば --force で自動修復
  *   4. DB (SQLite)  : `bun run db:push` でスキーマ反映（ファイル DB を作成。サーバ不要）
  *   5. git hooks    : husky（bun install の prepare で入るため確認のみ）
  *   6. --e2e 指定時 : bunx playwright install chromium
@@ -428,6 +429,35 @@ async function main(): Promise<number> {
     return 1
   }
   record('bun install', 'OK')
+
+  // ── 3b. 依存の実体検証 ────────────────────────────────────────────────
+  // bun は node_modules の状態ファイルだけを見て「no changes」と報告することがあり、
+  // 実体が欠けていても気付かない。欠けを検出したら --force で一度だけ修復する。
+  const criticalModules = ['next', '@libsql/client', 'dexie', 'drizzle-kit', 'typescript']
+  const findMissing = async () => {
+    const missing: string[] = []
+    for (const name of criticalModules) {
+      const inRoot = await Bun.file(`node_modules/${name}/package.json`).exists()
+      const inWeb = await Bun.file(`apps/web/node_modules/${name}/package.json`).exists()
+      if (!inRoot && !inWeb) missing.push(name)
+    }
+    return missing
+  }
+  let missingDeps = await findMissing()
+  if (missingDeps.length > 0) {
+    logLine('deps', `! node_modules に実体が欠けています: ${missingDeps.join(', ')}`)
+    logLine('deps', '  bun install --force で再取得します...')
+    await run('deps', ['bun', 'install', '--force'])
+    missingDeps = await findMissing()
+  }
+  if (missingDeps.length === 0) {
+    record('依存の実体検証', 'OK')
+  } else {
+    logLine('deps', '  手動復旧: rm -rf node_modules apps/*/node_modules && bun install')
+    record('依存の実体検証', 'FAIL', `欠落: ${missingDeps.join(', ')}`)
+    printSummary()
+    return 1
+  }
 
   // ── 4. DB スキーマ反映(組み込み SQLite。サーバ不要・即終了)──────────
   if ((await run('db', ['bun', 'run', 'db:push'])) === 0) {

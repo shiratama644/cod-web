@@ -153,6 +153,57 @@ async function runInstallWithLogs(
   return { exit: exit ?? 1, output: captured }
 }
 
+// ── 依存の実体検証 ───────────────────────────────────────────────────────
+// bun は node_modules の状態ファイルだけを見て「no changes」と報告することがあり、
+// 実体のパッケージが欠けていても気付かない(部分削除・pull 直後・proot 環境等)。
+// ビルドが `next: command not found` で落ちる前にここで検出して自動修復する。
+const CRITICAL_MODULES = ['next', '@libsql/client', 'dexie', 'drizzle-kit', 'typescript']
+
+/** 重要パッケージの実体が node_modules に存在するか確認し、欠けている名前を返す。 */
+async function missingCriticalModules(): Promise<string[]> {
+  const missing: string[] = []
+  for (const name of CRITICAL_MODULES) {
+    const candidates = [
+      `node_modules/${name}/package.json`,
+      `apps/web/node_modules/${name}/package.json`,
+    ]
+    let found = false
+    for (const path of candidates) {
+      if (await Bun.file(path).exists()) {
+        found = true
+        break
+      }
+    }
+    if (!found) missing.push(name)
+  }
+  return missing
+}
+
+/**
+ * インストール後の実体検証。欠けがあれば `bun install --force` で一度だけ修復を試み、
+ * それでも直らなければ手動復旧手順を表示して false を返す。
+ */
+async function verifyAndRepairInstall(): Promise<boolean> {
+  let missing = await missingCriticalModules()
+  if (missing.length === 0) return true
+  logLine('install', `! node_modules に実体が欠けています: ${missing.join(', ')}`)
+  logLine('install', '  (bun のインストール状態と実体がずれています。--force で再取得します)')
+  const force = await runInstallWithLogs(['install', '--force'], 'install')
+  if (force.exit !== 0) {
+    logLine('install', `X bun install --force failed (exit ${force.exit}).`)
+  }
+  missing = await missingCriticalModules()
+  if (missing.length === 0) {
+    logLine('install', 'OK 依存の実体を修復しました。')
+    return true
+  }
+  logLine('install', `X 依然として欠けています: ${missing.join(', ')}`)
+  logLine('install', '  手動復旧:')
+  logLine('install', '    rm -rf node_modules apps/*/node_modules packages/*/node_modules')
+  logLine('install', '    bun install')
+  return false
+}
+
 async function main(): Promise<number> {
   // ── 1. 依存関係のインストール ──────────────────────────────────────────
   // まずは frozen-lockfile で決定的に。失敗したら verbose で原因を出す。
@@ -184,6 +235,9 @@ async function main(): Promise<number> {
     return verbose.exit ?? 1
   }
   logLine('install', 'OK Install succeeded.')
+
+  // ── 1b. 依存の実体検証(bun が no changes と言っても欠けていることがある)──
+  if (!(await verifyAndRepairInstall())) return 1
 
   // ── 2. DB スキーマ反映（組み込み SQLite・失敗しても続行） ──────────────
   await applySchema()
