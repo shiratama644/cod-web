@@ -47,7 +47,7 @@
     "security:check": "bun run scripts/check-security.ts",
     "bench": "vitest bench --run --config vitest.bench.config.ts",
     "spell": "cspell --no-progress --relative",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "dependencies": {
     "@neon/config": "^1.8.3",
@@ -72,7 +72,6 @@
     "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^5.0.3",
-    "bun": "1.4.0",
     "cspell": "^10.3.6",
     "fake-indexeddb": "^6.2.5",
     "husky": "^9.1.7",
