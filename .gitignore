@@ -28,6 +28,13 @@ test-results/
 # agent memory canonical is .agent only, .claude is forbidden
 .claude/
 
+# sqlite(組み込み DB のデータファイル)
+.data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
 # env
 .env
 .env.local

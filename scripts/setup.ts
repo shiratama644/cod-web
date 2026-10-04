@@ -7,35 +7,20 @@
  *   bun run setup --e2e        （Playwright ブラウザ(chromium)も取得する）
  *
  * 実行内容（各ステップは冪等。失敗しても可能な限り続行するフェイルソフト設計）:
- *   1. 環境診断     : bun / node / docker / apt の有無とバージョンを表示。
- *        DATABASE_URL(env / apps/web/.env / ルート .env = neon CLI の出力先)が
- *        リモート DB(Neon 等)を指す場合は、ローカル DB を一切構築せず
- *        apps/web/.env へ URL を配置してスキーマ反映のみ行う
+ *   1. 環境診断     : bun / node / docker / apt の有無とバージョンを表示
  *   2. システム依存 : apt が使える環境でのみ実行（nala があれば apt-get より優先して使う）
  *        - docker なし → **Docker 公式 apt リポジトリを設定して docker-ce 一式を導入**
- *          （/etc/apt/keyrings/docker.asc + sources.list.d/docker.list、公式手順準拠。
- *           非 root なら docker グループへ追加。グループは再ログインまで反映されないため、
- *           導入直後の daemon 確認と compose pull は sudo 経由で行う）。`--no-docker` でスキップ可
- *        - Termux/proot-distro(Android)を検出 → daemon は動作しない（Android カーネルが
- *          cgroups/namespaces/overlayfs を非 root に公開しないため）。さらに proot は
- *          所有権を偽装 UID に固定するため postgres OS ユーザー方式も通らない。
- *          よって現在のユーザー所有の ~/.cod-web/pgdata に initdb したローカルクラスタを
- *          pg_ctl で起動する（bun run start も同じクラスタを自動起動する）
- *        - docker CLI はあるが daemon 停止 → systemctl / service → dockerd 直接起動を試み、
- *          それでも到達できなければ環境別ヒント（WSL systemd / proot 等）を表示する
- *        - docker が使える（daemon 起動確認済み）→ PostgreSQL は compose が提供する
- *          ため apt では入れない（ホスト postgres と :5432 の衝突を避ける）
- *        - docker が使えない（導入失敗 / proot 等で daemon 不可）→ フォールバックとして
- *          apt install postgresql → サービス起動（クラスタ未作成なら pg_createcluster で
- *          修復、pg_isready で起動待ち）→ パスワード設定 + app_db 作成 +
- *          apps/web/.env 生成 + スキーマ反映
+ *          （任意。フルスタック compose 用。DB は組み込み SQLite のため Docker 不要）。
+ *          `--no-docker` でスキップ可
+ *        - Termux/proot-distro(Android)を検出 → daemon は動作しないため Docker は飛ばす
+ *        - docker CLI はあるが daemon 停止 → systemctl / service → dockerd 直接起動を試みる
  *   3. bun install  : --frozen-lockfile（唯一の必須ステップ。失敗時はここで終了）
- *   4. git hooks    : husky（bun install の prepare で入るため確認のみ）
- *   5. docker 可用時: docker compose pull postgres（イメージ取得のみ。起動はしない）
+ *   4. DB (SQLite)  : `bun run db:push` でスキーマ反映（ファイル DB を作成。サーバ不要）
+ *   5. git hooks    : husky（bun install の prepare で入るため確認のみ）
  *   6. --e2e 指定時 : bunx playwright install chromium
  *   7. 仕上げ検証   : bun run check:env（環境診断。品質ゲートは回さない）
  *
- * 終了後に「次の手順」（bun run start / --no-db / db:up）を表示する。
+ * 終了後に「次の手順」（bun run start 等）を表示する。
  */
 
 const RESET = '\x1b[0m'
@@ -111,16 +96,6 @@ function privileged(cmd: string[]): string[] | null {
   return null
 }
 
-/** postgres OS ユーザーとしてコマンドを実行する形に包む。 */
-function asPostgres(cmd: string[]): string[] | null {
-  if (isRoot) {
-    if (Bun.which('runuser')) return ['runuser', '-u', 'postgres', '--', ...cmd]
-    return ['su', '-s', '/bin/sh', 'postgres', '-c', cmd.join(' ')]
-  }
-  if (hasSudo) return ['sudo', '-u', 'postgres', ...cmd]
-  return null
-}
-
 /** /etc/os-release から distro ID と codename を読む（Docker 公式リポジトリの URL 決定用）。 */
 async function readOsRelease(): Promise<{ id: string; codename: string }> {
   try {
@@ -185,7 +160,7 @@ function hasSystemd(): boolean {
  * Termux / proot-distro(Android)環境か。
  * Android カーネルは cgroups v2 / kernel namespaces / overlayfs を非 root アプリに
  * 公開しないため、この環境では Docker daemon は動作しない（Termux 公式の既知制約）。
- * 代替: apt PostgreSQL(本スクリプトが設定) / udocker / QEMU VM / リモート DOCKER_HOST。
+ * 代替: udocker(daemon 不要) / QEMU VM / リモート DOCKER_HOST。DB は SQLite なので不要。
  */
 function isAndroidProot(): boolean {
   if (process.env.TERMUX_VERSION) return true
@@ -244,8 +219,8 @@ function printDockerDaemonHints(): void {
     logLine('sys', '    `sudo dockerd &` を試してください。')
     logLine('sys', '  - `ulimit: error setting limit (Operation not permitted)` が出る場合は')
     logLine('sys', '    proot/LXC 等の権限制限環境で、Docker daemon は起動できません。')
-    logLine('sys', '    `bun run setup --no-docker` で Docker を飛ばし、')
-    logLine('sys', '    apt の PostgreSQL(本スクリプトが自動設定)を使ってください。')
+    logLine('sys', '    `bun run setup --no-docker` で Docker を飛ばしてください。')
+    logLine('sys', '    (DB は組み込み SQLite のため Docker がなくても動きます)')
   }
 }
 
@@ -341,332 +316,6 @@ function record(step: string, status: Status, note = ''): void {
   summary.push({ step, status, note })
 }
 
-/** apt 環境で PostgreSQL をインストールし、ユーザー/DB/.env/スキーマまで整える。 */
-async function setupAptPostgres(): Promise<void> {
-  const install = privileged([aptBin, 'install', '-y', 'postgresql', 'postgresql-client'])
-  if (!install) {
-    logLine('db', '! root でも sudo でもないため apt install できません。スキップします。')
-    record('PostgreSQL (apt)', 'WARN', 'root/sudo なし')
-    return
-  }
-  if ((await run('db', install)) !== 0) {
-    logLine('db', '! apt install postgresql に失敗しました。手動で導入してください。')
-    record('PostgreSQL (apt)', 'WARN', 'install 失敗')
-    return
-  }
-
-  // サービス起動（Debian/Ubuntu/proot: service が無難。失敗しても続行）
-  const svc = privileged(['service', 'postgresql', 'start'])
-  if (svc) await run('db', svc)
-
-  // クラスタ未作成（インストール時の locale 問題等）なら作成、停止中なら直接起動する
-  if (Bun.which('pg_lsclusters')) {
-    const clusters = runQuiet(['pg_lsclusters'])
-    const rows = clusters.out
-      .split('\n')
-      .slice(1)
-      .map((l) => l.trim().split(/\s+/))
-      .filter((cols) => cols.length >= 4)
-    if (rows.length === 0) {
-      const ver = runQuiet(['sh', '-c', 'ls /usr/lib/postgresql 2>/dev/null | sort -V | tail -1'])
-      if (ver.out) {
-        logLine('db', `クラスタが無いため作成します... (pg_createcluster ${ver.out} main --start)`)
-        const create = privileged(['pg_createcluster', ver.out, 'main', '--start'])
-        if (create) await run('db', create)
-      }
-    } else {
-      // service が効かない環境(proot 等)では pg_ctlcluster での直接起動が通ることがある
-      for (const [ver, name, , status] of rows) {
-        if (ver && name && status?.includes('down')) {
-          logLine('db', `クラスタ ${ver}/${name} が停止中のため起動します... (pg_ctlcluster)`)
-          const startCluster = privileged(['pg_ctlcluster', ver, name, 'start'])
-          if (startCluster) await run('db', startCluster)
-        }
-      }
-    }
-  }
-
-  // サーバが接続を受け付けるまで最大 15 秒待つ（service 直後は起動中のことがある）
-  if (Bun.which('pg_isready')) {
-    let ready = runQuiet(['pg_isready']).ok
-    for (let i = 0; i < 15 && !ready; i++) {
-      Bun.sleepSync(1000)
-      ready = runQuiet(['pg_isready']).ok
-    }
-    if (!ready) {
-      logLine('db', '! pg_isready で起動確認できませんでした(そのまま続行して試します)。')
-    }
-  }
-
-  // パスワード設定 + app_db 作成（compose.yaml / .env.example のデフォルトに一致させる）
-  const alter = asPostgres(['psql', '-c', "ALTER USER postgres PASSWORD 'postgres'"])
-  const alterRes = alter ? runQuiet(alter) : { ok: false, out: '', err: 'root/sudo が使えません' }
-  if (!alterRes.ok) {
-    logLine('db', '! postgres ユーザーのパスワード設定に失敗しました。')
-    if (alterRes.err) logLine('db', `  詳細: ${alterRes.err.split('\n')[0]}`)
-    logLine('db', '  手動: sudo -u postgres psql -c "ALTER USER postgres PASSWORD \'postgres\'"')
-    logLine('db', '  状態確認: pg_lsclusters / sudo service postgresql status')
-    record('PostgreSQL (apt)', 'WARN', 'provisioning 失敗')
-    return
-  }
-  const exists = asPostgres(['psql', '-tAc', "SELECT 1 FROM pg_database WHERE datname='app_db'"])
-  const found = exists ? runQuiet(exists) : { ok: false, out: '' }
-  if (!found.out.includes('1')) {
-    const createdb = asPostgres(['createdb', 'app_db'])
-    if (createdb) await run('db', createdb)
-  }
-
-  // .env 生成（無い場合のみ）→ スキーマ反映
-  await finalizeDbEnvAndSchema('PostgreSQL (apt)', 'service 起動済み + app_db + スキーマ反映')
-}
-
-/** apps/web/.env を用意して db:push でスキーマを反映する（apt / proot 共通の仕上げ）。 */
-async function finalizeDbEnvAndSchema(label: string, okNote: string): Promise<void> {
-  const envFile = Bun.file('apps/web/.env')
-  if (!(await envFile.exists())) {
-    await Bun.write(envFile, await Bun.file('apps/web/.env.example').text())
-    logLine('db', 'apps/web/.env を .env.example から生成しました。')
-  }
-  if ((await run('db', ['bun', 'run', 'db:push'])) === 0) {
-    logLine('db', `OK ${label} の準備が完了しました。`)
-    record(label, 'OK', okNote)
-  } else {
-    record(label, 'WARN', 'db:push 失敗(後で `bun run db:push` を再実行)')
-  }
-}
-
-/** ユーザーローカルクラスタの配置先（execute.ts の自動起動と一致させること）。 */
-const USER_PG_DATA_DIR = `${process.env.HOME}/.cod-web/pgdata`
-
-/** .env から DATABASE_URL を読む（apps/web/.env 優先。ルート .env は neon CLI の出力先）。 */
-async function readDatabaseUrlFromEnvFiles(): Promise<string | null> {
-  for (const path of ['apps/web/.env', '.env']) {
-    const text = await Bun.file(path)
-      .text()
-      .catch(() => '')
-    const m = text.match(/^DATABASE_URL=["']?([^"'\n]+)/m)
-    if (m?.[1]) return m[1].trim()
-  }
-  return null
-}
-
-/** 127.0.0.1 / localhost 以外のホストを指す接続文字列か（Neon 等のリモート DB）。 */
-function isRemoteDbUrl(url: string): boolean {
-  try {
-    const host = new URL(url).hostname
-    return host !== '127.0.0.1' && host !== 'localhost' && host !== '[::1]'
-  } catch {
-    return false
-  }
-}
-
-/** ログ表示用のホスト名（資格情報は表示しない）。 */
-function dbHostLabel(url: string): string {
-  try {
-    return new URL(url).hostname
-  } catch {
-    return 'remote'
-  }
-}
-
-/**
- * Neon 等のリモート DATABASE_URL を使う場合: ローカル DB は一切構築せず、
- * apps/web/.env に URL を配置(Next.js が読むのはここ)してスキーマを反映する。
- */
-async function setupRemoteDb(url: string): Promise<void> {
-  const label = 'PostgreSQL (remote/Neon)'
-  logLine('db', `リモート DATABASE_URL を検出しました(${dbHostLabel(url)})。`)
-  logLine('db', 'ローカル DB(Docker/apt/proot)は構築しません。')
-  const envPath = 'apps/web/.env'
-  const text = await Bun.file(envPath)
-    .text()
-    .catch(() => '')
-  if (!/^DATABASE_URL=/m.test(text)) {
-    const head = text.length > 0 && !text.endsWith('\n') ? `${text}\n` : text
-    await Bun.write(envPath, `${head}DATABASE_URL=${url}\n`)
-    logLine('db', `${envPath} に DATABASE_URL を書き込みました。`)
-  }
-  process.env.DATABASE_URL = url
-  if ((await run('db', ['bun', 'run', 'db:push'])) === 0) {
-    logLine('db', `OK ${label} の準備が完了しました。`)
-    record(label, 'OK', `${dbHostLabel(url)} + スキーマ反映`)
-  } else {
-    record(label, 'WARN', 'db:push 失敗(接続/認証を確認して `bun run db:push` を再実行)')
-  }
-}
-
-/**
- * Termux/proot-distro 向け: postgres OS ユーザーを使わないユーザーローカルクラスタ。
- * proot はファイル所有権をログイン時の偽装 UID に固定して見せるため、
- * `sudo -u postgres` に切り替えても initdb/サーバの所有権チェック
- * （data directory has wrong ownership）が必ず失敗する。
- * そのため現在のユーザー自身で initdb した専用クラスタを ~/.cod-web/pgdata に作り、
- * pg_ctl で起動する（bun run start も同じ場所を自動起動する）。
- */
-async function setupProotPostgres(): Promise<void> {
-  const label = 'PostgreSQL (proot user-local)'
-  // initdb 等のバイナリが無ければ導入（既導入なら no-op）
-  const install = privileged([aptBin, 'install', '-y', 'postgresql', 'postgresql-client'])
-  if (install) await run('db', install)
-
-  const ver = runQuiet(['sh', '-c', 'ls /usr/lib/postgresql 2>/dev/null | sort -V | tail -1']).out
-  if (!ver) {
-    logLine(
-      'db',
-      '! /usr/lib/postgresql にバイナリが見つかりません。apt install を確認してください。',
-    )
-    record(label, 'WARN', 'postgresql バイナリなし')
-    return
-  }
-  const bin = `/usr/lib/postgresql/${ver}/bin`
-  const dataDir = USER_PG_DATA_DIR
-
-  logLine('db', 'proot では postgres OS ユーザーの所有権チェックが通らないため、')
-  logLine('db', `現在のユーザーで動くローカルクラスタを使います: ${dataDir}`)
-
-  if (!(await Bun.file(`${dataDir}/PG_VERSION`).exists())) {
-    // PG_VERSION が無いのにディレクトリが残っている場合は壊れた初期化の残骸なので作り直す
-    if (runQuiet(['test', '-d', dataDir]).ok) {
-      logLine('db', '不完全な pgdata を検出したため作り直します。')
-      await run('db', ['rm', '-rf', dataDir])
-    }
-    const code = await run('db', [
-      `${bin}/initdb`,
-      '-D',
-      dataDir,
-      '-U',
-      'postgres',
-      '--auth=trust',
-      '-E',
-      'UTF8',
-      '--locale=C.UTF-8',
-    ])
-    if (code !== 0) {
-      logLine('db', '! initdb に失敗しました。root でログインしている場合は一般ユーザーを')
-      logLine('db', '  作成し、そのユーザーで `bun run setup` を実行してください。')
-      record(label, 'WARN', 'initdb 失敗')
-      return
-    }
-  }
-
-  // proot/Android 向け設定を冪等に追記:
-  //   - socket は権限不要な /tmp
-  //   - Android カーネルは SysV IPC 非対応・/dev/shm も不安定なため共有メモリは mmap
-  const confPath = `${dataDir}/postgresql.conf`
-  const confText = await Bun.file(confPath)
-    .text()
-    .catch(() => '')
-  const marker = '# cod-web proot settings'
-  if (confText && !confText.includes(marker)) {
-    const extra = [
-      '',
-      marker,
-      "unix_socket_directories = '/tmp'",
-      'shared_memory_type = mmap',
-      'dynamic_shared_memory_type = mmap',
-      '',
-    ].join('\n')
-    await Bun.write(confPath, confText + extra)
-    logLine('db', 'postgresql.conf に proot 向け設定(socket=/tmp, shm=mmap)を追記しました。')
-  }
-
-  // 起動状態を確認。status が「起動中」でも接続できない場合は stale postmaster.pid の
-  // 可能性があるため再起動する
-  const status = runQuiet([`${bin}/pg_ctl`, '-D', dataDir, 'status'])
-  logLine('db', `pg_ctl status: ${(status.out || status.err).split('\n')[0] || '(出力なし)'}`)
-  const isReady = () => runQuiet([`${bin}/pg_isready`, '-h', '127.0.0.1']).ok
-  if (status.ok && !isReady()) {
-    logLine('db', 'status は起動中ですが接続できないため再起動します... (pg_ctl restart)')
-    await run('db', [
-      `${bin}/pg_ctl`,
-      '-D',
-      dataDir,
-      '-l',
-      `${dataDir}/log`,
-      '-m',
-      'fast',
-      'restart',
-    ])
-  } else if (!status.ok) {
-    const code = await run('db', [`${bin}/pg_ctl`, '-D', dataDir, '-l', `${dataDir}/log`, 'start'])
-    if (code !== 0) {
-      await printPgFailureDiagnostics(bin, dataDir)
-      record(label, 'WARN', 'pg_ctl start 失敗')
-      return
-    }
-  }
-
-  // 接続確認（低速ストレージ向けに最大 30 秒）
-  let ready = false
-  for (let i = 0; i < 30 && !ready; i++) {
-    ready = isReady()
-    if (!ready) Bun.sleepSync(1000)
-  }
-  if (!ready) {
-    await printPgFailureDiagnostics(bin, dataDir)
-    record(label, 'WARN', '起動確認失敗')
-    return
-  }
-
-  // .env の URL と互換にするためパスワードを設定し、app_db を作成する
-  await run('db', [
-    'psql',
-    '-h',
-    '127.0.0.1',
-    '-U',
-    'postgres',
-    '-c',
-    "ALTER USER postgres PASSWORD 'postgres'",
-  ])
-  const exists = runQuiet([
-    'psql',
-    '-h',
-    '127.0.0.1',
-    '-U',
-    'postgres',
-    '-tAc',
-    "SELECT 1 FROM pg_database WHERE datname='app_db'",
-  ])
-  if (!exists.out.includes('1')) {
-    await run('db', ['createdb', '-h', '127.0.0.1', '-U', 'postgres', 'app_db'])
-  }
-
-  await finalizeDbEnvAndSchema(
-    label,
-    `~/.cod-web/pgdata (PostgreSQL ${ver}) + app_db + スキーマ反映`,
-  )
-}
-
-/** ユーザーローカル PostgreSQL が起動しない時に、原因をその場で表示する。 */
-async function printPgFailureDiagnostics(bin: string, dataDir: string): Promise<void> {
-  logLine('db', '! PostgreSQL が起動しませんでした。診断情報:')
-  const status = runQuiet([`${bin}/pg_ctl`, '-D', dataDir, 'status'])
-  logLine('db', `  pg_ctl status: ${(status.out || status.err).split('\n')[0] || '(出力なし)'}`)
-  if (await Bun.file(`${dataDir}/log`).exists()) {
-    logLine('db', `  ── サーバログ末尾 (${dataDir}/log) ──`)
-    await run('db', ['tail', '-n', '15', `${dataDir}/log`])
-  } else {
-    logLine('db', '  サーバログ未作成のため、前景起動でエラーを採取します(最大 5 秒)...')
-    const probe = Bun.spawnSync(['timeout', '5', `${bin}/postgres`, '-D', dataDir], {
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    const out = `${new TextDecoder().decode(probe.stderr)}\n${new TextDecoder().decode(probe.stdout)}`
-    const lines = out
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0)
-      .slice(0, 12)
-    if (lines.length === 0) {
-      logLine(
-        'db',
-        '  (前景起動でも出力がありません。timeout/postgres の実行可否を確認してください)',
-      )
-    }
-    for (const line of lines) logLine('db', `  ${line}`)
-  }
-}
-
 async function main(): Promise<number> {
   const args = process.argv.slice(2)
   const noApt = args.includes('--no-apt')
@@ -692,14 +341,6 @@ async function main(): Promise<number> {
     `docker: ${dockerLabel} / apt: ${hasApt ? (aptBin === 'nala' ? 'あり(nala 使用)' : 'あり') : 'なし'}`,
   )
   record('環境診断', 'OK', `bun ${bunVer.out}, docker ${docker.up ? '可用' : 'なし/不可'}`)
-
-  // リモート DB(Neon 等): env / apps/web/.env / ルート .env の DATABASE_URL を検出。
-  // 設定されている場合、ローカル DB(Docker/apt/proot)の構築は不要になる。
-  const configuredDbUrl = process.env.DATABASE_URL ?? (await readDatabaseUrlFromEnvFiles())
-  const remoteDbUrl = configuredDbUrl && isRemoteDbUrl(configuredDbUrl) ? configuredDbUrl : null
-  if (remoteDbUrl) {
-    logLine('setup', `DATABASE_URL: リモート(${dbHostLabel(remoteDbUrl)})を使用します。`)
-  }
 
   // ── 2. システム依存(apt)─────────────────────────────────────────────
   if (noApt) {
@@ -773,21 +414,8 @@ async function main(): Promise<number> {
             : 'インストール済み(daemon 未稼働)',
         )
       } else {
-        record('Docker (公式リポジトリ)', 'WARN', '導入失敗 → apt postgresql へフォールバック')
+        record('Docker (公式リポジトリ)', 'WARN', '導入失敗(DB は SQLite のため影響なし)')
       }
-    }
-
-    // ── 2b. PostgreSQL(リモート優先 → compose → proot → apt)────────────
-    if (remoteDbUrl) {
-      record('システム依存 (apt)', 'OK', 'リモート DB 使用 → ローカル postgresql 不要')
-    } else if (docker.up) {
-      logLine('sys', 'docker が使えるため PostgreSQL は compose が提供します(apt では入れません)。')
-      record('システム依存 (apt)', 'OK', 'docker 可用 → apt postgresql 不要')
-    } else if (androidProot) {
-      await setupProotPostgres()
-    } else {
-      logLine('sys', 'docker が使えないため PostgreSQL は apt でセットアップします。')
-      await setupAptPostgres()
     }
   }
 
@@ -801,12 +429,14 @@ async function main(): Promise<number> {
   }
   record('bun install', 'OK')
 
-  // ── 3b. リモート DB(Neon 等)の仕上げ(apt の有無に関わらず、依存導入後に実行)──
-  if (remoteDbUrl) {
-    await setupRemoteDb(remoteDbUrl)
+  // ── 4. DB スキーマ反映(組み込み SQLite。サーバ不要・即終了)──────────
+  if ((await run('db', ['bun', 'run', 'db:push'])) === 0) {
+    record('DB (SQLite)', 'OK', 'スキーマ反映済み(apps/web/.data/cod.sqlite)')
+  } else {
+    record('DB (SQLite)', 'WARN', 'db:push 失敗(初回アクセス時に自動作成されます)')
   }
 
-  // ── 4. git hooks(husky は bun install の prepare で導入済みのはず)───
+  // ── 5. git hooks(husky は bun install の prepare で導入済みのはず)───
   const hooks = await Bun.file('.husky/_/husky.sh')
     .exists()
     .catch(() => false)
@@ -815,18 +445,6 @@ async function main(): Promise<number> {
   } else {
     const code = await run('deps', ['bunx', 'husky'])
     record('git hooks (husky)', code === 0 ? 'OK' : 'WARN', code === 0 ? '再導入' : '失敗')
-  }
-
-  // ── 5. docker compose イメージ取得(起動はしない)─────────────────────
-  if (remoteDbUrl) {
-    record('postgres イメージ取得', 'SKIP', 'リモート DB 使用')
-  } else if (docker.up) {
-    logLine('db', 'Pulling PostgreSQL image... (docker compose pull postgres)')
-    const pull = ['docker', 'compose', 'pull', 'postgres']
-    const code = await run('db', docker.viaSudo ? ['sudo', '-n', ...pull] : pull)
-    record('postgres イメージ取得', code === 0 ? 'OK' : 'WARN', code === 0 ? '' : 'pull 失敗')
-  } else {
-    record('postgres イメージ取得', 'SKIP', 'docker 不可用')
   }
 
   // ── 6. Playwright ブラウザ(任意)─────────────────────────────────────
@@ -850,9 +468,8 @@ async function main(): Promise<number> {
     logLine('setup', '      それまで docker コマンドを直接使う場合は sudo を付けてください。')
   }
   logLine('setup', '次の手順:')
-  logLine('setup', '  bun run start          # DB(Docker) + build + サーバ一括起動')
-  logLine('setup', '  bun run start --no-db  # DB なしで起動(インメモリ保存)')
-  logLine('setup', '  bun run db:up          # PostgreSQL だけ起動(通常開発)')
+  logLine('setup', '  bun run start          # build + サーバ一括起動(DB は組み込み SQLite)')
+  logLine('setup', '  bun run dev            # Next.js 開発サーバのみ')
   logLine('setup', '  bun run check:all      # 品質ゲート 7 種(コミット前)')
   return 0
 }

@@ -1,34 +1,53 @@
-import { drizzle } from 'drizzle-orm/node-postgres'
-import { Pool } from 'pg'
+import { mkdirSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { createClient } from '@libsql/client'
+import { drizzle } from 'drizzle-orm/libsql'
 
-const databaseUrl = process.env.DATABASE_URL
+// 組み込み SQLite(ファイル DB)。サーバ不要・設定不要で動く。
+// 保存先は SQLITE_PATH で上書き可(既定: apps/web/.data/cod.sqlite)
+const sqlitePath = process.env.SQLITE_PATH ?? resolve(process.cwd(), '.data/cod.sqlite')
 
-/** True when a PostgreSQL connection is configured. */
-export const hasDb = Boolean(databaseUrl)
+/** SQLite は常に利用可能(旧 Postgres 構成との互換のため残しているフラグ)。 */
+export const hasDb = true
 
 const globalForDb = globalThis as typeof globalThis & {
-  __arenaNextJsPostgresqlPool?: Pool
+  __arenaNextJsSqlite?: {
+    client: ReturnType<typeof createClient>
+    db: ReturnType<typeof drizzle>
+    ready: Promise<void> | null
+  }
 }
 
-let _db: ReturnType<typeof drizzle> | null = null
+function getConn() {
+  if (!globalForDb.__arenaNextJsSqlite) {
+    mkdirSync(dirname(sqlitePath), { recursive: true })
+    const client = createClient({ url: `file:${sqlitePath}` })
+    globalForDb.__arenaNextJsSqlite = { client, db: drizzle(client), ready: null }
+  }
+  return globalForDb.__arenaNextJsSqlite
+}
+
+/** drizzle クライアント(SQLite)。 */
+export function getDb() {
+  return getConn().db
+}
 
 /**
- * Lazily create the drizzle client. Throws if DATABASE_URL is not set —
- * callers must check `hasDb` first (routes fall back to in-memory storage).
+ * スキーマの存在を保証する(初回アクセス時に CREATE TABLE IF NOT EXISTS)。
+ * drizzle-kit push(db:push)と同じ定義。ルートは最初にこれを await する。
  */
-export function getDb() {
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL is required')
+export function dbReady(): Promise<void> {
+  const conn = getConn()
+  if (!conn.ready) {
+    conn.ready = conn.client
+      .execute(
+        `CREATE TABLE IF NOT EXISTS loadouts (
+          id integer PRIMARY KEY,
+          data text NOT NULL,
+          updated_at integer NOT NULL
+        )`,
+      )
+      .then(() => undefined)
   }
-  if (_db) return _db
-  const pool =
-    globalForDb.__arenaNextJsPostgresqlPool ??
-    new Pool({
-      connectionString: databaseUrl,
-    })
-  if (process.env.NODE_ENV !== 'production') {
-    globalForDb.__arenaNextJsPostgresqlPool = pool
-  }
-  _db = drizzle(pool)
-  return _db
+  return conn.ready
 }

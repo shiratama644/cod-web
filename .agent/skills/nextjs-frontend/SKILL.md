@@ -15,10 +15,10 @@ description: apps/web（Next.js 16）をSandbox/Arenaプレビューで確実に
 | 項目 | 値 |
 | :--- | :--- |
 | 場所 | `apps/web/`（package name `web`） |
-| スタック | Next 16 (App Router) + React 19 + Tailwind 4 + framer-motion 13 + drizzle-orm/pg |
+| スタック | Next 16 (App Router) + React 19 + Tailwind 4 + framer-motion 13 + drizzle-orm/libsql |
 | scripts | `dev`=`next dev -H 0.0.0.0 -p 3000` / `build` / `start` / `preview`=`next start -H 0.0.0.0 -p 4173` / `lint`=eslint / `typecheck`=tsc |
 | 画面 | Home（MP/BR）・Loadout（5クラス）・Gunsmith（9スロット+stat mod）・TopBar・横画面ロック。データは `src/lib/data.ts` |
-| DB | `src/db/` drizzle+pg。**DATABASE_URL 未設定ならインメモリfallback**（`getDb()`/`hasDb` の遅延初期化）。`/api/health` が `{ok, db}` を返す。ローカルはルート `compose.yaml` で起動: `bun run db:up` → `bun run db:push`（README「データベース」節参照） |
+| DB | `src/db/` drizzle+`@libsql/client`(組み込み SQLite・サーバ不要)。保存先 `apps/web/.data/cod.sqlite`(`SQLITE_PATH` で上書き可)。ルートは `await dbReady()`(初回に CREATE TABLE IF NOT EXISTS)→`getDb()`。`/api/health` が `{ok, db, storage:'sqlite'}` を返す。スキーマ反映は `bun run db:push`（README「データベース」節参照） |
 
 ## ツールチェーンの分担（重要）
 

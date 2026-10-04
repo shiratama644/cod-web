@@ -2,17 +2,15 @@
  * 一括起動スクリプト（本番構成）。
  *
  *   bun run scripts/execute.ts   （または `bun run start`）
- *   bun run start --no-db        （PostgreSQL を起動せずに実行）
  *
  * 次を順に実行する:
  *   1. `bun install`。失敗したらそこで停止。
- *   2. PostgreSQL（Docker）起動: `docker compose up -d --wait postgres` → `bun run db:push`。
- *      `--no-db` 指定時はスキップ。docker が無い/起動失敗の場合は警告して **DB なしで続行**
- *      （/api/loadouts はインメモリフォールバック）。起動を止めない。
+ *   2. DB スキーマ反映: `bun run db:push`（組み込み SQLite ファイルを作成/更新。
+ *      サーバ・Docker 不要。失敗しても警告のみで続行 — 初回アクセス時にも自動作成される）。
  *   3. `bun run build`（packages + gameserver + next build）。失敗したらそこで停止してサーバは起動しない。
  *   4. ビルド成功後、次の 2 プロセスを並列起動する:
  *        - game server : `bun run server` （権威ゲームサーバ・:8080）
- *        - web client  : `bun run preview`（next start・:4173、DB 起動時は DATABASE_URL を注入）
+ *        - web client  : `bun run preview`（next start・:4173）
  *
  * 各プロセスの stdout/stderr は **プロセスごとに色分けしてタグ付け**して
  * 自プロセスの stdout へ流す。Ctrl+C 等で終了したら子プロセスをすべて後始末する。
@@ -96,205 +94,19 @@ function spawn(kind: Kind, cmd: string[], cwd = process.cwd(), env?: Record<stri
   return proc
 }
 
-// ── PostgreSQL（Docker）起動 ─────────────────────────────────────────────
+// ── DB スキーマ反映（組み込み SQLite） ──────────────────────────────────
 
-/** compose.yaml のデフォルトと一致する接続文字列（環境変数があれば尊重する）。 */
-const DEFAULT_DATABASE_URL = [
-  'postgresql://',
-  process.env.POSTGRES_USER ?? 'postgres',
-  ':',
-  process.env.POSTGRES_PASSWORD ?? 'postgres',
-  '@127.0.0.1:',
-  process.env.POSTGRES_PORT ?? '5432',
-  '/',
-  process.env.POSTGRES_DB ?? 'app_db',
-].join('')
-
-/** .env から DATABASE_URL を読む（apps/web/.env 優先。ルート .env は neon CLI の出力先）。 */
-async function readDatabaseUrlFromEnvFiles(): Promise<string | null> {
-  for (const path of ['apps/web/.env', '.env']) {
-    const text = await Bun.file(path)
-      .text()
-      .catch(() => '')
-    const m = text.match(/^DATABASE_URL=["']?([^"'\n]+)/m)
-    if (m?.[1]) return m[1].trim()
-  }
-  return null
-}
-
-/** 127.0.0.1 / localhost 以外のホストを指す接続文字列か（Neon 等のリモート DB）。 */
-function isRemoteDbUrl(url: string): boolean {
-  try {
-    const host = new URL(url).hostname
-    return host !== '127.0.0.1' && host !== 'localhost' && host !== '[::1]'
-  } catch {
-    return false
-  }
-}
-
-/** ログ表示用のホスト名（資格情報は表示しない）。 */
-function dbHostLabel(url: string): string {
-  try {
-    return new URL(url).hostname
-  } catch {
-    return 'remote'
-  }
-}
-
-/** TCP ポートに接続できるか（ローカル PostgreSQL の稼働確認用。1 秒でタイムアウト）。 */
-async function tcpOpen(hostname: string, port: number): Promise<boolean> {
-  return await new Promise<boolean>((resolve) => {
-    const timer = setTimeout(() => resolve(false), 1000)
-    const done = (ok: boolean) => {
-      clearTimeout(timer)
-      resolve(ok)
-    }
-    Bun.connect({
-      hostname,
-      port,
-      socket: {
-        open(socket) {
-          socket.end()
-          done(true)
-        },
-        data() {},
-        close() {},
-        error() {
-          done(false)
-        },
-        connectError() {
-          done(false)
-        },
-      },
-    }).catch(() => done(false))
-  })
-}
-
-/**
- * setup.ts が Termux/proot 向けに作るユーザーローカルクラスタを起動する。
- * （proot では postgres OS ユーザーの所有権チェックが通らないため、
- *   ~/.cod-web/pgdata に現在のユーザー所有のクラスタが作られる）
- * クラスタが存在しない環境では何もせず false を返す。
- */
-async function tryStartUserLocalPostgres(pgPort: number): Promise<boolean> {
-  const dataDir = `${process.env.HOME}/.cod-web/pgdata`
-  if (!(await Bun.file(`${dataDir}/PG_VERSION`).exists())) return false
-  const verProc = Bun.spawnSync(
-    ['sh', '-c', 'ls /usr/lib/postgresql 2>/dev/null | sort -V | tail -1'],
-    { stdout: 'pipe', stderr: 'pipe' },
-  )
-  const ver = new TextDecoder().decode(verProc.stdout).trim()
-  if (!ver) return false
-  const pgCtl = `/usr/lib/postgresql/${ver}/bin/pg_ctl`
-  logLine('db', `Starting user-local PostgreSQL... (${pgCtl} -D ~/.cod-web/pgdata start)`)
-  const startArgs = [pgCtl, '-D', dataDir, '-l', `${dataDir}/log`]
-  let proc = spawn('db', [...startArgs, 'start'])
-  if ((await proc.exited) !== 0) {
-    // stale postmaster.pid 等で start が拒否された場合は restart を一度だけ試す
-    proc = spawn('db', [...startArgs, '-m', 'fast', 'restart'])
-    if ((await proc.exited) !== 0) {
-      logLine('db', '! user-local PostgreSQL failed to start.')
-      const log = Bun.file(`${dataDir}/log`)
-      if (await log.exists()) {
-        const logProc = spawn('db', ['tail', '-n', '10', `${dataDir}/log`])
-        await logProc.exited
-      }
-      return false
-    }
-  }
-  for (let i = 0; i < 10; i++) {
-    if (await tcpOpen('127.0.0.1', pgPort)) return true
-    await Bun.sleep(1000)
-  }
-  return await tcpOpen('127.0.0.1', pgPort)
-}
-
-/** スキーマを反映する（DB 起動後に呼ぶ。失敗しても DB ありとして続行）。 */
+/** スキーマを反映する（drizzle-kit push → SQLite ファイル作成/更新。失敗しても続行）。 */
 async function applySchema(): Promise<void> {
-  logLine('db', 'Applying schema... (bun run db:push)')
+  logLine('db', 'Applying schema... (bun run db:push / SQLite)')
   const push = spawn('db', ['bun', 'run', 'db:push'])
   const pushExit = await push.exited
   if (pushExit !== 0) {
     logLine('db', `! Schema push failed (exit ${pushExit}). The server will still start;`)
-    logLine('db', '  /api/loadouts may fall back until `bun run db:push` succeeds.')
+    logLine('db', '  the table is also auto-created on first /api/loadouts access.')
     return
   }
   logLine('db', 'OK Schema is up to date.')
-}
-
-/**
- * PostgreSQL を用意してスキーマを反映する。
- *   0. DATABASE_URL が Neon 等のリモート DB を指すならそれを使う（ローカル起動なし）
- *   1. 既にローカルで PostgreSQL が動いていればそれを使う
- *   2. Termux/proot 向けユーザーローカルクラスタ(~/.cod-web/pgdata)があれば起動して使う
- *   3. なければ docker compose で起動する
- * 失敗しても全体を止めず false を返す（/api/loadouts はインメモリへフォールバック）。
- */
-async function startDatabase(): Promise<boolean> {
-  // 0. 設定済み DATABASE_URL（env か apps/web/.env かルート .env）がリモートならそれを使う
-  const configured = process.env.DATABASE_URL ?? (await readDatabaseUrlFromEnvFiles())
-  if (configured && isRemoteDbUrl(configured)) {
-    process.env.DATABASE_URL = configured
-    logLine('db', `Remote DATABASE_URL detected (${dbHostLabel(configured)}); skipping local DB.`)
-    await applySchema()
-    return true
-  }
-
-  // 1. ローカル PostgreSQL（apt 版・proot 環境など Docker を使わない構成）を優先
-  const pgPort = Number(process.env.POSTGRES_PORT ?? '5432')
-  if (await tcpOpen('127.0.0.1', pgPort)) {
-    logLine('db', `PostgreSQL is already listening on 127.0.0.1:${pgPort}; skipping Docker.`)
-    await applySchema()
-    return true
-  }
-
-  // 2. Termux/proot 向けユーザーローカルクラスタ（setup.ts が作成）があれば起動して使う
-  if (await tryStartUserLocalPostgres(pgPort)) {
-    logLine('db', 'OK user-local PostgreSQL is up; skipping Docker.')
-    await applySchema()
-    return true
-  }
-
-  if (!Bun.which('docker')) {
-    logLine('db', '! docker not found. Starting WITHOUT a database (in-memory fallback).')
-    logLine('db', '  Install Docker, or use `bun run start --no-db` to silence this message.')
-    return false
-  }
-
-  // docker グループ追加が未反映のシェル（セットアップ直後など）では、
-  // 直接の docker 呼び出しは権限エラーになるが sudo 経由なら daemon に到達できる。
-  const direct = Bun.spawnSync(['docker', 'info', '--format', '{{.ServerVersion}}'], {
-    stdout: 'pipe',
-    stderr: 'pipe',
-  })
-  let composeCmd = ['docker', 'compose', 'up', '-d', '--wait', 'postgres']
-  if (direct.exitCode !== 0 && Bun.which('sudo')) {
-    const viaSudo = Bun.spawnSync(
-      ['sudo', '-n', 'docker', 'info', '--format', '{{.ServerVersion}}'],
-      {
-        stdout: 'pipe',
-        stderr: 'pipe',
-      },
-    )
-    if (viaSudo.exitCode === 0) {
-      logLine('db', 'docker group not active in this shell yet; using sudo for docker compose.')
-      logLine('db', '  (Re-login or `newgrp docker` to drop the sudo requirement.)')
-      composeCmd = ['sudo', '-n', ...composeCmd]
-    }
-  }
-
-  logLine('db', `Starting PostgreSQL... (${composeCmd.join(' ')})`)
-  const up = spawn('db', composeCmd)
-  const upExit = await up.exited
-  if (upExit !== 0) {
-    logLine('db', `! PostgreSQL startup failed (exit ${upExit}). Continuing WITHOUT a database.`)
-    logLine('db', '  Check: docker daemon running? port in use? -> `bun run db:logs`')
-    return false
-  }
-
-  logLine('db', 'OK PostgreSQL is healthy.')
-  await applySchema()
-  return true
 }
 
 async function runInstallWithLogs(
@@ -342,9 +154,6 @@ async function runInstallWithLogs(
 }
 
 async function main(): Promise<number> {
-  // `bun run start --no-db` / `bun run scripts/execute.ts --no-db` で DB 起動をスキップ
-  const noDb = process.argv.includes('--no-db')
-
   // ── 1. 依存関係のインストール ──────────────────────────────────────────
   // まずは frozen-lockfile で決定的に。失敗したら verbose で原因を出す。
   logLine('install', 'Installing dependencies... (bun install --frozen-lockfile)')
@@ -376,13 +185,8 @@ async function main(): Promise<number> {
   }
   logLine('install', 'OK Install succeeded.')
 
-  // ── 2. PostgreSQL（Docker）起動（任意・失敗しても続行） ────────────────
-  let dbReady = false
-  if (noDb) {
-    logLine('db', 'Skipping PostgreSQL startup (--no-db). /api/loadouts uses in-memory fallback.')
-  } else {
-    dbReady = await startDatabase()
-  }
+  // ── 2. DB スキーマ反映（組み込み SQLite・失敗しても続行） ──────────────
+  await applySchema()
 
   // ── 3. ビルド ─────────────────────────────────────────────────────────
   logLine('build', 'Starting production build... (packages + gameserver + next build)')
@@ -401,15 +205,8 @@ async function main(): Promise<number> {
   logLine('build', 'OK Build succeeded. Starting game server and client...')
 
   // ── 4. game server と next preview を並列起動 ──────────────────────────
-  // DB が起動できた場合、未設定なら DATABASE_URL を注入して永続化を有効にする
-  // （apps/web/.env 等で明示設定済みならそちらを優先する）。
-  const clientEnv: Record<string, string> = {}
-  if (dbReady && !process.env.DATABASE_URL) {
-    clientEnv.DATABASE_URL = DEFAULT_DATABASE_URL
-    logLine('db', 'DATABASE_URL injected into web client (compose defaults).')
-  }
   const server = spawn('server', ['bun', 'run', 'server'])
-  const client = spawn('client', ['bun', 'run', 'preview'], process.cwd(), clientEnv)
+  const client = spawn('client', ['bun', 'run', 'preview'])
 
   // どちらかが落ちたら全体を終扱いにする。
   const children = [

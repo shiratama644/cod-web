@@ -16,21 +16,17 @@
 
 ```bash
 # 初回セットアップ(環境準備のみ。アプリ・ビルドは実行しない)
-bun run setup                        # 環境診断 → apt(必要時) → bun install → postgres イメージ取得 → check:env
+bun run setup                        # 環境診断 → apt(必要時) → bun install → SQLite スキーマ反映 → check:env
 bun run setup --no-apt               # apt によるシステム依存インストールをスキップ
 bun run setup --no-docker            # Docker の導入を試みない(proot 等 daemon 不可環境向け)
 bun run setup --e2e                  # Playwright ブラウザ(chromium)も取得
-# ※ docker なし → Docker 公式 apt リポジトリ(keyrings/docker.asc + sources.list.d)を
-#   設定して docker-ce 一式を導入。daemon が使えない環境(Termux proot 等)では
-#   フォールバックとして apt で PostgreSQL を導入し、
-#   パスワード/app_db/.env/スキーマまで自動設定する(フェイルソフト)
+# ※ DB は組み込み SQLite(ファイル DB)のため Docker/PostgreSQL のセットアップは不要。
+#   Docker の導入はフルスタック compose(任意)向けで、失敗しても影響しない
 
 bun install                          # 依存インストール (bun@1.4.0, bun.lock)
 
-# 本番構成: install → PostgreSQL(Docker) → build → gameserver :8080 + preview :4173
+# 本番構成: install → SQLite スキーマ反映 → build → gameserver :8080 + preview :4173
 bun run start                        # = bun run scripts/execute.ts
-bun run start --no-db                # PostgreSQL を起動せずに実行(インメモリ保存)
-# ※ docker が無い環境では自動的に DB なしで続行する(警告のみ・停止しない)
 
 # 開発時
 bun run dev                          # apps/web Vite :5173 (/ws を :8080 へプロキシ)
@@ -60,59 +56,28 @@ bun run test:e2e                     # E2E実行 (要 browser, CI/実環境)
 
 テストは `./_tests_/` にソース構造をミラー。エイリアスは `@` → `apps/web/src`, `@cod/protocol`, `@cod/engine-core`, `@cod/profile-fps`。ランタイムは bun。テストランナーは Vitest（`bun test` は使わない）。
 
-## データベース (PostgreSQL)
+## データベース (SQLite)
 
-`apps/web` のロードアウト永続化 (`/api/loadouts`) は PostgreSQL + Drizzle を使う。
-ローカルではルートの `compose.yaml` で簡単に起動できる（要 Docker + Compose v2）。
+`apps/web` のロードアウト永続化 (`/api/loadouts`) は **組み込み SQLite**(`@libsql/client` +
+Drizzle)を使う。**サーバも Docker も設定も不要** — ファイル DB が自動作成される。
 
 ```bash
-# 1. PostgreSQL 起動（postgres:17-alpine, healthy になるまで待機）
-bun run db:up
-
-# 2. 接続設定（compose のデフォルトと一致済み）
-cp apps/web/.env.example apps/web/.env
-
-# 3. スキーマ反映（drizzle-kit push → loadouts テーブル作成）
+# スキーマ反映（drizzle-kit push → apps/web/.data/cod.sqlite を作成/更新）
 bun run db:push
 
-# 運用
-bun run db:logs                      # ログ追尾
-bun run db:psql                      # psql シェル (app_db)
-bun run db:down                      # 停止（データは volume に保持）
-bun run db:destroy                   # 停止 + データ削除
-cd apps/web && bun run db:studio     # Drizzle Studio（GUI ブラウザ）
+# GUI ブラウザ（任意）
+cd apps/web && bun run db:studio
 ```
 
-- 接続先: `postgresql://postgres:postgres@127.0.0.1:5432/app_db`（`POSTGRES_PORT` 等の環境変数で上書き可）
-- `DATABASE_URL` 未設定でもアプリは動く（`/api/loadouts` はインメモリ保存にフォールバック）。`/api/health` の `db` フィールドで接続状態を確認できる。
+- 保存先: `apps/web/.data/cod.sqlite`（環境変数 `SQLITE_PATH` で上書き可。gitignore 済み）
+- `db:push` を忘れても、初回アクセス時にテーブルを自動作成する（`CREATE TABLE IF NOT EXISTS`）
+- `/api/health` が `{ ok: true, db: true, storage: "sqlite" }` を返せば正常
 
-### Neon（リモート PostgreSQL / ローカル DB 不要）
+### PostgreSQL / Neon について（現在未使用）
 
-Docker が使えない環境（Termux proot 等）やマネージド DB を使いたい場合は
-[Neon](https://neon.com) を利用できる。バックエンド宣言はルートの `neon.ts`
-（`auth: true` = Neon Auth 有効。`neon deploy` がブランチへ反映する）。
-
-```bash
-# 初回のみ（ログインとプロジェクトのリンク。リンク情報 .neon は gitignore 済み）
-# 注意: `bun i -g neon` は bun の共有グローバル node_modules の依存ホイストにより
-#       Node 側で ERR_UNSUPPORTED_DIR_IMPORT (escalade/sync) になることがある。
-#       CLI は npm でグローバル導入するか、bunx --bun で都度実行するのが確実。
-npm i -g neon@latest && neon login     # または: bunx --bun neon login
-neon link --project-id misty-sea-87909993 --branch production -y
-
-# 反映（DATABASE_URL 等がルートの .env に書き出される）
-neon deploy
-
-# あとは通常どおり（リモート URL を自動検出し、ローカル DB は起動しない）
-bun run setup
-bun run start
-```
-
-- `bun run setup` / `bun run start` は `DATABASE_URL` を env → `apps/web/.env` →
-  ルート `.env`（neon CLI の出力先）の順で探し、リモート URL なら
-  Docker/apt/proot のローカル DB 構築・起動をすべてスキップして `db:push` だけ行う。
-- 接続文字列例: `postgresql://<user>:<password>@<endpoint>.aws.neon.tech/cod?sslmode=require&channel_binding=require`
-  （DB 名 `cod` / PostgreSQL 18。`pg` ドライバは `sslmode=require` で自動的に TLS 接続する）
+以前は PostgreSQL(compose)/ Neon を使っていた。**サイトからは切り離したが、設定ファイルは
+将来のために残している**: `compose.yaml` の postgres サービスと `db:up` 等のスクリプト、
+Neon のバックエンド宣言 `neon.ts`（`@neon/config`）。再接続する場合はこれらを起点にする。
 
 ## Docker（フルスタック実行 / イメージビルド）
 
