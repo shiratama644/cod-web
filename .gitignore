@@ -33,6 +33,11 @@ test-results/
 .env.local
 .env.*.local
 
+# Neon CLI ローカル連携(リンク情報・MCP 設定・skills ロックは個人環境のもの)
+.neon
+.mcp.json
+skills-lock.json
+
 # Next.js
 .next/
 next-env.d.ts

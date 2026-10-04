@@ -86,6 +86,31 @@ cd apps/web && bun run db:studio     # Drizzle Studio（GUI ブラウザ）
 - 接続先: `postgresql://postgres:postgres@127.0.0.1:5432/app_db`（`POSTGRES_PORT` 等の環境変数で上書き可）
 - `DATABASE_URL` 未設定でもアプリは動く（`/api/loadouts` はインメモリ保存にフォールバック）。`/api/health` の `db` フィールドで接続状態を確認できる。
 
+### Neon（リモート PostgreSQL / ローカル DB 不要）
+
+Docker が使えない環境（Termux proot 等）やマネージド DB を使いたい場合は
+[Neon](https://neon.com) を利用できる。バックエンド宣言はルートの `neon.ts`
+（`auth: true` = Neon Auth 有効。`neon deploy` がブランチへ反映する）。
+
+```bash
+# 初回のみ（ログインとプロジェクトのリンク。リンク情報 .neon は gitignore 済み）
+bun i -g neon@latest && neon login
+neon link --project-id misty-sea-87909993 --branch production -y
+
+# 反映（DATABASE_URL 等がルートの .env に書き出される）
+neon deploy
+
+# あとは通常どおり（リモート URL を自動検出し、ローカル DB は起動しない）
+bun run setup
+bun run start
+```
+
+- `bun run setup` / `bun run start` は `DATABASE_URL` を env → `apps/web/.env` →
+  ルート `.env`（neon CLI の出力先）の順で探し、リモート URL なら
+  Docker/apt/proot のローカル DB 構築・起動をすべてスキップして `db:push` だけ行う。
+- 接続文字列例: `postgresql://<user>:<password>@<endpoint>.aws.neon.tech/cod?sslmode=require&channel_binding=require`
+  （DB 名 `cod` / PostgreSQL 18。`pg` ドライバは `sslmode=require` で自動的に TLS 接続する）
+
 ## Docker（フルスタック実行 / イメージビルド）
 
 `Dockerfile` はマルチステージ構成（base = node:22-alpine + bun）。

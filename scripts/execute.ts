@@ -110,6 +110,37 @@ const DEFAULT_DATABASE_URL = [
   process.env.POSTGRES_DB ?? 'app_db',
 ].join('')
 
+/** .env から DATABASE_URL を読む（apps/web/.env 優先。ルート .env は neon CLI の出力先）。 */
+async function readDatabaseUrlFromEnvFiles(): Promise<string | null> {
+  for (const path of ['apps/web/.env', '.env']) {
+    const text = await Bun.file(path)
+      .text()
+      .catch(() => '')
+    const m = text.match(/^DATABASE_URL=["']?([^"'\n]+)/m)
+    if (m?.[1]) return m[1].trim()
+  }
+  return null
+}
+
+/** 127.0.0.1 / localhost 以外のホストを指す接続文字列か（Neon 等のリモート DB）。 */
+function isRemoteDbUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname
+    return host !== '127.0.0.1' && host !== 'localhost' && host !== '[::1]'
+  } catch {
+    return false
+  }
+}
+
+/** ログ表示用のホスト名（資格情報は表示しない）。 */
+function dbHostLabel(url: string): string {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return 'remote'
+  }
+}
+
 /** TCP ポートに接続できるか（ローカル PostgreSQL の稼働確認用。1 秒でタイムアウト）。 */
 async function tcpOpen(hostname: string, port: number): Promise<boolean> {
   return await new Promise<boolean>((resolve) => {
@@ -193,12 +224,22 @@ async function applySchema(): Promise<void> {
 
 /**
  * PostgreSQL を用意してスキーマを反映する。
+ *   0. DATABASE_URL が Neon 等のリモート DB を指すならそれを使う（ローカル起動なし）
  *   1. 既にローカルで PostgreSQL が動いていればそれを使う
  *   2. Termux/proot 向けユーザーローカルクラスタ(~/.cod-web/pgdata)があれば起動して使う
  *   3. なければ docker compose で起動する
  * 失敗しても全体を止めず false を返す（/api/loadouts はインメモリへフォールバック）。
  */
 async function startDatabase(): Promise<boolean> {
+  // 0. 設定済み DATABASE_URL（env か apps/web/.env かルート .env）がリモートならそれを使う
+  const configured = process.env.DATABASE_URL ?? (await readDatabaseUrlFromEnvFiles())
+  if (configured && isRemoteDbUrl(configured)) {
+    process.env.DATABASE_URL = configured
+    logLine('db', `Remote DATABASE_URL detected (${dbHostLabel(configured)}); skipping local DB.`)
+    await applySchema()
+    return true
+  }
+
   // 1. ローカル PostgreSQL（apt 版・proot 環境など Docker を使わない構成）を優先
   const pgPort = Number(process.env.POSTGRES_PORT ?? '5432')
   if (await tcpOpen('127.0.0.1', pgPort)) {

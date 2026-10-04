@@ -7,7 +7,10 @@
  *   bun run setup --e2e        （Playwright ブラウザ(chromium)も取得する）
  *
  * 実行内容（各ステップは冪等。失敗しても可能な限り続行するフェイルソフト設計）:
- *   1. 環境診断     : bun / node / docker / apt の有無とバージョンを表示
+ *   1. 環境診断     : bun / node / docker / apt の有無とバージョンを表示。
+ *        DATABASE_URL(env / apps/web/.env / ルート .env = neon CLI の出力先)が
+ *        リモート DB(Neon 等)を指す場合は、ローカル DB を一切構築せず
+ *        apps/web/.env へ URL を配置してスキーマ反映のみ行う
  *   2. システム依存 : apt が使える環境でのみ実行（nala があれば apt-get より優先して使う）
  *        - docker なし → **Docker 公式 apt リポジトリを設定して docker-ce 一式を導入**
  *          （/etc/apt/keyrings/docker.asc + sources.list.d/docker.list、公式手順準拠。
@@ -435,6 +438,63 @@ async function finalizeDbEnvAndSchema(label: string, okNote: string): Promise<vo
 /** ユーザーローカルクラスタの配置先（execute.ts の自動起動と一致させること）。 */
 const USER_PG_DATA_DIR = `${process.env.HOME}/.cod-web/pgdata`
 
+/** .env から DATABASE_URL を読む（apps/web/.env 優先。ルート .env は neon CLI の出力先）。 */
+async function readDatabaseUrlFromEnvFiles(): Promise<string | null> {
+  for (const path of ['apps/web/.env', '.env']) {
+    const text = await Bun.file(path)
+      .text()
+      .catch(() => '')
+    const m = text.match(/^DATABASE_URL=["']?([^"'\n]+)/m)
+    if (m?.[1]) return m[1].trim()
+  }
+  return null
+}
+
+/** 127.0.0.1 / localhost 以外のホストを指す接続文字列か（Neon 等のリモート DB）。 */
+function isRemoteDbUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname
+    return host !== '127.0.0.1' && host !== 'localhost' && host !== '[::1]'
+  } catch {
+    return false
+  }
+}
+
+/** ログ表示用のホスト名（資格情報は表示しない）。 */
+function dbHostLabel(url: string): string {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return 'remote'
+  }
+}
+
+/**
+ * Neon 等のリモート DATABASE_URL を使う場合: ローカル DB は一切構築せず、
+ * apps/web/.env に URL を配置(Next.js が読むのはここ)してスキーマを反映する。
+ */
+async function setupRemoteDb(url: string): Promise<void> {
+  const label = 'PostgreSQL (remote/Neon)'
+  logLine('db', `リモート DATABASE_URL を検出しました(${dbHostLabel(url)})。`)
+  logLine('db', 'ローカル DB(Docker/apt/proot)は構築しません。')
+  const envPath = 'apps/web/.env'
+  const text = await Bun.file(envPath)
+    .text()
+    .catch(() => '')
+  if (!/^DATABASE_URL=/m.test(text)) {
+    const head = text.length > 0 && !text.endsWith('\n') ? `${text}\n` : text
+    await Bun.write(envPath, `${head}DATABASE_URL=${url}\n`)
+    logLine('db', `${envPath} に DATABASE_URL を書き込みました。`)
+  }
+  process.env.DATABASE_URL = url
+  if ((await run('db', ['bun', 'run', 'db:push'])) === 0) {
+    logLine('db', `OK ${label} の準備が完了しました。`)
+    record(label, 'OK', `${dbHostLabel(url)} + スキーマ反映`)
+  } else {
+    record(label, 'WARN', 'db:push 失敗(接続/認証を確認して `bun run db:push` を再実行)')
+  }
+}
+
 /**
  * Termux/proot-distro 向け: postgres OS ユーザーを使わないユーザーローカルクラスタ。
  * proot はファイル所有権をログイン時の偽装 UID に固定して見せるため、
@@ -633,6 +693,14 @@ async function main(): Promise<number> {
   )
   record('環境診断', 'OK', `bun ${bunVer.out}, docker ${docker.up ? '可用' : 'なし/不可'}`)
 
+  // リモート DB(Neon 等): env / apps/web/.env / ルート .env の DATABASE_URL を検出。
+  // 設定されている場合、ローカル DB(Docker/apt/proot)の構築は不要になる。
+  const configuredDbUrl = process.env.DATABASE_URL ?? (await readDatabaseUrlFromEnvFiles())
+  const remoteDbUrl = configuredDbUrl && isRemoteDbUrl(configuredDbUrl) ? configuredDbUrl : null
+  if (remoteDbUrl) {
+    logLine('setup', `DATABASE_URL: リモート(${dbHostLabel(remoteDbUrl)})を使用します。`)
+  }
+
   // ── 2. システム依存(apt)─────────────────────────────────────────────
   if (noApt) {
     logLine('sys', 'Skipping apt (--no-apt).')
@@ -709,8 +777,10 @@ async function main(): Promise<number> {
       }
     }
 
-    // ── 2b. PostgreSQL(docker 可用なら compose、proot はユーザーローカル、他は apt)──
-    if (docker.up) {
+    // ── 2b. PostgreSQL(リモート優先 → compose → proot → apt)────────────
+    if (remoteDbUrl) {
+      record('システム依存 (apt)', 'OK', 'リモート DB 使用 → ローカル postgresql 不要')
+    } else if (docker.up) {
       logLine('sys', 'docker が使えるため PostgreSQL は compose が提供します(apt では入れません)。')
       record('システム依存 (apt)', 'OK', 'docker 可用 → apt postgresql 不要')
     } else if (androidProot) {
@@ -731,6 +801,11 @@ async function main(): Promise<number> {
   }
   record('bun install', 'OK')
 
+  // ── 3b. リモート DB(Neon 等)の仕上げ(apt の有無に関わらず、依存導入後に実行)──
+  if (remoteDbUrl) {
+    await setupRemoteDb(remoteDbUrl)
+  }
+
   // ── 4. git hooks(husky は bun install の prepare で導入済みのはず)───
   const hooks = await Bun.file('.husky/_/husky.sh')
     .exists()
@@ -743,7 +818,9 @@ async function main(): Promise<number> {
   }
 
   // ── 5. docker compose イメージ取得(起動はしない)─────────────────────
-  if (docker.up) {
+  if (remoteDbUrl) {
+    record('postgres イメージ取得', 'SKIP', 'リモート DB 使用')
+  } else if (docker.up) {
     logLine('db', 'Pulling PostgreSQL image... (docker compose pull postgres)')
     const pull = ['docker', 'compose', 'pull', 'postgres']
     const code = await run('db', docker.viaSudo ? ['sudo', '-n', ...pull] : pull)
