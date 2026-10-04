@@ -73,6 +73,17 @@ cd apps/web && bun run db:studio
 - `db:push` を忘れても、初回アクセス時にテーブルを自動作成する（`CREATE TABLE IF NOT EXISTS`）
 - `/api/health` が `{ ok: true, db: true, storage: "sqlite" }` を返せば正常
 
+### ブラウザ側フォールバック（dexie.js / IndexedDB）
+
+開発段階の保険として、ロードアウトは **ブラウザの IndexedDB にも保存**される
+（`apps/web/src/lib/loadout-store.ts`、[dexie.js](https://dexie.org) 使用）。
+
+- 保存はローカルファースト: まず IndexedDB に書き、その後 API（SQLite）へ送る
+- API が使えない場合（サーバ未起動・オフライン等）でもデータは失われず、
+  画面右上の同期表示が `SAVED (LOCAL)`（琥珀色）になる
+- 読込は API 優先。API が空/不達なら IndexedDB から復元する
+  （API から読めた内容は IndexedDB にミラーされる）
+
 ### PostgreSQL / Neon について（現在未使用）
 
 以前は PostgreSQL(compose)/ Neon を使っていた。**サイトからは切り離したが、設定ファイルは

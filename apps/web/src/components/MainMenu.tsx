@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { type ClassLoadout, DEFAULT_CLASSES, MODES, type ModeTab } from '@/lib/data'
 import { type SavedLoadouts, sanitizeSaved } from '@/lib/loadout'
+import { loadLoadouts, saveLoadouts } from '@/lib/loadout-store'
 import Background from './Background'
 import { Modal, ToastHost, toast } from './feedback'
 import GunsmithPanel from './GunsmithPanel'
@@ -48,7 +49,10 @@ export default function MainMenu() {
   const [classes, setClasses] = useState<ClassLoadout[]>(DEFAULT_CLASSES)
   const [selected, setSelected] = useState(0)
   const [equipped, setEquipped] = useState(0)
-  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  // 'local' = API 不達のため IndexedDB(dexie)のみに保存された状態
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'local' | 'error'>(
+    'idle',
+  )
   const [modal, setModal] = useState<ModalKind>(null)
   const [mailRead, setMailRead] = useState<boolean[]>(() => MOCK_MAILS.map(() => false))
   const [invited, setInvited] = useState<string[]>([])
@@ -62,13 +66,12 @@ export default function MainMenu() {
   // Snapshot of the last payload known to be persisted — skips redundant echo saves.
   const lastSaved = useRef<string | null>(null)
 
-  // Load persisted loadouts
+  // Load persisted loadouts(API 優先 → IndexedDB フォールバック)
   useEffect(() => {
-    fetch('/api/loadouts')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((j: { data: Saved | null }) => {
-        if (j.data && Array.isArray(j.data.classes) && j.data.classes.length) {
-          const safe = sanitizeSaved(j.data)
+    loadLoadouts()
+      .then(({ data }) => {
+        if (data && Array.isArray(data.classes) && data.classes.length) {
+          const safe = sanitizeSaved(data)
           lastSaved.current = JSON.stringify(safe)
           setClasses(safe.classes)
           setEquipped(safe.equipped)
@@ -81,25 +84,21 @@ export default function MainMenu() {
       })
   }, [])
 
-  // Debounced save
+  // Debounced save(IndexedDB へ先に書き、API が使えなければローカルのみ)
   useEffect(() => {
     if (!loaded.current) return
     const payload = JSON.stringify({ classes, equipped } satisfies Saved)
     if (payload === lastSaved.current) return
     setSaveState('saving')
     const t = setTimeout(() => {
-      fetch('/api/loadouts', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: `{"data":${payload}}`,
-      })
-        .then((r) => {
-          if (r.ok) {
-            lastSaved.current = payload
-            setSaveState('saved')
-          } else {
+      saveLoadouts({ classes, equipped })
+        .then((result) => {
+          if (result === 'error') {
             setSaveState('error')
+            return
           }
+          lastSaved.current = payload
+          setSaveState(result === 'api' ? 'saved' : 'local')
         })
         .catch(() => setSaveState('error'))
     }, 600)
@@ -259,7 +258,9 @@ export default function MainMenu() {
                     ? 'cloud_sync'
                     : saveState === 'error'
                       ? 'cloud_off'
-                      : 'cloud_done'
+                      : saveState === 'local'
+                        ? 'save'
+                        : 'cloud_done'
                 }
                 size={14}
                 className={
@@ -267,10 +268,18 @@ export default function MainMenu() {
                     ? 'text-cod-400'
                     : saveState === 'error'
                       ? 'text-red-400'
-                      : 'text-green-500'
+                      : saveState === 'local'
+                        ? 'text-amber-400'
+                        : 'text-green-500'
                 }
               />
-              {saveState === 'saving' ? 'SYNCING' : saveState === 'error' ? 'SYNC FAILED' : 'SAVED'}
+              {saveState === 'saving'
+                ? 'SYNCING'
+                : saveState === 'error'
+                  ? 'SYNC FAILED'
+                  : saveState === 'local'
+                    ? 'SAVED (LOCAL)'
+                    : 'SAVED'}
             </span>
             <span className="text-steel-600">ESC · BACK</span>
           </div>

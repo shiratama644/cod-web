@@ -18,7 +18,7 @@ description: apps/web（Next.js 16）をSandbox/Arenaプレビューで確実に
 | スタック | Next 16 (App Router) + React 19 + Tailwind 4 + framer-motion 13 + drizzle-orm/libsql |
 | scripts | `dev`=`next dev -H 0.0.0.0 -p 3000` / `build` / `start` / `preview`=`next start -H 0.0.0.0 -p 4173` / `lint`=eslint / `typecheck`=tsc |
 | 画面 | Home（MP/BR）・Loadout（5クラス）・Gunsmith（9スロット+stat mod）・TopBar・横画面ロック。データは `src/lib/data.ts` |
-| DB | `src/db/` drizzle+`@libsql/client`(組み込み SQLite・サーバ不要)。保存先 `apps/web/.data/cod.sqlite`(`SQLITE_PATH` で上書き可)。ルートは `await dbReady()`(初回に CREATE TABLE IF NOT EXISTS)→`getDb()`。`/api/health` が `{ok, db, storage:'sqlite'}` を返す。スキーマ反映は `bun run db:push`（README「データベース」節参照） |
+| DB | `src/db/` drizzle+`@libsql/client`(組み込み SQLite・サーバ不要)。保存先 `apps/web/.data/cod.sqlite`(`SQLITE_PATH` で上書き可)。ルートは `await dbReady()`(初回に CREATE TABLE IF NOT EXISTS)→`getDb()`。`/api/health` が `{ok, db, storage:'sqlite'}` を返す。スキーマ反映は `bun run db:push`（README「データベース」節参照）。クライアント側は `src/lib/loadout-store.ts`(dexie/IndexedDB)がローカルファーストで保存し、API 不達時のフォールバックになる(保存結果 'api'/'local'/'error') |
 
 ## ツールチェーンの分担（重要）
 
