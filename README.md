@@ -94,7 +94,10 @@ Docker が使えない環境（Termux proot 等）やマネージド DB を使�
 
 ```bash
 # 初回のみ（ログインとプロジェクトのリンク。リンク情報 .neon は gitignore 済み）
-bun i -g neon@latest && neon login
+# 注意: `bun i -g neon` は bun の共有グローバル node_modules の依存ホイストにより
+#       Node 側で ERR_UNSUPPORTED_DIR_IMPORT (escalade/sync) になることがある。
+#       CLI は npm でグローバル導入するか、bunx --bun で都度実行するのが確実。
+npm i -g neon@latest && neon login     # または: bunx --bun neon login
 neon link --project-id misty-sea-87909993 --branch production -y
 
 # 反映（DATABASE_URL 等がルートの .env に書き出される）

@@ -49,3 +49,13 @@ PostgreSQL 18 / DB 名 `cod` / プロジェクト `misty-sea-87909993` / ブラ�
   (サンドボックスに .env を残さない規約)。
 - `bun run check:all` 7/7 PASS
 - 制約: 実際の Neon 接続(login/link/deploy はユーザーの手元でのみ可能)は実機確認待ち。
+
+## 追記(同日): `bun i -g neon` の ERR_UNSUPPORTED_DIR_IMPORT
+
+- ユーザー環境(Node 24.21.0)で `neon login` が
+  `ERR_UNSUPPORTED_DIR_IMPORT: .../.bun/install/global/node_modules/escalade/sync` で失敗。
+- 原因: bun のグローバルは単一の共有 node_modules(husky 等と同居)で、依存ホイストの
+  結果 exports マップを解決できない escalade 配置になることがある(yargs → escalade/sync)。
+- サンドボックス検証(いずれも 8.0.4 動作): `npm i -g neon@latest` /
+  `npx -y neon@latest --version` / `bunx --bun neon --version`。
+- README の Neon 節を npm -g 推奨(または bunx --bun)に修正。
